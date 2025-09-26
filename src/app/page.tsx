@@ -562,6 +562,11 @@ export default function KonvaEditor() {
           nodeToTransform = e.target.parent;
         }
 
+        // Don't re-select if it's already selected
+        if (nodeToTransform === selectedNode) {
+          return;
+        }
+
         if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText')) {
           deselectNode();
 
@@ -579,32 +584,34 @@ export default function KonvaEditor() {
           layer.add(tr);
           tr.nodes([nodeToTransform]);
 
-          // Populate dialog for editing
-          if (dialogTitle) dialogTitle.textContent = 'Update Text';
-          if (addBtn) addBtn.textContent = 'Update';
+          // Open and populate dialog ONLY for text objects
+          if (nodeToTransform.hasName('text') || nodeToTransform.hasName('circularText')) {
+            textDialog.style.display = 'flex';
+            if (dialogTitle) dialogTitle.textContent = 'Update Text';
+            if (addBtn) addBtn.textContent = 'Update';
 
-          if (nodeToTransform.hasName('text')) {
-              // Populate dialog for standard text
-              if(textInput) textInput.value = nodeToTransform.text();
-              if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
-              if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
-              if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
-              if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
-              
-              // Set curvature to 0 for standard text
-              if(circularTextCurvature) circularTextCurvature.value = '0';
-              if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
+            if (nodeToTransform.hasName('text')) {
+                // Populate dialog for standard text
+                if(textInput) textInput.value = nodeToTransform.text();
+                if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
+                if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
+                if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
+                if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
+                
+                // Set curvature to 0 for standard text
+                if(circularTextCurvature) circularTextCurvature.value = '0';
+                if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
 
-          } else if (nodeToTransform.hasName('circularText')) {
-              // Populate dialog for circular text
-              if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
-              if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
-              if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
-              if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
-              if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
-              if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
+            } else if (nodeToTransform.hasName('circularText')) {
+                // Populate dialog for circular text
+                if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
+                if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
+                if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
+                if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
+                if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
+                if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
+            }
           }
-
 
           layer.draw();
 
@@ -823,6 +830,8 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
 
     
 
