@@ -46,6 +46,7 @@ export default function KonvaEditor() {
     const addBtn = document.getElementById('add-btn');
     const cancelBtn = document.getElementById('cancel-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
+    const centerBtn = document.getElementById('center-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
     const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
@@ -58,9 +59,6 @@ export default function KonvaEditor() {
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
     const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
-    const alignLeftBtn = document.getElementById('align-left-btn') as HTMLElement;
-    const alignCenterBtn = document.getElementById('align-center-btn') as HTMLElement;
-    const alignRightBtn = document.getElementById('align-right-btn') as HTMLElement;
     const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
     const shadowBlurSlider = document.getElementById('shadow-blur-slider') as HTMLInputElement;
     const shadowDistanceSlider = document.getElementById('shadow-distance-slider') as HTMLInputElement;
@@ -89,6 +87,7 @@ export default function KonvaEditor() {
       }
       selectedNode = null;
       deleteBtn.classList.add('hidden');
+      centerBtn.classList.add('hidden');
       layer?.draw();
     };
 
@@ -106,9 +105,6 @@ export default function KonvaEditor() {
       boldBtn.classList.remove('active');
       italicBtn.classList.remove('active');
       underlineBtn.classList.remove('active');
-      alignLeftBtn.classList.add('active'); // Default to left
-      alignCenterBtn.classList.remove('active');
-      alignRightBtn.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
       if(shadowControls) shadowControls.classList.add('hidden');
 
@@ -223,16 +219,6 @@ export default function KonvaEditor() {
         selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         selectedNode.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
         
-        // Handle Alignment
-        if (alignCenterBtn.classList.contains('active')) {
-          selectedNode.align('center');
-        } else if (alignRightBtn.classList.contains('active')) {
-          selectedNode.align('right');
-        } else {
-          selectedNode.align('left');
-        }
-
-
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
           selectedNode.shadowColor('#000000');
@@ -273,15 +259,6 @@ export default function KonvaEditor() {
         newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         newText.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
         
-        // Apply alignment
-        if (alignCenterBtn.classList.contains('active')) {
-          newText.align('center');
-        } else if (alignRightBtn.classList.contains('active')) {
-          newText.align('right');
-        } else {
-          newText.align('left');
-        }
-
         // Apply shadow if active
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
@@ -504,21 +481,6 @@ export default function KonvaEditor() {
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       underlineBtn?.addEventListener('click', () => { underlineBtn.classList.toggle('active'); updateSelectedTextStyle(); });
-      
-      const handleAlignmentClick = (align: string) => {
-        alignLeftBtn.classList.remove('active');
-        alignCenterBtn.classList.remove('active');
-        alignRightBtn.classList.remove('active');
-        if (align === 'left') alignLeftBtn.classList.add('active');
-        else if (align === 'center') alignCenterBtn.classList.add('active');
-        else if (align === 'right') alignRightBtn.classList.add('active');
-        updateSelectedTextStyle();
-      };
-
-      alignLeftBtn?.addEventListener('click', () => handleAlignmentClick('left'));
-      alignCenterBtn?.addEventListener('click', () => handleAlignmentClick('center'));
-      alignRightBtn?.addEventListener('click', () => handleAlignmentClick('right'));
-
 
       // Shadow Controls
       dropShadowBtn?.addEventListener('click', () => {
@@ -544,6 +506,22 @@ export default function KonvaEditor() {
         if (selectedNode) {
           selectedNode.destroy();
           deselectNode();
+        }
+      });
+
+      centerBtn?.addEventListener('click', () => {
+        if (selectedNode) {
+          const centerX = stage.width() / 2;
+          const centerY = stage.height() / 2;
+          
+          // To truly center, we need to offset by half the object's size.
+          // Konva's groups and transformed shapes have a getClientRect() method
+          // which is perfect for getting the visual bounding box.
+          const box = selectedNode.getClientRect();
+          selectedNode.x(centerX - box.width / 2);
+          selectedNode.y(centerY - box.height / 2);
+          
+          layer.draw();
         }
       });
 
@@ -583,6 +561,7 @@ export default function KonvaEditor() {
 
           selectedNode = nodeToTransform;
           deleteBtn.classList.remove('hidden');
+          centerBtn.classList.remove('hidden');
 
           tr = new window.Konva.Transformer({ rotateEnabled: true });
           layer.add(tr);
@@ -680,7 +659,8 @@ export default function KonvaEditor() {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                     <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
-                    <button id="delete-btn" className="button button-danger flex-grow hidden">Delete Selected</button>
+                    <button id="center-btn" className="button button-secondary flex-grow hidden">Center</button>
+                    <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
                     <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                 </div>
             </div>
@@ -739,14 +719,6 @@ export default function KonvaEditor() {
                                     <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
                                     <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
                                     <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
-                                </div>
-                            </div>
-                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700">Text Align</label>
-                                <div className="flex gap-2 justify-center">
-                                    <button id="align-left-btn" className="p-2 border rounded-md active">Left</button>
-                                    <button id="align-center-btn" className="p-2 border rounded-md">Center</button>
-                                    <button id="align-right-btn" className="p-2 border rounded-md">Right</button>
                                 </div>
                             </div>
                             <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">

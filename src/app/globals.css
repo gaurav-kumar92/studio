@@ -164,6 +164,11 @@ body {
     color: white;
 }
 
+.button-secondary {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
 .button-danger {
     background-color: #ef4444;
     color: white;
