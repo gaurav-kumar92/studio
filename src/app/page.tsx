@@ -25,22 +25,18 @@ export default function KonvaEditor() {
     // --- 1. Element References ---
     const canvasContainer = document.getElementById('canvas-container') as HTMLElement;
     const addTextBtn = document.getElementById('add-text-btn');
-    const addCircularTextBtn = document.getElementById('add-circular-text-btn');
     const addShapeBtn = document.getElementById('add-shape-btn');
     const canvasSizeSelect = document.getElementById('canvas-size') as HTMLSelectElement;
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
     const shapeDialog = document.getElementById('shape-dialog') as HTMLElement;
-    const circularTextDialog = document.getElementById('circular-text-dialog') as HTMLElement;
     const cancelShapeBtn = document.getElementById('cancel-shape-btn');
     const dialogTitle = document.getElementById('dialog-title');
     const textInput = document.getElementById('text-input') as HTMLInputElement;
     const circularTextInput = document.getElementById('circular-text-input') as HTMLInputElement;
     const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
-    const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement; // NEW CURVATURE SLIDER
+    const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
     const addBtn = document.getElementById('add-btn');
-    const addCircularBtn = document.getElementById('add-circular-btn');
     const cancelBtn = document.getElementById('cancel-btn');
-    const cancelCircularBtn = document.getElementById('cancel-circular-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
     const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
@@ -73,6 +69,7 @@ export default function KonvaEditor() {
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
     let originalSelectedNodeY: number | null = null;
+    let activeTextTab = 'standard'; // 'standard' or 'circular'
 
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
@@ -94,38 +91,66 @@ export default function KonvaEditor() {
     };
 
     const resetTextDialog = () => {
-      if(dialogTitle) dialogTitle.textContent = 'Add Text to Canvas';
+      if(dialogTitle) dialogTitle.textContent = 'Add Text';
       if(addBtn) addBtn.textContent = 'Add';
+      
+      // Reset standard text fields
       if(textInput) textInput.value = '';
       if(textFontSizeInput) textFontSizeInput.value = '24';
       if(textFontFamilySelect) textFontFamilySelect.value = 'Inter';
       if(textColorPicker) textColorPicker.value = '#000000';
-      if(colorPreviewText) colorPreviewText.style.backgroundColor = '#000000'; // Reset visible swatch
+      if(colorPreviewText) colorPreviewText.style.backgroundColor = '#000000';
       selectedColorText = '#000000';
       boldBtn.classList.remove('active');
       italicBtn.classList.remove('active');
-underlineBtn.classList.remove('active');
+      underlineBtn.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
-      shadowControls.classList.add('hidden');
+      if(shadowControls) shadowControls.classList.add('hidden');
+
+      // Reset circular text fields
+      if(circularTextInput) circularTextInput.value = 'Konva Circular Text Tool';
+      if(circularTextRadius) circularTextRadius.value = '150';
+      if(circularTextCurvature) circularTextCurvature.value = '100';
+      if(circularColorPicker) circularColorPicker.value = '#000000';
+      if(colorPreviewCircular) colorPreviewCircular.style.backgroundColor = '#000000';
+      selectedColorCircular = '#000000';
     };
 
     // --- 4. Core Button Listeners (Dialog Control) ---
-    addTextBtn?.addEventListener('click', () => { deselectNode(); resetTextDialog(); textDialog.style.display = 'flex'; });
-    addCircularTextBtn?.addEventListener('click', () => {
-      deselectNode();
-      // Reset circular text dialog on open
-      if(circularTextInput) circularTextInput.value = 'Konva Circular Text Tool';
-      if(circularTextRadius) circularTextRadius.value = '150';
-      if(circularTextCurvature) circularTextCurvature.value = '100'; // Default to full wrap
-      if(circularColorPicker) circularColorPicker.value = '#000000'; // Reset color
-      if(colorPreviewCircular) colorPreviewCircular.style.backgroundColor = '#000000';
-      selectedColorCircular = '#000000';
-      circularTextDialog.style.display = 'flex';
+    addTextBtn?.addEventListener('click', () => { 
+        deselectNode(); 
+        resetTextDialog(); 
+        textDialog.style.display = 'flex'; 
     });
     addShapeBtn?.addEventListener('click', () => { deselectNode(); shapeDialog.style.display = 'flex'; });
     cancelShapeBtn?.addEventListener('click', () => { shapeDialog.style.display = 'none'; });
     cancelBtn?.addEventListener('click', () => { textDialog.style.display = 'none'; });
-    cancelCircularBtn?.addEventListener('click', () => { circularTextDialog.style.display = 'none'; });
+
+    // --- Text Dialog Tab Logic ---
+    const textTabsContainer = document.getElementById('text-tabs');
+    const standardTextTab = document.getElementById('standard-text-tab');
+    const circularTextTab = document.getElementById('circular-text-tab');
+    const standardTextContent = document.getElementById('standard-text-content');
+    const circularTextContent = document.getElementById('circular-text-content');
+
+    textTabsContainer?.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if(target.id === 'standard-text-tab-btn') {
+            activeTextTab = 'standard';
+            standardTextTab?.classList.add('active');
+            circularTextTab?.classList.remove('active');
+            standardTextContent?.classList.remove('hidden');
+            circularTextContent?.classList.add('hidden');
+            if(dialogTitle) dialogTitle.textContent = 'Add Standard Text';
+        } else if (target.id === 'circular-text-tab-btn') {
+            activeTextTab = 'circular';
+            circularTextTab?.classList.add('active');
+            standardTextTab?.classList.remove('active');
+            circularTextContent?.classList.remove('hidden');
+            standardTextContent?.classList.add('hidden');
+            if(dialogTitle) dialogTitle.textContent = 'Add Circular Text';
+        }
+    });
 
 
     // --- 5. Konva Initialization ---
@@ -376,7 +401,7 @@ underlineBtn.classList.remove('active');
 
 
         layer.add(circularGroup);
-        circularTextDialog.style.display = 'none';
+        textDialog.style.display = 'none';
         layer.draw();
       };
 
@@ -454,15 +479,16 @@ underlineBtn.classList.remove('active');
       // Text Dialog Update/Add
       addBtn?.addEventListener('click', () => {
         if (addBtn.textContent === 'Add') {
-          addText();
+          if (activeTextTab === 'standard') {
+              addText();
+          } else {
+              addCircularText();
+          }
         } else if (addBtn.textContent === 'Update') {
           updateText();
           textDialog.style.display = 'none';
         }
       });
-
-      // Circular Text Add
-      addCircularBtn?.addEventListener('click', addCircularText);
 
       // Shape Dialog Selection
       shapeDialog?.addEventListener('click', e => {
@@ -558,6 +584,17 @@ underlineBtn.classList.remove('active');
             if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
             if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
             if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill(); // Update visible swatch
+            
+            // Show the standard text tab when editing a standard text node
+            activeTextTab = 'standard';
+            standardTextTab?.classList.add('active');
+            circularTextTab?.classList.remove('active');
+            standardTextContent?.classList.remove('hidden');
+            circularTextContent?.classList.add('hidden');
+            if(textTabsContainer) (textTabsContainer.parentElement as HTMLElement).style.display = 'none'; // Hide tabs when editing
+          } else {
+             // For new items, show the tabs
+            if(textTabsContainer) (textTabsContainer.parentElement as HTMLElement).style.display = 'block';
           }
 
           layer.draw();
@@ -625,7 +662,6 @@ underlineBtn.classList.remove('active');
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                     <button id="add-text-btn" className="button button-primary flex-grow">Add Text</button>
-                    <button id="add-circular-text-btn" className="button button-primary flex-grow">Add Circular Text</button>
                     <button id="add-shape-btn" className="button button-primary flex-grow">Add Shape</button>
                     <button id="delete-btn" className="button button-danger flex-grow hidden">Delete Selected</button>
                     <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
@@ -651,56 +687,89 @@ underlineBtn.classList.remove('active');
             </div>
         </div>
 
-        {/* Text Dialog */}
+        {/* Unified Text Dialog */}
         <div id="text-dialog" className="dialog-overlay">
             <div className="dialog">
                 <div className="dialog-content">
-                    <h3 id="dialog-title" className="text-lg font-semibold">Add Text to Canvas</h3>
-                    <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
+                    <h3 id="dialog-title" className="text-lg font-semibold mb-4">Add Text</h3>
                     
-                    <div id="text-controls" className="mt-4 pt-4 relative">
-                        
-                        {/* SINGLE COLOR INPUT (Circle Swatch) */}
-                        <div className="color-picker-container">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
-                            {/* VISIBLE SWATCH */}
-                            <div id="color-preview-text" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                            {/* HIDDEN FUNCTIONAL INPUT */}
-                            <input type="color" id="text-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
-                        </div>
+                    <div className="border-b border-gray-200 mb-4">
+                        <nav id="text-tabs" className="-mb-px flex space-x-4" aria-label="Tabs">
+                            <div id="standard-text-tab" className="tab active">
+                                <button id="standard-text-tab-btn" className="tab-button">Standard</button>
+                            </div>
+                            <div id="circular-text-tab" className="tab">
+                                <button id="circular-text-tab-btn" className="tab-button">Circular</button>
+                            </div>
+                        </nav>
+                    </div>
 
-                        <div className="mb-4 mt-4">
-                            <label htmlFor="text-font-size" className="block text-sm font-medium text-gray-700">Font Size</label>
-                            <input type="number" id="text-font-size" className="w-full p-2 border rounded-md" defaultValue="24" min="12" max="100" />
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="text-font-family" className="block text-sm font-medium text-gray-700">Font Family</label>
-                            <select id="text-font-family" className="w-full p-2 border border-gray-300 rounded-md">
-                                <option value="Inter">Inter</option>
-                                <option value="Arial">Arial</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                                <option value="Courier New">Courier New</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Impact">Impact</option>
-                            </select>
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Font Style</label>
-                            <div className="flex gap-2 justify-center">
-                                <button id="bold-btn" className="p-2 border rounded-md font-bold">B</button>
-                                <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
-                                <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
-                                <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
+                    {/* Standard Text Content */}
+                    <div id="standard-text-content">
+                        <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
+                        <div id="text-controls" className="mt-4 pt-4 relative">
+                            <div className="color-picker-container">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+                                <div id="color-preview-text" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
+                                <input type="color" id="text-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
+                            </div>
+                            <div className="mb-4 mt-4">
+                                <label htmlFor="text-font-size" className="block text-sm font-medium text-gray-700">Font Size</label>
+                                <input type="number" id="text-font-size" className="w-full p-2 border rounded-md" defaultValue="24" min="12" max="100" />
+                            </div>
+                            <div className="mb-4">
+                                <label htmlFor="text-font-family" className="block text-sm font-medium text-gray-700">Font Family</label>
+                                <select id="text-font-family" className="w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="Inter">Inter</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Impact">Impact</option>
+                                </select>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700">Font Style</label>
+                                <div className="flex gap-2 justify-center">
+                                    <button id="bold-btn" className="p-2 border rounded-md font-bold">B</button>
+                                    <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
+                                    <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
+                                    <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
+                                </div>
+                            </div>
+                            <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
+                                <label className="block text-sm font-medium text-gray-700">Shadow Blur (Current: <span id="shadow-blur-value">10</span>)</label>
+                                <input type="range" id="shadow-blur-slider" min="0" max="20" defaultValue="10" />
+                                <label className="block text-sm font-medium text-gray-700">Shadow Distance (Current: <span id="shadow-distance-value">5</span>)</label>
+                                <input type="range" id="shadow-distance-slider" min="0" max="20" defaultValue="5" />
+                                <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
+                                <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
                             </div>
                         </div>
-                        <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
-                             <label className="block text-sm font-medium text-gray-700">Shadow Blur (Current: <span id="shadow-blur-value">10</span>)</label>
-                            <input type="range" id="shadow-blur-slider" min="0" max="20" defaultValue="10" />
-                             <label className="block text-sm font-medium text-gray-700">Shadow Distance (Current: <span id="shadow-distance-value">5</span>)</label>
-                            <input type="range" id="shadow-distance-slider" min="0" max="20" defaultValue="5" />
-                             <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
-                            <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
+                    </div>
+
+                    {/* Circular Text Content */}
+                    <div id="circular-text-content" className="hidden">
+                         <input type="text" id="circular-text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." defaultValue="Konva Circular Text Tool" />
+                        <div className="mt-4 pt-4">
+                            <div className="mb-4 flex items-center justify-between">
+                                <label htmlFor="circular-text-radius" className="block text-sm font-medium text-gray-700">Radius</label>
+                                <input type="range" id="circular-text-radius" min="10" max="250" defaultValue="150" className="flex-grow ml-4" />
+                            </div>
+                            <div className="mb-4 flex flex-col items-start w-full">
+                                <label htmlFor="circular-text-curvature" className="block text-sm font-medium text-gray-700 mb-2">Curvature</label>
+                                <input type="range" id="circular-text-curvature" min="0" max="100" defaultValue="100" className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
+                                <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
+                                    <span className="text-gray-600 font-semibold">Straight (0)</span>
+                                    <span className="text-gray-600 font-semibold">Full Wrap (100)</span>
+                                </div>
+                            </div>
+                            <div className="color-picker-container">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+                                <div id="color-preview-circular" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
+                                <input type="color" id="circular-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
+                            </div>
                         </div>
                     </div>
                     
@@ -716,12 +785,9 @@ underlineBtn.classList.remove('active');
         <div id="shape-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">Add a Shape</h3>
-                 {/* SINGLE COLOR INPUT (Circle Swatch) */}
                  <div className="color-picker-container">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Shape Color</label>
-                    {/* VISIBLE SWATCH */}
                     <div id="color-preview-shape" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
-                    {/* HIDDEN FUNCTIONAL INPUT */}
                     <input type="color" id="shape-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                 </div>
 
@@ -736,49 +802,7 @@ underlineBtn.classList.remove('active');
                 </div>
             </div>
         </div>
-
-        {/* Circular Text Dialog */}
-        <div id="circular-text-dialog" className="dialog-overlay">
-            <div className="dialog">
-                <div className="dialog-content">
-                    <h3 className="text-lg font-semibold">Add Circular Text</h3>
-                    <input type="text" id="circular-text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." defaultValue="Konva Circular Text Tool" />
-                    <div className="mt-4 pt-4">
-                        <div className="mb-4 flex items-center justify-between">
-                            <label htmlFor="circular-text-radius" className="block text-sm font-medium text-gray-700">Radius</label>
-                            {/* CHANGED: Min radius set back to 10 */}
-                            <input type="range" id="circular-text-radius" min="10" max="250" defaultValue="150" className="flex-grow ml-4" />
-                        </div>
-                        
-                        {/* NEW CURVATURE SLIDER */}
-                        <div className="mb-4 flex flex-col items-start w-full">
-                            <label htmlFor="circular-text-curvature" className="block text-sm font-medium text-gray-700 mb-2">Curvature</label>
-                            <input type="range" id="circular-text-curvature" min="0" max="100" defaultValue="100" className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
-                            <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
-                                <span className="text-gray-600 font-semibold">Straight (0)</span>
-                                <span className="text-gray-600 font-semibold">Full Wrap (100)</span>
-                            </div>
-                        </div>
-
-                        {/* SINGLE COLOR INPUT (Circle Swatch) */}
-                        <div className="color-picker-container">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
-                            {/* VISIBLE SWATCH */}
-                            <div id="color-preview-circular" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                            {/* HIDDEN FUNCTIONAL INPUT */}
-                            <input type="color" id="circular-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
-                        </div>
-                    </div>
-                    <div className="dialog-actions flex justify-end gap-2 mt-4">
-                        <button id="cancel-circular-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                        <button id="add-circular-btn" className="dialog-button dialog-button-primary">Add</button>
-                    </div>
-                </div>
-            </div>
-        </div>
       </main>
     </>
   );
 }
-
-    
