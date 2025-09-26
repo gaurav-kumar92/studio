@@ -24,9 +24,6 @@ function greet(name) {
 }
 
 console.log(greet('Developer'));
-
-// Try using the "Generate with AI" tool in the toolbar.
-// For example, try the prompt: "a function that calculates the factorial of a number"
 `;
 
 export default function Home() {
@@ -45,7 +42,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
-      <Toolbar onRun={handleRunCode} onGeneratedCode={setCode} />
+      <Toolbar onRun={handleRunCode} />
       
       <main className="flex-grow flex flex-col md:flex-row gap-4 p-4 pt-2 overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0">
