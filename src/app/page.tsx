@@ -49,13 +49,11 @@ export default function KonvaEditor() {
     const saveBtn = document.getElementById('save-btn');
     const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
-    const colorPreviewCircular = document.getElementById('color-preview-circular') as HTMLElement;
     const colorPreviewBackground = document.getElementById('color-preview-background') as HTMLElement;
     const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
     const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
     const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
-    const circularColorPicker = document.getElementById('circular-color-picker') as HTMLInputElement;
     const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
@@ -77,12 +75,10 @@ export default function KonvaEditor() {
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
     let originalSelectedNodeY: number | null = null;
-    let activeTextTab = 'standard'; // 'standard' or 'circular'
-
+    
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
-    let selectedColorCircular = circularColorPicker.value;
     let selectedColorBackground = backgroundColorPicker.value;
 
     // --- 3. UI Helper Functions ---
@@ -115,13 +111,9 @@ export default function KonvaEditor() {
       dropShadowBtn?.classList.remove('active');
       if(shadowControls) shadowControls.classList.add('hidden');
 
-      // Reset circular text fields
-      if(circularTextInput) circularTextInput.value = 'Konva Circular Text Tool';
+      // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
-      if(circularTextCurvature) circularTextCurvature.value = '100';
-      if(circularColorPicker) circularColorPicker.value = '#000000';
-      if(colorPreviewCircular) colorPreviewCircular.style.backgroundColor = '#000000';
-      selectedColorCircular = '#000000';
+      if(circularTextCurvature) circularTextCurvature.value = '0';
     };
 
     // --- 4. Core Button Listeners (Dialog Control) ---
@@ -152,33 +144,6 @@ export default function KonvaEditor() {
 
     cancelShapeBtn?.addEventListener('click', () => { shapeDialog.style.display = 'none'; });
     cancelBtn?.addEventListener('click', () => { textDialog.style.display = 'none'; });
-
-    // --- Text Dialog Tab Logic ---
-    const textTabsContainer = document.getElementById('text-tabs');
-    const standardTextTab = document.getElementById('standard-text-tab');
-    const circularTextTab = document.getElementById('circular-text-tab');
-    const standardTextContent = document.getElementById('standard-text-content');
-    const circularTextContent = document.getElementById('circular-text-content');
-
-    textTabsContainer?.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        if(target.id === 'standard-text-tab-btn') {
-            activeTextTab = 'standard';
-            standardTextTab?.classList.add('active');
-            circularTextTab?.classList.remove('active');
-            standardTextContent?.classList.remove('hidden');
-            circularTextContent?.classList.add('hidden');
-            if(dialogTitle) dialogTitle.textContent = 'Add Standard Text';
-        } else if (target.id === 'circular-text-tab-btn') {
-            activeTextTab = 'circular';
-            circularTextTab?.classList.add('active');
-            standardTextTab?.classList.remove('active');
-            circularTextContent?.classList.remove('hidden');
-            standardTextContent?.classList.add('hidden');
-            if(dialogTitle) dialogTitle.textContent = 'Add Circular Text';
-        }
-    });
-
 
     // --- 5. Konva Initialization ---
     if (typeof window.Konva === 'undefined') {
@@ -265,7 +230,13 @@ export default function KonvaEditor() {
       };
 
       const updateSelectedTextStyle = () => {
-        if (!selectedNode || selectedNode.name() !== 'text') return;
+        if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
+
+        if (selectedNode.name() === 'circularText') {
+             // For circular text, we can't apply bold/italic/underline in the same way.
+             // This could be enhanced in the future to recreate the text nodes.
+            return;
+        }
 
         const isBold = boldBtn.classList.contains('active');
         const isItalic = italicBtn.classList.contains('active');
@@ -292,8 +263,7 @@ export default function KonvaEditor() {
         const textValue = textInput.value || 'New Text';
         const fontSize = Number(textFontSizeInput.value);
         const fontFamily = textFontFamilySelect.value;
-        const isBold = boldBtn.classList.contains('active');
-        const isItalic = italicBtn.classList.contains('active');
+        const color = textColorPicker.value;
 
         const newText = new window.Konva.Text({
           text: textValue,
@@ -301,23 +271,36 @@ export default function KonvaEditor() {
           y: stage.height() / 4,
           fontSize: fontSize,
           fontFamily: fontFamily,
-          fill: selectedColorText,
+          fill: color,
           draggable: true,
-          fontStyle: `${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim(),
-          textDecoration: underlineBtn.classList.contains('active') ? 'underline' : '',
           name: 'text',
         });
+        
+        // Apply styles
+        const isBold = boldBtn.classList.contains('active');
+        const isItalic = italicBtn.classList.contains('active');
+        newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
+        newText.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
+        
+        // Apply shadow if active
+        const isShadowActive = dropShadowBtn?.classList.contains('active');
+        if (isShadowActive) {
+          newText.shadowColor('#000000');
+          newText.shadowBlur(Number(shadowBlurSlider.value));
+          newText.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
+          newText.shadowOpacity(Number(shadowOpacitySlider.value));
+        }
 
         layer.add(newText);
         layer.draw();
-        textDialog.style.display = 'none';
       };
 
       const addCircularText = () => {
-        const textValue = circularTextInput.value.trim() || 'Curved Text';
+        const textValue = textInput.value.trim() || 'Curved Text';
         const radius = Number(circularTextRadius.value);
         const curvatureValue = Number(circularTextCurvature.value);
-        const color = selectedColorCircular;
+        const color = textColorPicker.value;
+        const fontFamily = textFontFamilySelect.value;
 
         // Font size scales with radius, with a minimum of 10pt for readability
         const fontSize = Math.max(10, Math.floor(radius / 5));
@@ -332,12 +315,14 @@ export default function KonvaEditor() {
           y: stage.height() / 2,
           draggable: true,
           name: 'circularText',
-          'data-curvature': curvatureValue, // Store curvature value
-          'data-text': textValue, // Store text value for potential future editing
+          'data-curvature': curvatureValue,
+          'data-text': textValue,
           'data-radius': radius,
+          'data-color': color,
+          'data-font-family': fontFamily,
         });
 
-        const tempText = new window.Konva.Text({ text: textValue, fontSize: fontSize, fontFamily: 'Inter' });
+        const tempText = new window.Konva.Text({ text: textValue, fontSize: fontSize, fontFamily: fontFamily });
         const charHeight = tempText.height();
 
         // --- Dynamic Curvature Logic ---
@@ -404,7 +389,7 @@ export default function KonvaEditor() {
             y: y,
             fill: color,
             fontSize: fontSize,
-            fontFamily: 'Inter',
+            fontFamily: fontFamily,
             rotation: rotationDegrees,
             offsetX: offsetX,
             offsetY: charHeight / 2,
@@ -428,9 +413,26 @@ export default function KonvaEditor() {
 
 
         layer.add(circularGroup);
-        textDialog.style.display = 'none';
         layer.draw();
       };
+      
+      const handleAddOrUpdateText = () => {
+        const curvature = Number(circularTextCurvature.value);
+        
+        // If we are updating a node, we need to handle replacing it.
+        if (selectedNode) {
+            selectedNode.destroy(); // Remove the old node
+            deselectNode();
+        }
+
+        if (curvature > 0) {
+            addCircularText();
+        } else {
+            addText();
+        }
+        textDialog.style.display = 'none';
+      };
+
 
       const addShape = (type: string) => {
         let newShape;
@@ -457,17 +459,6 @@ export default function KonvaEditor() {
         layer.draw();
       };
 
-      const updateText = () => {
-        if (selectedNode && selectedNode.name() === 'text') {
-          selectedNode.text(textInput.value);
-          selectedNode.fontSize(Number(textFontSizeInput.value));
-          selectedNode.fontFamily(textFontFamilySelect.value);
-          selectedNode.fill(textColorPicker.value);
-          updateSelectedTextStyle();
-          layer.draw();
-        }
-      };
-
       // --- 7. Konva Dependent Event Handlers ---
 
       // Initial resize
@@ -490,10 +481,6 @@ export default function KonvaEditor() {
         selectedColorShape = (e.target as HTMLInputElement).value;
         if(colorPreviewShape) colorPreviewShape.style.backgroundColor = selectedColorShape;
       });
-      circularColorPicker?.addEventListener('input', e => {
-        selectedColorCircular = (e.target as HTMLInputElement).value;
-        if(colorPreviewCircular) colorPreviewCircular.style.backgroundColor = selectedColorCircular;
-      });
       backgroundColorPicker?.addEventListener('input', e => {
         selectedColorBackground = (e.target as HTMLInputElement).value;
         if(colorPreviewBackground) colorPreviewBackground.style.backgroundColor = selectedColorBackground;
@@ -503,19 +490,9 @@ export default function KonvaEditor() {
         }
       });
 
-      // Text Dialog Update/Add
-      addBtn?.addEventListener('click', () => {
-        if (addBtn.textContent === 'Add') {
-          if (activeTextTab === 'standard') {
-              addText();
-          } else {
-              addCircularText();
-          }
-        } else if (addBtn.textContent === 'Update') {
-          updateText();
-          textDialog.style.display = 'none';
-        }
-      });
+      // Unified Text Dialog Add/Update
+      addBtn?.addEventListener('click', handleAddOrUpdateText);
+
 
       // Shape Dialog Selection
       shapeDialog?.addEventListener('click', e => {
@@ -602,27 +579,32 @@ export default function KonvaEditor() {
           layer.add(tr);
           tr.nodes([nodeToTransform]);
 
+          // Populate dialog for editing
+          if (dialogTitle) dialogTitle.textContent = 'Update Text';
+          if (addBtn) addBtn.textContent = 'Update';
+
           if (nodeToTransform.hasName('text')) {
-            // Populate dialog for editing
-            if(dialogTitle) dialogTitle.textContent = 'Update Text';
-            if(addBtn) addBtn.textContent = 'Update';
-            if(textInput) textInput.value = nodeToTransform.text();
-            if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
-            if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
-            if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
-            if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill(); // Update visible swatch
-            
-            // Show the standard text tab when editing a standard text node
-            activeTextTab = 'standard';
-            standardTextTab?.classList.add('active');
-            circularTextTab?.classList.remove('active');
-            standardTextContent?.classList.remove('hidden');
-            circularTextContent?.classList.add('hidden');
-            if(textTabsContainer) (textTabsContainer.parentElement as HTMLElement).style.display = 'none'; // Hide tabs when editing
-          } else {
-             // For new items, show the tabs
-            if(textTabsContainer) (textTabsContainer.parentElement as HTMLElement).style.display = 'block';
+              // Populate dialog for standard text
+              if(textInput) textInput.value = nodeToTransform.text();
+              if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
+              if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
+              if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
+              if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
+              
+              // Set curvature to 0 for standard text
+              if(circularTextCurvature) circularTextCurvature.value = '0';
+              if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
+
+          } else if (nodeToTransform.hasName('circularText')) {
+              // Populate dialog for circular text
+              if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
+              if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
+              if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
+              if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
+              if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
+              if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
           }
+
 
           layer.draw();
 
@@ -719,19 +701,7 @@ export default function KonvaEditor() {
                 <div className="dialog-content">
                     <h3 id="dialog-title" className="text-lg font-semibold mb-4">Add Text</h3>
                     
-                    <div className="border-b border-gray-200 mb-4">
-                        <nav id="text-tabs" className="-mb-px flex space-x-4" aria-label="Tabs">
-                            <div id="standard-text-tab" className="tab active">
-                                <button id="standard-text-tab-btn" className="tab-button">Standard</button>
-                            </div>
-                            <div id="circular-text-tab" className="tab">
-                                <button id="circular-text-tab-btn" className="tab-button">Circular</button>
-                            </div>
-                        </nav>
-                    </div>
-
-                    {/* Standard Text Content */}
-                    <div id="standard-text-content">
+                    <div id="text-content">
                         <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
                         <div id="text-controls" className="mt-4 pt-4 relative">
                             <div className="color-picker-container">
@@ -755,6 +725,18 @@ export default function KonvaEditor() {
                                     <option value="Impact">Impact</option>
                                 </select>
                             </div>
+                             <div className="mb-4 flex items-center justify-between">
+                                <label htmlFor="circular-text-radius" className="block text-sm font-medium text-gray-700">Radius</label>
+                                <input type="range" id="circular-text-radius" min="10" max="250" defaultValue="150" className="flex-grow ml-4" />
+                            </div>
+                            <div className="mb-4 flex flex-col items-start w-full">
+                                <label htmlFor="circular-text-curvature" className="block text-sm font-medium text-gray-700 mb-2">Curvature</label>
+                                <input type="range" id="circular-text-curvature" min="0" max="100" defaultValue="0" className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
+                                <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
+                                    <span className="text-gray-600 font-semibold">Straight (0)</span>
+                                    <span className="text-gray-600 font-semibold">Full Wrap (100)</span>
+                                </div>
+                            </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Font Style</label>
                                 <div className="flex gap-2 justify-center">
@@ -771,30 +753,6 @@ export default function KonvaEditor() {
                                 <input type="range" id="shadow-distance-slider" min="0" max="20" defaultValue="5" />
                                 <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
                                 <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Circular Text Content */}
-                    <div id="circular-text-content" className="hidden">
-                         <input type="text" id="circular-text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." defaultValue="Konva Circular Text Tool" />
-                        <div className="mt-4 pt-4">
-                            <div className="mb-4 flex items-center justify-between">
-                                <label htmlFor="circular-text-radius" className="block text-sm font-medium text-gray-700">Radius</label>
-                                <input type="range" id="circular-text-radius" min="10" max="250" defaultValue="150" className="flex-grow ml-4" />
-                            </div>
-                            <div className="mb-4 flex flex-col items-start w-full">
-                                <label htmlFor="circular-text-curvature" className="block text-sm font-medium text-gray-700 mb-2">Curvature</label>
-                                <input type="range" id="circular-text-curvature" min="0" max="100" defaultValue="100" className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
-                                <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
-                                    <span className="text-gray-600 font-semibold">Straight (0)</span>
-                                    <span className="text-gray-600 font-semibold">Full Wrap (100)</span>
-                                </div>
-                            </div>
-                            <div className="color-picker-container">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
-                                <div id="color-preview-circular" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                                <input type="color" id="circular-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
                             </div>
                         </div>
                     </div>
