@@ -86,3 +86,190 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+}
+
+#editor-ui {
+    display: flex; 
+    flex-direction: column; 
+    flex-grow: 1; 
+    width: 100%;
+    max-width: 100%; 
+    min-height: 50vh; 
+}
+
+.relative-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #fcfcfc;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    flex-grow: 1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+/* This ensures the canvas itself gets the rounded corners */
+#canvas-container canvas {
+    border-radius: 1rem;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    display: block; 
+}
+
+#controls {
+    width: 100%;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 1.5rem;
+}
+
+.button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    margin-top: 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.2s;
+    text-align: center;
+}
+
+.button-primary {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.button-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.button:hover {
+    transform: translateY(-2px);
+}
+
+/* --- Dialog Styles --- */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.dialog {
+    background-color: #ffffff;
+    color: #1f2937;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    text-align: center;
+    max-width: 90%; 
+    overflow-y: auto;
+}
+
+.dialog-button-primary {
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+}
+.dialog-button-secondary {
+    background-color: #e5e7eb;
+    color: #4b5563;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+}
+
+/* Custom slider thumb for vertical alignment control */
+#vertical-alignment-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4F46E5;
+    cursor: grab;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    margin-top: -8px; 
+}
+
+#vertical-alignment-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4F46E5;
+    cursor: grab;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.shape-button-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.active {
+    background-color: #e0e7ff; /* Light indigo background for active state */
+    border-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.color-picker-container {
+    /* Ensures the color picker input can be positioned relative to this */
+    position: relative; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* The functional color input is hidden and placed over the swatch */
+.color-picker-input-hidden {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    /* Make the input invisible but clickable */
+    opacity: 0; 
+    cursor: pointer;
+}
+
+/* The visible circle swatch */
+.color-preview-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #9ca3af;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
