@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -309,4 +310,30 @@ body {
 
 .hidden {
     display: none;
+}
+
+/* New Add Item Dialog Styles */
+.add-item-card {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-weight: 500;
+    color: #374151;
+    transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+}
+
+.add-item-card:hover {
+    background-color: #f3f4f6;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.add-item-card:disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
 }
