@@ -46,7 +46,6 @@ export default function KonvaEditor() {
     const addBtn = document.getElementById('add-btn');
     const cancelBtn = document.getElementById('cancel-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
-    const centerBtn = document.getElementById('center-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
     const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
@@ -68,6 +67,15 @@ export default function KonvaEditor() {
     const shadowBlurValue = document.getElementById('shadow-blur-value');
     const shadowDistanceValue = document.getElementById('shadow-distance-value');
     const shadowOpacityValue = document.getElementById('shadow-opacity-value');
+      
+    // New Object Properties panel
+    const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
+    const alignTopBtn = document.getElementById('align-top-btn');
+    const alignLeftBtn = document.getElementById('align-left-btn');
+    const alignCenterBtn = document.getElementById('align-center-btn');
+    const alignRightBtn = document.getElementById('align-right-btn');
+    const alignBottomBtn = document.getElementById('align-bottom-btn');
+    const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
     // --- 2. Global State Variables ---
     let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
@@ -87,7 +95,7 @@ export default function KonvaEditor() {
       }
       selectedNode = null;
       deleteBtn.classList.add('hidden');
-      centerBtn.classList.add('hidden');
+      if(objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
       layer?.draw();
     };
 
@@ -250,7 +258,6 @@ export default function KonvaEditor() {
           fill: color,
           draggable: true,
           name: 'text',
-          width: 200, // Set a default width for alignment to work
         });
         
         // Apply styles
@@ -501,7 +508,7 @@ export default function KonvaEditor() {
         if(shadowOpacityValue) shadowOpacityValue.textContent = shadowOpacitySlider.value;
         updateSelectedTextStyle();
       });
-
+        
       deleteBtn?.addEventListener('click', () => {
         if (selectedNode) {
           selectedNode.destroy();
@@ -509,21 +516,45 @@ export default function KonvaEditor() {
         }
       });
 
-      centerBtn?.addEventListener('click', () => {
-        if (selectedNode) {
-          const centerX = stage.width() / 2;
-          const centerY = stage.height() / 2;
-          
-          // To truly center, we need to offset by half the object's size.
-          // Konva's groups and transformed shapes have a getClientRect() method
-          // which is perfect for getting the visual bounding box.
-          const box = selectedNode.getClientRect();
-          selectedNode.x(centerX - box.width / 2);
-          selectedNode.y(centerY - box.height / 2);
-          
-          layer.draw();
+      // --- Object Properties Panel Handlers ---
+      const alignObject = (position: string) => {
+        if (!selectedNode) return;
+        const box = selectedNode.getClientRect({ relativeTo: stage });
+
+        switch (position) {
+            case 'top':
+                selectedNode.y(0);
+                break;
+            case 'left':
+                selectedNode.x(0);
+                break;
+            case 'center':
+                selectedNode.x(stage.width() / 2 - box.width / 2);
+                selectedNode.y(stage.height() / 2 - box.height / 2);
+                break;
+            case 'right':
+                selectedNode.x(stage.width() - box.width);
+                break;
+            case 'bottom':
+                selectedNode.y(stage.height() - box.height);
+                break;
         }
+        layer.draw();
+      };
+      
+      alignTopBtn?.addEventListener('click', () => alignObject('top'));
+      alignLeftBtn?.addEventListener('click', () => alignObject('left'));
+      alignCenterBtn?.addEventListener('click', () => alignObject('center'));
+      alignRightBtn?.addEventListener('click', () => alignObject('right'));
+      alignBottomBtn?.addEventListener('click', () => alignObject('bottom'));
+
+      opacitySlider?.addEventListener('input', (e) => {
+        if (!selectedNode) return;
+        const newOpacity = parseFloat((e.target as HTMLInputElement).value);
+        selectedNode.opacity(newOpacity);
+        layer.draw();
       });
+
 
       saveBtn?.addEventListener('click', () => {
         deselectNode();
@@ -561,7 +592,11 @@ export default function KonvaEditor() {
 
           selectedNode = nodeToTransform;
           deleteBtn.classList.remove('hidden');
-          centerBtn.classList.remove('hidden');
+          if(objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
+
+          // Update opacity slider to match selected node's opacity
+          if(opacitySlider) opacitySlider.value = selectedNode.opacity();
+
 
           tr = new window.Konva.Transformer({ rotateEnabled: true });
           layer.add(tr);
@@ -657,9 +692,33 @@ export default function KonvaEditor() {
                         <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
                     </div>
                 </div>
+                 {/* Object Properties Panel */}
+                <div id="object-properties" className="hidden">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
+                    <div className="alignment-controls">
+                        <button id="align-top-btn" className="align-btn" title="Align Top">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V6h16v2"/><path d="M10 18v-5h4v5"/><path d="M4 21h16"/></svg>
+                        </button>
+                        <button id="align-left-btn" className="align-btn" title="Align Left">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h-2v16h2"/><path d="M6 14H4V4h2"/><path d="M3 4h18"/></svg>
+                        </button>
+                        <button id="align-center-btn" className="align-btn" title="Center">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        </button>
+                        <button id="align-right-btn" className="align-btn" title="Align Right">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 20h2V4H8"/><path d="M18 10h2v10h-2"/><path d="M3 20h18"/></svg>
+                        </button>
+                         <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v2h16v-2"/><path d="M10 6v5h4V6"/><path d="M4 3h16"/></svg>
+                        </button>
+                    </div>
+                    <div className="opacity-controls">
+                        <label htmlFor="opacity-slider">Opacity</label>
+                        <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
+                    </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                     <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
-                    <button id="center-btn" className="button button-secondary flex-grow hidden">Center</button>
                     <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
                     <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                 </div>
@@ -768,7 +827,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
