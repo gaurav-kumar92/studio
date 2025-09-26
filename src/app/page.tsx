@@ -48,6 +48,7 @@ export default function KonvaEditor() {
     const colorPreviewCircular = document.getElementById('color-preview-circular') as HTMLElement;
     const colorPreviewBackground = document.getElementById('color-preview-background') as HTMLElement;
     const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
+    const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
     const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
     const circularColorPicker = document.getElementById('circular-color-picker') as HTMLInputElement;
@@ -97,6 +98,7 @@ export default function KonvaEditor() {
       if(addBtn) addBtn.textContent = 'Add';
       if(textInput) textInput.value = '';
       if(textFontSizeInput) textFontSizeInput.value = '24';
+      if(textFontFamilySelect) textFontFamilySelect.value = 'Inter';
       if(textColorPicker) textColorPicker.value = '#000000';
       if(colorPreviewText) colorPreviewText.style.backgroundColor = '#000000'; // Reset visible swatch
       selectedColorText = '#000000';
@@ -237,6 +239,7 @@ underlineBtn.classList.remove('active');
       const addText = () => {
         const textValue = textInput.value || 'New Text';
         const fontSize = Number(textFontSizeInput.value);
+        const fontFamily = textFontFamilySelect.value;
         const isBold = boldBtn.classList.contains('active');
         const isItalic = italicBtn.classList.contains('active');
 
@@ -245,7 +248,7 @@ underlineBtn.classList.remove('active');
           x: stage.width() / 4,
           y: stage.height() / 4,
           fontSize: fontSize,
-          fontFamily: 'Inter',
+          fontFamily: fontFamily,
           fill: selectedColorText,
           draggable: true,
           fontStyle: `${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim(),
@@ -406,6 +409,7 @@ underlineBtn.classList.remove('active');
         if (selectedNode && selectedNode.name() === 'text') {
           selectedNode.text(textInput.value);
           selectedNode.fontSize(Number(textFontSizeInput.value));
+          selectedNode.fontFamily(textFontFamilySelect.value);
           selectedNode.fill(textColorPicker.value);
           updateSelectedTextStyle();
           layer.draw();
@@ -551,6 +555,7 @@ underlineBtn.classList.remove('active');
             if(addBtn) addBtn.textContent = 'Update';
             if(textInput) textInput.value = nodeToTransform.text();
             if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
+            if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
             if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
             if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill(); // Update visible swatch
           }
@@ -667,6 +672,18 @@ underlineBtn.classList.remove('active');
                         <div className="mb-4 mt-4">
                             <label htmlFor="text-font-size" className="block text-sm font-medium text-gray-700">Font Size</label>
                             <input type="number" id="text-font-size" className="w-full p-2 border rounded-md" defaultValue="24" min="12" max="100" />
+                        </div>
+                        <div className="mb-4">
+                            <label htmlFor="text-font-family" className="block text-sm font-medium text-gray-700">Font Family</label>
+                            <select id="text-font-family" className="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="Inter">Inter</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Impact">Impact</option>
+                            </select>
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700">Font Style</label>
