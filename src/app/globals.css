@@ -255,6 +255,14 @@ body {
     margin-bottom: 1rem;
 }
 
+.color-picker-container-inline {
+    position: relative;
+    display: flex;
+    align-items: center; /* Vertically center the items */
+    margin-bottom: 1rem;
+}
+
+
 /* The functional color input is hidden and placed over the swatch */
 .color-picker-input-hidden {
     position: absolute;

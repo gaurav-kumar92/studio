@@ -46,10 +46,12 @@ export default function KonvaEditor() {
     const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
     const colorPreviewCircular = document.getElementById('color-preview-circular') as HTMLElement;
+    const colorPreviewBackground = document.getElementById('color-preview-background') as HTMLElement;
     const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
     const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
     const circularColorPicker = document.getElementById('circular-color-picker') as HTMLInputElement;
+    const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
     const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
@@ -75,6 +77,7 @@ export default function KonvaEditor() {
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
     let selectedColorCircular = circularColorPicker.value;
+    let selectedColorBackground = backgroundColorPicker.value;
 
     // --- 3. UI Helper Functions ---
     const deselectNode = () => {
@@ -146,7 +149,7 @@ underlineBtn.classList.remove('active');
         y: 0,
         width: stage.width(),
         height: stage.height(),
-        fill: '#ffffff',
+        fill: selectedColorBackground,
         name: 'background'
       });
       layer.add(canvasBackground);
@@ -435,6 +438,14 @@ underlineBtn.classList.remove('active');
         selectedColorCircular = (e.target as HTMLInputElement).value;
         if(colorPreviewCircular) colorPreviewCircular.style.backgroundColor = selectedColorCircular;
       });
+      backgroundColorPicker?.addEventListener('input', e => {
+        selectedColorBackground = (e.target as HTMLInputElement).value;
+        if(colorPreviewBackground) colorPreviewBackground.style.backgroundColor = selectedColorBackground;
+        if(canvasBackground) {
+            canvasBackground.fill(selectedColorBackground);
+            layer.draw();
+        }
+      });
 
       // Text Dialog Update/Add
       addBtn?.addEventListener('click', () => {
@@ -599,6 +610,13 @@ underlineBtn.classList.remove('active');
                         <option value="1684x2384">A2 (1684x2384)</option>
                         <option value="2384x3370">A1 (2384x3370)</option>
                     </select>
+                </div>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
+                    <div className="color-picker-container-inline">
+                        <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
+                        <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
+                    </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                     <button id="add-text-btn" className="button button-primary flex-grow">Add Text</button>
