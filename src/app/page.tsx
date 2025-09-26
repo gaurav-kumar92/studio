@@ -663,8 +663,8 @@ export default function KonvaEditor() {
                     </select>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
                     <div className="color-picker-container-inline">
+                        <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
                         <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
                         <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
                     </div>
@@ -704,8 +704,8 @@ export default function KonvaEditor() {
                     <div id="text-content">
                         <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
                         <div id="text-controls" className="mt-4 pt-4 relative">
-                            <div className="color-picker-container">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+                           <div className="color-picker-container-inline">
+                                <label htmlFor="text-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Text Color</label>
                                 <div id="color-preview-text" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
                                 <input type="color" id="text-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
                             </div>
@@ -723,6 +723,10 @@ export default function KonvaEditor() {
                                     <option value="Courier New">Courier New</option>
                                     <option value="Georgia">Georgia</option>
                                     <option value="Impact">Impact</option>
+                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                    <option value="Trebuchet MS">Trebuchet MS</option>
+                                    <option value="Arial Black">Arial Black</option>
+                                    <option value="Garamond">Garamond</option>
                                 </select>
                             </div>
                              <div className="mb-4 flex items-center justify-between">
@@ -793,7 +797,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18.1H3"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
@@ -819,5 +823,7 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
 
     
