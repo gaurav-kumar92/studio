@@ -58,14 +58,15 @@ export default function KonvaEditor() {
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
     const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
+    const alignLeftBtn = document.getElementById('align-left-btn') as HTMLElement;
+    const alignCenterBtn = document.getElementById('align-center-btn') as HTMLElement;
+    const alignRightBtn = document.getElementById('align-right-btn') as HTMLElement;
     const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
     const shadowBlurSlider = document.getElementById('shadow-blur-slider') as HTMLInputElement;
     const shadowDistanceSlider = document.getElementById('shadow-distance-slider') as HTMLInputElement;
     const shadowOpacitySlider = document.getElementById('shadow-opacity-slider') as HTMLInputElement;
     const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
-
-    const alignmentControl = document.getElementById('alignment-control') as HTMLElement;
-    const verticalAlignmentSlider = document.getElementById('vertical-alignment-slider') as HTMLInputElement;
+    
     const shadowBlurValue = document.getElementById('shadow-blur-value');
     const shadowDistanceValue = document.getElementById('shadow-distance-value');
     const shadowOpacityValue = document.getElementById('shadow-opacity-value');
@@ -74,7 +75,6 @@ export default function KonvaEditor() {
     let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
-    let originalSelectedNodeY: number | null = null;
     
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
@@ -89,8 +89,6 @@ export default function KonvaEditor() {
       }
       selectedNode = null;
       deleteBtn.classList.add('hidden');
-      alignmentControl.classList.add('hidden');
-      originalSelectedNodeY = null;
       layer?.draw();
     };
 
@@ -108,6 +106,9 @@ export default function KonvaEditor() {
       boldBtn.classList.remove('active');
       italicBtn.classList.remove('active');
       underlineBtn.classList.remove('active');
+      alignLeftBtn.classList.add('active'); // Default to left
+      alignCenterBtn.classList.remove('active');
+      alignRightBtn.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
       if(shadowControls) shadowControls.classList.add('hidden');
 
@@ -208,27 +209,6 @@ export default function KonvaEditor() {
           stage.draw();
       };
 
-      /**
-       * Implements the vertical alignment logic.
-       */
-      const handleVerticalAlignment = (sliderValue: number) => {
-        if (!selectedNode || originalSelectedNodeY === null) return;
-
-        // Max displacement from center (in pixels).
-        const MAX_DISPLACEMENT_PX = 100;
-
-        // Calculate a relative value from -50 (at 0) to +50 (at 100)
-        const relativeValue = sliderValue - 50;
-
-        // Slider 0 (Lower) -> displacementY +100 (Moves Down)
-        // Slider 100 (Upper) -> displacementY -100 (Moves Up)
-        const displacementY = -(relativeValue / 50) * MAX_DISPLACEMENT_PX;
-
-        const newY = originalSelectedNodeY + displacementY;
-        selectedNode.y(newY);
-        layer.draw();
-      };
-
       const updateSelectedTextStyle = () => {
         if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
 
@@ -242,6 +222,16 @@ export default function KonvaEditor() {
         const isItalic = italicBtn.classList.contains('active');
         selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         selectedNode.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
+        
+        // Handle Alignment
+        if (alignCenterBtn.classList.contains('active')) {
+          selectedNode.align('center');
+        } else if (alignRightBtn.classList.contains('active')) {
+          selectedNode.align('right');
+        } else {
+          selectedNode.align('left');
+        }
+
 
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
@@ -274,6 +264,7 @@ export default function KonvaEditor() {
           fill: color,
           draggable: true,
           name: 'text',
+          width: 200, // Set a default width for alignment to work
         });
         
         // Apply styles
@@ -282,6 +273,15 @@ export default function KonvaEditor() {
         newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         newText.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
         
+        // Apply alignment
+        if (alignCenterBtn.classList.contains('active')) {
+          newText.align('center');
+        } else if (alignRightBtn.classList.contains('active')) {
+          newText.align('right');
+        } else {
+          newText.align('left');
+        }
+
         // Apply shadow if active
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
@@ -468,10 +468,6 @@ export default function KonvaEditor() {
       canvasSizeSelect.addEventListener('change', e => resizeCanvas((e.target as HTMLSelectElement).value));
       
 
-      verticalAlignmentSlider?.addEventListener('input', (event) => {
-        handleVerticalAlignment(Number((event.target as HTMLInputElement).value));
-      });
-
       // Color Picker Logic (Update state variables and visible swatch)
       textColorPicker?.addEventListener('input', e => {
         selectedColorText = (e.target as HTMLInputElement).value;
@@ -508,6 +504,21 @@ export default function KonvaEditor() {
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       underlineBtn?.addEventListener('click', () => { underlineBtn.classList.toggle('active'); updateSelectedTextStyle(); });
+      
+      const handleAlignmentClick = (align: string) => {
+        alignLeftBtn.classList.remove('active');
+        alignCenterBtn.classList.remove('active');
+        alignRightBtn.classList.remove('active');
+        if (align === 'left') alignLeftBtn.classList.add('active');
+        else if (align === 'center') alignCenterBtn.classList.add('active');
+        else if (align === 'right') alignRightBtn.classList.add('active');
+        updateSelectedTextStyle();
+      };
+
+      alignLeftBtn?.addEventListener('click', () => handleAlignmentClick('left'));
+      alignCenterBtn?.addEventListener('click', () => handleAlignmentClick('center'));
+      alignRightBtn?.addEventListener('click', () => handleAlignmentClick('right'));
+
 
       // Shadow Controls
       dropShadowBtn?.addEventListener('click', () => {
@@ -573,13 +584,6 @@ export default function KonvaEditor() {
           selectedNode = nodeToTransform;
           deleteBtn.classList.remove('hidden');
 
-          // Show alignment control 
-          alignmentControl.classList.remove('hidden');
-
-          // SET INITIAL STATE FOR SLIDER
-          originalSelectedNodeY = selectedNode.y();
-          if(verticalAlignmentSlider) verticalAlignmentSlider.value = '50';
-
           tr = new window.Konva.Transformer({ rotateEnabled: true });
           layer.add(tr);
           tr.nodes([nodeToTransform]);
@@ -617,8 +621,6 @@ export default function KonvaEditor() {
 
           // Update original Y position after drag ends so the slider position (50) remains center.
           nodeToTransform.on('dragend', () => {
-            originalSelectedNodeY = nodeToTransform.y();
-            if(verticalAlignmentSlider) verticalAlignmentSlider.value = '50';
             layer.draw();
           });
         }
@@ -681,24 +683,6 @@ export default function KonvaEditor() {
                     <button id="delete-btn" className="button button-danger flex-grow hidden">Delete Selected</button>
                     <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                 </div>
-
-                {/* VERTICAL ALIGNMENT SLIDER */}
-                <div id="alignment-control" className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 hidden">
-                    <label htmlFor="vertical-alignment-slider" className="block text-sm font-medium text-gray-700">Vertical Alignment (Selected Item)</label>
-                    <input 
-                        type="range" 
-                        id="vertical-alignment-slider" 
-                        min="0" 
-                        max="100" 
-                        defaultValue="50" 
-                        className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
-                    <div className="flex justify-between w-full text-xs text-gray-500">
-                        <span className="text-green-600 font-semibold">Lower (0)</span>
-                        <span className="text-gray-600 font-semibold">Center (50)</span>
-                        <span className="text-red-600 font-semibold">Upper (100)</span>
-                    </div>
-                </div>
-
             </div>
         </div>
 
@@ -757,6 +741,14 @@ export default function KonvaEditor() {
                                     <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
                                 </div>
                             </div>
+                             <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700">Text Align</label>
+                                <div className="flex gap-2 justify-center">
+                                    <button id="align-left-btn" className="p-2 border rounded-md active">Left</button>
+                                    <button id="align-center-btn" className="p-2 border rounded-md">Center</button>
+                                    <button id="align-right-btn" className="p-2 border rounded-md">Right</button>
+                                </div>
+                            </div>
                             <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
                                 <label className="block text-sm font-medium text-gray-700">Shadow Blur (Current: <span id="shadow-blur-value">10</span>)</label>
                                 <input type="range" id="shadow-blur-slider" min="0" max="20" defaultValue="10" />
@@ -804,7 +796,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18.1H3"/></svg>
+                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
@@ -830,12 +822,3 @@ export default function KonvaEditor() {
     </>
   );
 }
-
-    
-
-    
-
-    
-
-    
-    
