@@ -112,7 +112,6 @@ body {
 .relative-canvas {
     position: relative;
     width: 100%;
-    height: 100%;
     background-color: #fcfcfc;
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -122,17 +121,21 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 300px;
+    padding: 1rem; /* Added padding to ensure the container has space */
 }
-
+        
 /* This ensures the canvas itself gets the rounded corners */
 #canvas-container canvas {
     border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 #canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
     height: 100%;
-    display: block; 
 }
 
 #controls {
@@ -273,3 +276,5 @@ body {
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
+
+    

@@ -4,9 +4,23 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 
+// This is a global declaration for the Konva object.
+// It's a way to tell TypeScript that 'Konva' will be available on the window object
+// at runtime, even though we can't import it directly as a module.
+declare global {
+  interface Window {
+    Konva: any;
+  }
+}
+
+
 export default function KonvaEditor() {
+  
   const initializeKonva = () => {
-    if (typeof window.Konva === 'undefined') return;
+    // Check if Konva is loaded and if we're in a browser environment
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined') {
+        return;
+    }
 
     // --- 1. Element References ---
     const canvasContainer = document.getElementById('canvas-container') as HTMLElement;
@@ -85,7 +99,7 @@ export default function KonvaEditor() {
       selectedColorText = '#000000';
       boldBtn.classList.remove('active');
       italicBtn.classList.remove('active');
-      underlineBtn.classList.remove('active');
+underlineBtn.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
       shadowControls.classList.add('hidden');
     };
@@ -116,15 +130,13 @@ export default function KonvaEditor() {
     }
 
     try {
-      const fallbackWidth = 500;
-      const fallbackHeight = 500;
-      const containerWidth = canvasContainer.clientWidth || fallbackWidth;
-      const containerHeight = canvasContainer.clientHeight || fallbackHeight;
-
+      // Get the parent container for sizing
+      const parentContainer = canvasContainer.parentElement as HTMLElement;
+      
       stage = new window.Konva.Stage({
         container: 'canvas-container',
-        width: containerWidth,
-        height: containerHeight,
+        width: parentContainer.clientWidth,
+        height: parentContainer.clientHeight,
       });
       layer = new window.Konva.Layer();
       stage.add(layer);
@@ -138,26 +150,40 @@ export default function KonvaEditor() {
         name: 'background'
       });
       layer.add(canvasBackground);
+      layer.draw();
 
       // --- 6. Konva Dependent Functions ---
 
       const resizeCanvas = (size: string) => {
-        let [width, height] = size.split('x').map(Number);
-        currentCanvasSize = size;
+          currentCanvasSize = size;
+          let [targetWidth, targetHeight] = size.split('x').map(Number);
+          const parentContainer = canvasContainer.parentElement as HTMLElement;
 
-        canvasContainer.style.aspectRatio = `${width} / ${height}`;
+          const parentWidth = parentContainer.clientWidth;
+          const parentHeight = parentContainer.clientHeight;
+          
+          const targetRatio = targetWidth / targetHeight;
+          const parentRatio = parentWidth / parentHeight;
+          
+          let newWidth, newHeight;
+          
+          // Determine the new dimensions based on the limiting factor (width or height)
+          if (parentRatio > targetRatio) {
+              // Parent is wider than target, so height is the limiter
+              newHeight = parentHeight;
+              newWidth = parentHeight * targetRatio;
+          } else {
+              // Parent is taller than target, so width is the limiter
+              newWidth = parentWidth;
+              newHeight = parentWidth / targetRatio;
+          }
 
-        // Delay needed to allow browser to calculate new container dimensions
-        setTimeout(() => {
-          const newWidth = canvasContainer.clientWidth;
-          const newHeight = canvasContainer.clientHeight;
-
+          // Update the Konva stage and background dimensions
           stage.width(newWidth);
           stage.height(newHeight);
           canvasBackground.width(newWidth);
           canvasBackground.height(newHeight);
           stage.draw();
-        }, 10);
       };
 
       /**
@@ -385,9 +411,12 @@ export default function KonvaEditor() {
 
       // --- 7. Konva Dependent Event Handlers ---
 
-      resizeCanvas(canvasSizeSelect.value);
+      // Initial resize
+      resizeCanvas(canvasSizeSelect.value); 
+      // Attach listeners
       window.addEventListener('resize', () => { resizeCanvas(currentCanvasSize); });
       canvasSizeSelect.addEventListener('change', e => resizeCanvas((e.target as HTMLSelectElement).value));
+      
 
       verticalAlignmentSlider?.addEventListener('input', (event) => {
         handleVerticalAlignment(Number((event.target as HTMLInputElement).value));
@@ -499,7 +528,7 @@ export default function KonvaEditor() {
 
           // SET INITIAL STATE FOR SLIDER
           originalSelectedNodeY = selectedNode.y();
-          verticalAlignmentSlider.value = '50';
+          if(verticalAlignmentSlider) verticalAlignmentSlider.value = '50';
 
           tr = new window.Konva.Transformer({ rotateEnabled: true });
           layer.add(tr);
@@ -520,7 +549,7 @@ export default function KonvaEditor() {
           // Update original Y position after drag ends so the slider position (50) remains center.
           nodeToTransform.on('dragend', () => {
             originalSelectedNodeY = nodeToTransform.y();
-            verticalAlignmentSlider.value = '50';
+            if(verticalAlignmentSlider) verticalAlignmentSlider.value = '50';
             layer.draw();
           });
         }
@@ -529,13 +558,17 @@ export default function KonvaEditor() {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
   };
-
+  
   useEffect(() => {
-    // We need to check if the Konva script has loaded before initializing.
+    // This effect hook runs once after the component mounts.
+    // We check if the Konva script has already been loaded by a previous render.
+    // If it has, we initialize the editor. If not, the `onLoad` prop of the <Script>
+    // component will handle the initialization once the script is fetched.
     if ((window as any).Konva) {
       initializeKonva();
     }
   }, []);
+
 
   return (
     <>
@@ -712,3 +745,5 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
