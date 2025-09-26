@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import Script from 'next/script';
 
 export default function KonvaEditor() {
-  useEffect(() => {
+  const initializeKonva = () => {
     if (typeof window.Konva === 'undefined') return;
 
     // --- 1. Element References ---
@@ -422,7 +422,8 @@ export default function KonvaEditor() {
 
       // Shape Dialog Selection
       shapeDialog?.addEventListener('click', e => {
-        const shapeType = (e.target as HTMLElement).closest('[data-shape]')?.getAttribute('data-shape');
+        const target = e.target as HTMLElement;
+        const shapeType = target.closest('[data-shape]')?.getAttribute('data-shape');
         if (shapeType) {
           addShape(shapeType);
           shapeDialog.style.display = 'none';
@@ -527,6 +528,13 @@ export default function KonvaEditor() {
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
+  };
+
+  useEffect(() => {
+    // We need to check if the Konva script has loaded before initializing.
+    if ((window as any).Konva) {
+      initializeKonva();
+    }
   }, []);
 
   return (
@@ -534,12 +542,7 @@ export default function KonvaEditor() {
       <Script
         src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
         strategy="lazyOnload"
-        onLoad={() => {
-          // This will trigger the useEffect to run again now that Konva is loaded.
-          // A bit of a hack, but effective for this script-based approach.
-          const event = new Event('DOMContentLoaded');
-          document.dispatchEvent(event);
-        }}
+        onLoad={initializeKonva}
       />
       <main>
         <div id="editor-ui">
