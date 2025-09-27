@@ -76,6 +76,8 @@ export default function KonvaEditor() {
     const glowOpacitySlider = document.getElementById('glow-opacity-slider') as HTMLInputElement;
     const glowBlurValue = document.getElementById('glow-blur-value');
     const glowOpacityValue = document.getElementById('glow-opacity-value');
+    const colorPreviewGlow = document.getElementById('color-preview-glow') as HTMLElement;
+    const glowColorPicker = document.getElementById('glow-color-picker') as HTMLInputElement;
     
     // Shape Specific
     const shapeDialogTitle = document.getElementById('shape-dialog-title');
@@ -114,6 +116,7 @@ export default function KonvaEditor() {
     let selectedColorShape = shapeColorPicker.value;
     let selectedColorBackground = backgroundColorPicker.value;
     let selectedColorFrame = frameColorPicker.value;
+    let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI Helper Functions ---
     const deselectNode = () => {
@@ -156,6 +159,9 @@ export default function KonvaEditor() {
       if(shadowControls) shadowControls.classList.add('hidden');
       glowBtn?.classList.remove('active');
       if(glowControls) glowControls.classList.add('hidden');
+      if(glowColorPicker) glowColorPicker.value = '#0000ff';
+      if(colorPreviewGlow) colorPreviewGlow.style.backgroundColor = '#0000ff';
+      selectedColorGlow = '#0000ff';
 
       // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
@@ -311,7 +317,7 @@ export default function KonvaEditor() {
         const isGlowActive = glowBtn?.classList.contains('active');
         if (isGlowActive) {
             selectedNode.shadowEnabled(true);
-            selectedNode.shadowColor(selectedNode.fill()); // Glow color is text color
+            selectedNode.shadowColor(selectedColorGlow); // Glow color is from its own picker
             selectedNode.shadowBlur(Number(glowBlurSlider.value));
             selectedNode.shadowOffset({ x: 0, y: 0 }); // No offset for glow
             selectedNode.shadowOpacity(Number(glowOpacitySlider.value));
@@ -362,7 +368,7 @@ export default function KonvaEditor() {
         const isGlowActive = glowBtn?.classList.contains('active');
         if (isGlowActive) {
             newText.shadowEnabled(true);
-            newText.shadowColor(color);
+            newText.shadowColor(selectedColorGlow);
             newText.shadowBlur(Number(glowBlurSlider.value));
             newText.shadowOffset({ x: 0, y: 0 });
             newText.shadowOpacity(Number(glowOpacitySlider.value));
@@ -583,12 +589,17 @@ export default function KonvaEditor() {
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
         if(selectedNode) {
           selectedNode.fill(selectedColorText);
-           // If glow is active, update its color too
-          if (glowBtn?.classList.contains('active')) {
-              selectedNode.shadowColor(selectedColorText);
-          }
           layer.draw();
         }
+      });
+      
+      glowColorPicker?.addEventListener('input', e => {
+          selectedColorGlow = (e.target as HTMLInputElement).value;
+          if (colorPreviewGlow) colorPreviewGlow.style.backgroundColor = selectedColorGlow;
+          if (selectedNode && glowBtn?.classList.contains('active')) {
+              selectedNode.shadowColor(selectedColorGlow);
+              layer.draw();
+          }
       });
       
       shapeColorPicker?.addEventListener('input', e => {
@@ -601,6 +612,9 @@ export default function KonvaEditor() {
             if (shapeType === 'line' || shapeType === 'arrow') {
                 selectedNode.stroke(selectedColorShape);
             } else {
+                selectedNode.fill(selectedColorShape);
+            }
+            if (shapeType === 'arrow') {
                 selectedNode.fill(selectedColorShape);
             }
             layer.draw();
@@ -1038,11 +1052,20 @@ export default function KonvaEditor() {
                                 <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
                                 <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
                             </div>
-                             <div id="glow-controls" className="flex flex-col gap-2 mt-4 hidden">
-                                <label className="block text-sm font-medium text-gray-700">Glow Blur (Current: <span id="glow-blur-value">10</span>)</label>
-                                <input type="range" id="glow-blur-slider" min="0" max="20" defaultValue="10" />
-                                <label className="block text-sm font-medium text-gray-700">Glow Opacity (Current: <span id="glow-opacity-value">0.7</span>)</label>
-                                <input type="range" id="glow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.7" />
+                             <div id="glow-controls" className="flex flex-col gap-4 mt-4 hidden">
+                                <div className="color-picker-container-inline">
+                                    <label htmlFor="glow-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Glow Color</label>
+                                    <div id="color-preview-glow" className="color-preview-circle" style={{backgroundColor: '#0000ff'}}></div>
+                                    <input type="color" id="glow-color-picker" defaultValue="#0000ff" className="color-picker-input-hidden" />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">Glow Blur (Current: <span id="glow-blur-value">10</span>)</label>
+                                  <input type="range" id="glow-blur-slider" min="0" max="20" defaultValue="10" />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">Glow Opacity (Current: <span id="glow-opacity-value">0.7</span>)</label>
+                                  <input type="range" id="glow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.7" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1123,7 +1146,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M5 4h14M12 4v16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">

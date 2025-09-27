@@ -338,6 +338,9 @@ body {
 .add-item-card[data-item-type="frame"]:not(:disabled) svg {
     color: #8b5cf6; /* Example color for enabled frame icon */
 }
+.add-item-card[data-item-type="text"]:not(:disabled) svg {
+    color: #10b981; /* Example color for enabled text icon */
+}
 
 
 #object-properties {
@@ -397,4 +400,3 @@ body {
     text-align: left;
     margin-bottom: 0.5rem;
 }
-
