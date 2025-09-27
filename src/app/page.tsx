@@ -228,7 +228,6 @@ export default function KonvaEditor() {
     
     const addImageToFrame = (frameGroup: any, src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
-            // Remove existing image/placeholder if there is one
             const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
             if (existingImage) {
                 existingImage.destroy();
@@ -236,26 +235,61 @@ export default function KonvaEditor() {
 
             imageNode.setAttrs({
                 name: 'frame-image',
-                draggable: true // Draggable within the group
+                draggable: true,
             });
 
             const frameShape = frameGroup.findOne('.frame-shape');
-            const frameBounds = frameShape.getClientRect({relativeTo: frameGroup});
+            const frameBounds = frameShape.getClientRect({ relativeTo: frameGroup });
 
-            // Scale image to fill the frame
             const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
             imageNode.scale({ x: ratio, y: ratio });
 
-            // Center image within the frame initially
             imageNode.position({
                 x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
                 y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
             });
 
-
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
-            layer.draw();
+            
+            // Re-apply clip to make sure it respects new dimensions
+            const type = frameGroup.getAttr('data-type');
+            const size = frameShape.width() || frameShape.radius() * 2; // Approximate size
+            
+            frameGroup.clipFunc((ctx: any) => {
+                const clipShape = frameGroup.findOne('.frame-shape');
+                const pos = clipShape.position();
+                const size = clipShape.size();
+
+                ctx.beginPath();
+                 switch (type) {
+                    case 'circle':
+                        ctx.arc(pos.x, pos.y, size.width / 2, 0, Math.PI * 2, false);
+                        break;
+                    case 'star':
+                        const innerRadius = size.width / 4;
+                        const outerRadius = size.width / 2;
+                        ctx.moveTo(pos.x, pos.y - outerRadius);
+                        for (let i = 0; i < 5; i++) {
+                             ctx.lineTo(
+                                pos.x + Math.cos((18 + i * 72 - 90) / 180 * Math.PI) * outerRadius,
+                                pos.y + Math.sin((18 + i * 72 - 90) / 180 * Math.PI) * outerRadius
+                            );
+                            ctx.lineTo(
+                                pos.x + Math.cos((54 + i * 72 - 90) / 180 * Math.PI) * innerRadius,
+                                pos.y + Math.sin((54 + i * 72 - 90) / 180 * Math.PI) * innerRadius
+                            );
+                        }
+                        break;
+                    default: // rect
+                        ctx.rect(pos.x - size.width/2, pos.y - size.height/2, size.width, size.height);
+                        break;
+                }
+                ctx.closePath();
+            });
+
+
+            layer.batchDraw();
             selectNode(frameGroup);
         });
     };
@@ -284,16 +318,15 @@ export default function KonvaEditor() {
             }
         }
         
-        // If selecting an image within a frame, allow dragging it, but transform the parent group
         let nodeToTransform = node;
         if (node.hasName('frame-image')) {
             node.draggable(true);
-            nodeToTransform = node.getParent(); // select the group
-            selectedNode = nodeToTransform; // Make sure the group is the globally selected node
+            nodeToTransform = node.getParent(); 
+            selectedNode = nodeToTransform; 
         } else if (node.hasName('frame')) {
-            // If the frame itself is selected, disable dragging for any internal image
             const internalImage = node.findOne('.frame-image');
             if (internalImage) internalImage.draggable(false);
+            nodeToTransform = node; // Make sure the group is transformed
         }
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
@@ -383,8 +416,8 @@ export default function KonvaEditor() {
                     reader.readAsDataURL(file);
 
                     // Clean up to ensure it works next time
-                    target.value = '';
-                    target.onchange = null;
+                    imageFileInput.value = '';
+                    imageFileInput.onchange = null;
                 };
                 imageFileInput.click();
             }
@@ -497,52 +530,37 @@ export default function KonvaEditor() {
             draggable: true,
             name: 'frame',
             'data-type': type,
-            clipFunc: (ctx: any) => {
-                ctx.beginPath();
-                switch (type) {
-                    case 'circle':
-                        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
-                        break;
-                    case 'star':
-                        const innerRadius = size / 4;
-                        const outerRadius = size / 2;
-                        ctx.moveTo(size / 2, 0);
-                        for (let i = 0; i < 5; i++) {
-                             ctx.lineTo(
-                                size / 2 + Math.cos((18 + i * 72) / 180 * Math.PI) * outerRadius,
-                                size / 2 - Math.sin((18 + i * 72) / 180 * Math.PI) * outerRadius
-                            );
-                            ctx.lineTo(
-                                size / 2 + Math.cos((54 + i * 72) / 180 * Math.PI) * innerRadius,
-                                size / 2 - Math.sin((54 + i * 72) / 180 * Math.PI) * innerRadius
-                            );
-                        }
-                        break;
-                    default: // rect
-                        ctx.rect(0, 0, size, size);
-                        break;
-                }
-                ctx.closePath();
-            }
         });
-        
-        let borderShape;
-        switch (type) {
+
+        let clipShape;
+        switch(type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
+                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
+                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
                 break;
-            default: // rect
-                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
+            default:
+                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
                 break;
         }
+        
+        group.clipFunc((ctx: any) => {
+            const clipShapeForCtx = clipShape.clone();
+            clipShapeForCtx.drawScene(ctx);
+        });
+
+        const borderShape = clipShape.clone();
+        borderShape.setAttrs({
+            name: 'frame-shape',
+            fillEnabled: false,
+            stroke: color,
+            strokeWidth: frameWidth,
+        });
 
         group.add(borderShape);
 
-        // Add a placeholder icon
-        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder) => {
+        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
             placeholder.setAttrs({
                 name: 'frame-placeholder',
                 x: (size - 64) / 2,
@@ -1318,24 +1336,18 @@ export default function KonvaEditor() {
           return;
         }
 
-        let nodeToTransform = e.target;
+        let nodeToSelect = e.target;
 
         // Special handling for frames
         if (e.target.getParent()?.hasName('frame')) {
-            if (e.target.hasName('frame-image')) {
-                // If the image inside the frame is clicked, select it but prepare to transform the group
-                nodeToTransform = e.target;
-            } else {
-                // If the frame border is clicked, select the group
-                nodeToTransform = e.target.getParent();
-            }
+            nodeToSelect = e.target.getParent();
         }
         // If a character in a circular group is clicked, select the parent group
         else if (e.target.parent?.hasName('circularText')) {
-          nodeToTransform = e.target.parent;
+          nodeToSelect = e.target.parent;
         }
 
-        selectNode(nodeToTransform);
+        selectNode(nodeToSelect);
       });
       
       // Update layers panel after drag ends.
@@ -1705,3 +1717,5 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
