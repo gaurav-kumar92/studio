@@ -370,7 +370,7 @@ export default function KonvaEditor() {
 
             } else if (node.hasName('frame')) {
                 // When a frame is double-clicked, open the image file dialog
-                imageFileInput.onchange = () => {
+                const handleFileSelect = () => {
                     if (imageFileInput.files && imageFileInput.files.length > 0) {
                         const file = imageFileInput.files[0];
                         const reader = new FileReader();
@@ -380,7 +380,10 @@ export default function KonvaEditor() {
                         };
                         reader.readAsDataURL(file);
                     }
+                    // Clean up the event listener to prevent it from firing multiple times
+                    imageFileInput.removeEventListener('change', handleFileSelect);
                 };
+                imageFileInput.addEventListener('change', handleFileSelect);
                 imageFileInput.click();
             }
         });
@@ -1710,6 +1713,8 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
 
