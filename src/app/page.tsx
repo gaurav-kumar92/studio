@@ -145,6 +145,66 @@ export default function KonvaEditor() {
     let deselectNode: (updateLayers?: boolean) => void;
     let addImageFromSource: (src: string) => void;
 
+    addFrame = (type: string) => {
+        if (!type) return;
+        const frameWidth = Number(frameWidthSlider.value);
+        const color = selectedColorFrame;
+        const size = 150;
+
+        const group = new window.Konva.Group({
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            draggable: true,
+            name: 'frame',
+            'data-type': type,
+        });
+
+        let clipShape;
+        switch(type) {
+            case 'circle':
+                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
+                break;
+            case 'star':
+                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
+                break;
+            default: // rect
+                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
+                break;
+        }
+
+        const borderShape = clipShape.clone({
+            name: 'frame-shape',
+            fillEnabled: false,
+            stroke: color,
+            strokeWidth: frameWidth,
+        });
+        group.add(borderShape);
+
+        // Use a clone for clipping to avoid adding it to the group
+        const clipShapeForCtx = clipShape.clone({ visible: false }); 
+        group.clipFunc((ctx: any) => {
+            clipShapeForCtx.drawScene(ctx);
+        });
+
+        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
+            placeholder.setAttrs({
+                name: 'frame-placeholder',
+                x: (size - 64) / 2,
+                y: (size - 64) / 2,
+                width: 64,
+                height: 64,
+            });
+            group.add(placeholder);
+            placeholder.moveToBottom();
+            layer.draw();
+        });
+        
+        layer.add(group);
+        updateLayersPanel();
+        layer.draw();
+        selectNode(group);
+        if (frameDialog) frameDialog.style.display = 'none';
+    };
 
     addImageFromSource = (src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
@@ -208,67 +268,6 @@ export default function KonvaEditor() {
         });
     };
     
-    addFrame = (type: string) => {
-        if (!type) return;
-        const frameWidth = Number(frameWidthSlider.value);
-        const color = selectedColorFrame;
-        const size = 150;
-
-        const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            draggable: true,
-            name: 'frame',
-            'data-type': type,
-        });
-
-        let clipShape;
-        switch(type) {
-            case 'circle':
-                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
-                break;
-            case 'star':
-                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
-                break;
-            default: // rect
-                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
-                break;
-        }
-
-        const borderShape = clipShape.clone({
-            name: 'frame-shape',
-            fillEnabled: false,
-            stroke: color,
-            strokeWidth: frameWidth,
-        });
-        group.add(borderShape);
-
-        // Use a clone for clipping to avoid adding it to the group
-        const clipShapeForCtx = clipShape.clone({ visible: false }); 
-        group.clipFunc((ctx: any) => {
-            clipShapeForCtx.drawScene(ctx);
-        });
-
-        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
-            placeholder.setAttrs({
-                name: 'frame-placeholder',
-                x: (size - 64) / 2,
-                y: (size - 64) / 2,
-                width: 64,
-                height: 64,
-            });
-            group.add(placeholder);
-            placeholder.moveToBottom();
-            layer.draw();
-        });
-        
-        layer.add(group);
-        updateLayersPanel();
-        layer.draw();
-        selectNode(group);
-        if (frameDialog) frameDialog.style.display = 'none';
-    };
-
     updateLayersPanel = () => {
         if (!layersList) return;
         layersList.innerHTML = ''; // Clear the list
@@ -1509,7 +1508,7 @@ export default function KonvaEditor() {
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
                                         </button>
                                         <button data-align="center" className="p-2 border rounded-md" title="Align Center">
-                                            <svg xmlns="http://wwwLAGUNA_CORAL.svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
                                         </button>
                                         <button data-align="right" className="p-2 border rounded-md" title="Align Right">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
@@ -1644,7 +1643,7 @@ export default function KonvaEditor() {
                         <span>Frame</span>
                     </button>
                      <button className="add-item-card" data-item-type="qr" disabled>
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://wwww3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
+                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
                         <span>QR Code</span>
                     </button>                </div>
                 <div className="dialog-actions mt-6">
