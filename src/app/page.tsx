@@ -79,6 +79,11 @@ export default function KonvaEditor() {
     const colorPreviewGlow = document.getElementById('color-preview-glow') as HTMLElement;
     const glowColorPicker = document.getElementById('glow-color-picker') as HTMLInputElement;
     
+    // Advanced Text
+    const letterSpacingSlider = document.getElementById('letter-spacing-slider') as HTMLInputElement;
+    const lineHeightSlider = document.getElementById('line-height-slider') as HTMLInputElement;
+    const textAlignContainer = document.getElementById('text-align-container');
+    
     // Shape Specific
     const shapeDialogTitle = document.getElementById('shape-dialog-title');
     const shapeButtonsContainer = document.getElementById('shape-buttons-container');
@@ -244,6 +249,16 @@ export default function KonvaEditor() {
                   if(textColorPicker) textColorPicker.value = node.fill();
                   if(colorPreviewText) colorPreviewText.style.backgroundColor = node.fill();
                   
+                  // Advanced text properties
+                  if(letterSpacingSlider) letterSpacingSlider.value = node.letterSpacing();
+                  if(lineHeightSlider) lineHeightSlider.value = node.lineHeight();
+                  document.querySelectorAll('#text-align-container button').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-align') === node.align()) {
+                        btn.classList.add('active');
+                    }
+                  });
+                  
                   // Set curvature to 0 for standard text
                   if(circularTextCurvature) circularTextCurvature.value = '0';
                   if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
@@ -343,6 +358,15 @@ export default function KonvaEditor() {
       if(colorPreviewGlow) colorPreviewGlow.style.backgroundColor = '#0000ff';
       selectedColorGlow = '#0000ff';
 
+      // Reset advanced text fields
+      if(letterSpacingSlider) letterSpacingSlider.value = '0';
+      if(lineHeightSlider) lineHeightSlider.value = '1';
+      document.querySelectorAll('#text-align-container button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      // Set 'left' as default active alignment
+      document.querySelector('#text-align-container button[data-align="left"]')?.classList.add('active');
+
       // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
       if(circularTextCurvature) circularTextCurvature.value = '0';
@@ -397,7 +421,7 @@ export default function KonvaEditor() {
         } else if (itemType === 'image') {
             imageDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
-            addFrame();
+            frameDialog.style.display = 'flex';
         }
     });
 
@@ -482,6 +506,13 @@ export default function KonvaEditor() {
         selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         selectedNode.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
         
+        // Advanced properties
+        selectedNode.letterSpacing(Number(letterSpacingSlider.value));
+        selectedNode.lineHeight(Number(lineHeightSlider.value));
+        const activeAlignButton = document.querySelector('#text-align-container button.active');
+        selectedNode.align(activeAlignButton?.getAttribute('data-align') || 'left');
+
+
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
           selectedNode.shadowEnabled(true);
@@ -519,6 +550,13 @@ export default function KonvaEditor() {
         const fontSize = Number(textFontSizeInput.value);
         const fontFamily = textFontFamilySelect.value;
         const color = textColorPicker.value;
+        
+        // Advanced text properties
+        const letterSpacing = Number(letterSpacingSlider.value);
+        const lineHeight = Number(lineHeightSlider.value);
+        const activeAlignButton = document.querySelector('#text-align-container button.active');
+        const align = activeAlignButton?.getAttribute('data-align') || 'left';
+
 
         const newText = new window.Konva.Text({
           text: textValue,
@@ -529,6 +567,9 @@ export default function KonvaEditor() {
           fill: color,
           draggable: true,
           name: 'text',
+          letterSpacing: letterSpacing,
+          lineHeight: lineHeight,
+          align: align,
         });
         
         // Apply styles
@@ -882,6 +923,21 @@ export default function KonvaEditor() {
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       underlineBtn?.addEventListener('click', () => { underlineBtn.classList.toggle('active'); updateSelectedTextStyle(); });
+      
+      // Advanced Text Handlers
+      letterSpacingSlider?.addEventListener('input', updateSelectedTextStyle);
+      lineHeightSlider?.addEventListener('input', updateSelectedTextStyle);
+      textAlignContainer?.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const button = target.closest('button');
+          if (!button) return;
+
+          // Remove active class from all buttons and add to the clicked one
+          textAlignContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          updateSelectedTextStyle();
+      });
+
 
       // Shadow Controls
       dropShadowBtn?.addEventListener('click', () => {
@@ -1163,6 +1219,30 @@ export default function KonvaEditor() {
                                     <button id="glow-btn" className="p-2 border rounded-md shadow-sm">Glow</button>
                                 </div>
                             </div>
+                            <div id="advanced-text-controls" className="flex flex-col gap-4 mt-4">
+                                <div>
+                                    <label htmlFor="letter-spacing-slider" className="block text-sm font-medium text-gray-700">Letter Spacing</label>
+                                    <input type="range" id="letter-spacing-slider" min="-10" max="20" step="1" defaultValue="0" className="w-full" />
+                                </div>
+                                <div>
+                                    <label htmlFor="line-height-slider" className="block text-sm font-medium text-gray-700">Line Height</label>
+                                    <input type="range" id="line-height-slider" min="0.5" max="3" step="0.1" defaultValue="1" className="w-full" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Alignment</label>
+                                    <div id="text-align-container" className="flex gap-2 justify-center mt-1">
+                                        <button data-align="left" className="p-2 border rounded-md active" title="Align Left">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+                                        </button>
+                                        <button data-align="center" className="p-2 border rounded-md" title="Align Center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
+                                        </button>
+                                        <button data-align="right" className="p-2 border rounded-md" title="Align Right">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
                                 <label className="block text-sm font-medium text-gray-700">Shadow Blur (Current: <span id="shadow-blur-value">10</span>)</label>
                                 <input type="range" id="shadow-blur-slider" min="0" max="20" defaultValue="10" />
@@ -1265,7 +1345,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 4v16M8 4H4v16h4M16 4h4v16h-4"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
@@ -1317,3 +1397,5 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
