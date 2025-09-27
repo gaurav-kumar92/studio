@@ -146,70 +146,69 @@ export default function KonvaEditor() {
     let deselectNode: (updateLayers?: boolean) => void;
 
     addFrame = (type: string) => {
-        if (!stage || !layer) {
-          console.error("Stage or Layer not initialized yet.");
-          return;
-        }
+      if (!stage || !layer) {
+        console.error("Stage or Layer not initialized yet.");
+        return;
+      }
+      if (!type) return;
+      const frameWidth = Number(frameWidthSlider.value);
+      const color = selectedColorFrame;
+      const size = 150;
 
-        if (!type) return;
-        const frameWidth = Number(frameWidthSlider.value);
-        const color = selectedColorFrame;
-        const size = 150;
+      const group = new window.Konva.Group({
+          x: stage.width() / 4,
+          y: stage.height() / 4,
+          draggable: true,
+          name: 'frame',
+          'data-type': type,
+      });
 
-        const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            draggable: true,
-            name: 'frame',
-            'data-type': type,
-        });
+      let clipShape;
+      switch(type) {
+          case 'circle':
+              clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
+              break;
+          case 'star':
+              clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
+              break;
+          default: // rect
+              clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
+              break;
+      }
 
-        let clipShape;
-        switch(type) {
-            case 'circle':
-                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
-                break;
-            case 'star':
-                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
-                break;
-            default: // rect
-                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
-                break;
-        }
+      const borderShape = clipShape.clone({
+          name: 'frame-shape',
+          fillEnabled: false,
+          stroke: color,
+          strokeWidth: frameWidth,
+      });
+      group.add(borderShape);      
+ 
+      group.clipFunc((ctx: any) => {
+        const shape = clipShape.clone({ visible: false });
+        ctx.beginPath();
+        shape._sceneFunc(ctx);
+        ctx.closePath();
+      });
 
-        const borderShape = clipShape.clone({
-            name: 'frame-shape',
-            fillEnabled: false,
-            stroke: color,
-            strokeWidth: frameWidth,
-        });
-        group.add(borderShape);      
-   
-        group.clipFunc((ctx: any) => {
-            const shape = clipShape.clone({ visible: false });
-            ctx.beginPath();
-            shape._sceneFunc(ctx);
-            ctx.closePath();
-        });
-
-        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
-            placeholder.setAttrs({
-                name: 'frame-placeholder',
-                x: (size - 64) / 2,
-                y: (size - 64) / 2,
-                width: 64,
-                height: 64,
-            });
-            group.add(placeholder);
-            placeholder.moveToBottom();
-            layer.draw();
-        });
-        
-        layer.add(group);
-        updateLayersPanel();
-        layer.draw();
-        selectNode(group);
-        if (frameDialog) frameDialog.style.display = 'none';
+      window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
+          placeholder.setAttrs({
+              name: 'frame-placeholder',
+              x: (size - 64) / 2,
+              y: (size - 64) / 2,
+              width: 64,
+              height: 64
+          });
+          group.add(placeholder);
+          placeholder.moveToBottom();
+          layer.draw();
+      });
+      
+      layer.add(group);
+      updateLayersPanel();
+      layer.draw();
+      selectNode(group);
+      if (frameDialog) frameDialog.style.display = 'none';
     };
 
     addImageFromSource = (src: string) => {
@@ -221,7 +220,6 @@ export default function KonvaEditor() {
                 name: 'image'
             });
 
-            // Scale image to fit if it's too large
             const maxWidth = stage.width() * 0.5;
             const maxHeight = stage.height() * 0.5;
             const ratio = Math.min(maxWidth / imageNode.width(), maxHeight / imageNode.height());
@@ -262,30 +260,27 @@ export default function KonvaEditor() {
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
             
-            // Re-apply clip function to ensure it is rendered correctly
+            const clipShapeForCtx = frameShape.clone({ visible: false });
             frameGroup.clipFunc((ctx: any) => {
-                 const clipShapeForCtx = frameShape.clone({ visible: false });
                  clipShapeForCtx.drawScene(ctx);
             });
 
 
             layer.batchDraw();
-            selectNode(frameGroup); // re-select the frame to update the transformer
+            selectNode(frameGroup); 
         });
     };
     
     updateLayersPanel = () => {
         if (!layersList) return;
-        layersList.innerHTML = ''; // Clear the list
+        layersList.innerHTML = ''; 
 
-        // Get all nodes except the background and transformer
         const nodes = layer.getChildren((node: any) => {
             return node.name() !== 'background' && node.className !== 'Transformer';
         });
 
         const nodeCount = nodes.length;
 
-        // Iterate backwards to show top layer first
         nodes.reverse().forEach((node: any, index: number) => {
             const li = document.createElement('li');
             li.className = 'layer-item';
@@ -318,16 +313,14 @@ export default function KonvaEditor() {
                 selectNode(node);
             });
 
-            // Action buttons container
             const actions = document.createElement('div');
             actions.className = 'layer-actions';
             
-            // Move Up Button
             const upBtn = document.createElement('button');
             upBtn.className = 'layer-action-btn';
             upBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>`;
             upBtn.title = 'Move Up';
-            if (index === 0) upBtn.disabled = true; // Already at the top
+            if (index === 0) upBtn.disabled = true; 
             upBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 node.moveUp();
@@ -335,12 +328,11 @@ export default function KonvaEditor() {
                 layer.draw();
             });
 
-            // Move Down Button
             const downBtn = document.createElement('button');
             downBtn.className = 'layer-action-btn';
             downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
             downBtn.title = 'Move Down';
-            if (index === nodeCount - 1) downBtn.disabled = true; // Already at the bottom
+            if (index === nodeCount - 1) downBtn.disabled = true; 
             downBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 node.moveDown();
@@ -368,7 +360,6 @@ export default function KonvaEditor() {
             transformer.destroy();
         }
 
-        // If the selected node was a frame, make its internal image non-draggable
         if (selectedNode && selectedNode.hasName('frame')) {
             const internalImage = selectedNode.findOne('.frame-image');
             if (internalImage) internalImage.draggable(false);
@@ -387,20 +378,17 @@ export default function KonvaEditor() {
     };
 
     selectNode = (node: any) => {
-        // If it's already selected, do nothing.
         if (node === selectedNode) {
             return;
         }
 
-        // Clean up previous selection
-        deselectNode(false); // Pass false to prevent redundant layer update
+        deselectNode(false); 
 
         selectedNode = node;
         deleteBtn.classList.remove('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
         if (opacitySlider) opacitySlider.value = String(selectedNode.opacity());
         
-        // Show/hide image filters panel
         if (imageFiltersPanel) {
             if (selectedNode.hasName('image')) {
                 imageFiltersPanel.classList.remove('hidden');
@@ -417,14 +405,13 @@ export default function KonvaEditor() {
         } else if (node.hasName('frame')) {
             const internalImage = node.findOne('.frame-image');
             if (internalImage) internalImage.draggable(false);
-            nodeToTransform = node; // Make sure the group is transformed
+            nodeToTransform = node; 
         }
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
         tr.nodes([nodeToTransform]);
 
-        // Double-click handler for editing
         node.on('dblclick dbltap', () => {
              if (node.hasName('text') || node.hasName('circularText')) {
               textDialog.style.display = 'flex';
@@ -432,14 +419,12 @@ export default function KonvaEditor() {
               if (addTextBtn) addTextBtn.textContent = 'Update';
 
               if (node.hasName('text')) {
-                  // Populate dialog for standard text
                   if(textInput) textInput.value = node.text();
                   if(textFontSizeInput) textFontSizeInput.value = node.fontSize();
                   if(textFontFamilySelect) textFontFamilySelect.value = node.fontFamily();
                   if(textColorPicker) textColorPicker.value = node.fill();
                   if(colorPreviewText) colorPreviewText.style.backgroundColor = node.fill();
                   
-                  // Advanced text properties
                   if(letterSpacingSlider) letterSpacingSlider.value = node.letterSpacing();
                   if(lineHeightSlider) lineHeightSlider.value = node.lineHeight();
                   document.querySelectorAll('#text-align-container button').forEach(btn => {
@@ -449,12 +434,10 @@ export default function KonvaEditor() {
                     }
                   });
                   
-                  // Set curvature to 0 for standard text
                   if(circularTextCurvature) circularTextCurvature.value = '0';
-                  if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
+                  if(circularTextRadius) circularTextRadius.value = '150'; 
 
               } else if (node.hasName('circularText')) {
-                  // Populate dialog for circular text
                   if(textInput) textInput.value = node.getAttr('data-text');
                   if(circularTextCurvature) circularTextCurvature.value = node.getAttr('data-curvature');
                   if(circularTextRadius) circularTextRadius.value = node.getAttr('data-radius');
@@ -465,7 +448,7 @@ export default function KonvaEditor() {
             } else if (node.hasName('shape')) {
               shapeDialog.style.display = 'flex';
               if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
-              if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); // Hide shape selection
+              if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); 
               if(addShapeBtn) addShapeBtn.classList.add('hidden');
 
               const shapeColor = node.fill() || node.stroke();
@@ -493,7 +476,6 @@ export default function KonvaEditor() {
 
 
             } else if (node.hasName('frame')) {
-                // When a frame is double-clicked, open the image file dialog
                 imageFileInput.onchange = () => {
                     if (!imageFileInput.files || imageFileInput.files.length === 0) {
                         return;
@@ -505,7 +487,6 @@ export default function KonvaEditor() {
                     };
                     reader.readAsDataURL(file);
 
-                    // Clean up to ensure it works next time
                     imageFileInput.value = '';
                     imageFileInput.onchange = null;
                 };
@@ -537,7 +518,6 @@ export default function KonvaEditor() {
       if(dialogTitle) dialogTitle.textContent = 'Add Text';
       if(addTextBtn) addTextBtn.textContent = 'Add';
       
-      // Reset standard text fields
       if(textInput) textInput.value = '';
       if(textFontSizeInput) textFontSizeInput.value = '24';
       if(textFontFamilySelect) textFontFamilySelect.value = 'Inter';
@@ -556,16 +536,13 @@ export default function KonvaEditor() {
       if(colorPreviewGlow) colorPreviewGlow.style.backgroundColor = '#0000ff';
       selectedColorGlow = '#0000ff';
 
-      // Reset advanced text fields
       if(letterSpacingSlider) letterSpacingSlider.value = '0';
       if(lineHeightSlider) lineHeightSlider.value = '1';
       document.querySelectorAll('#text-align-container button').forEach(btn => {
         btn.classList.remove('active');
       });
-      // Set 'left' as default active alignment
       document.querySelector('#text-align-container button[data-align="left"]')?.classList.add('active');
 
-      // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
       if(circularTextCurvature) circularTextCurvature.value = '0';
     };
@@ -591,9 +568,9 @@ export default function KonvaEditor() {
         if (!target) return;
 
         const itemType = target.getAttribute('data-item-type');
-        if (addItemDialog) addItemDialog.style.display = 'none'; // Close the main add dialog
+        if (addItemDialog) addItemDialog.style.display = 'none'; 
 
-        deselectNode(); // Deselect any active object
+        deselectNode(); 
         if (itemType === 'text') {
             resetTextDialog();
             if (textDialog) textDialog.style.display = 'flex';
@@ -611,7 +588,7 @@ export default function KonvaEditor() {
     cancelTextBtn?.addEventListener('click', () => { if (textDialog) textDialog.style.display = 'none'; });
     cancelImageBtn?.addEventListener('click', () => { 
         if (imageDialog) imageDialog.style.display = 'none';
-        if (imageFileInput) imageFileInput.value = ''; // Reset file input
+        if (imageFileInput) imageFileInput.value = ''; 
     });
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
     
@@ -637,7 +614,6 @@ export default function KonvaEditor() {
 
 
     try {
-      // Get the parent container for sizing
       const parentContainer = canvasContainer.parentElement as HTMLElement;
       
       stage = new window.Konva.Stage({
@@ -657,7 +633,7 @@ export default function KonvaEditor() {
         name: 'background'
       });
       layer.add(canvasBackground);
-      updateLayersPanel(); // Initial layers update
+      updateLayersPanel(); 
       layer.draw();
 
       // --- 6. Konva Dependent Functions ---
@@ -675,18 +651,14 @@ export default function KonvaEditor() {
           
           let newWidth, newHeight;
           
-          // Determine the new dimensions based on the limiting factor (width or height)
           if (parentRatio > targetRatio) {
-              // Parent is wider than target, so height is the limiter
               newHeight = parentHeight;
               newWidth = parentHeight * targetRatio;
           } else {
-              // Parent is taller than target, so width is the limiter
               newWidth = parentWidth;
               newHeight = parentWidth / targetRatio;
           }
 
-          // Update the Konva stage and background dimensions
           stage.width(newWidth);
           stage.height(newHeight);
           canvasBackground.width(newWidth);
@@ -698,8 +670,6 @@ export default function KonvaEditor() {
         if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
 
         if (selectedNode.name() === 'circularText') {
-             // For circular text, we can't apply bold/italic/underline in the same way.
-             // This could be enhanced in the future to recreate the text nodes.
             return;
         }
 
@@ -715,7 +685,6 @@ export default function KonvaEditor() {
         selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         selectedNode.textDecoration(decorations.join(' '));
         
-        // Advanced properties
         selectedNode.letterSpacing(Number(letterSpacingSlider.value));
         selectedNode.lineHeight(Number(lineHeightSlider.value));
         const activeAlignButton = document.querySelector('#text-align-container button.active');
@@ -730,7 +699,6 @@ export default function KonvaEditor() {
           selectedNode.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
           selectedNode.shadowOpacity(Number(shadowOpacitySlider.value));
         } else {
-            // Only disable shadow if glow is also disabled
             if (!glowBtn?.classList.contains('active')) {
                 selectedNode.shadowEnabled(false);
             }
@@ -739,12 +707,11 @@ export default function KonvaEditor() {
         const isGlowActive = glowBtn?.classList.contains('active');
         if (isGlowActive) {
             selectedNode.shadowEnabled(true);
-            selectedNode.shadowColor(selectedColorGlow); // Glow color is from its own picker
+            selectedNode.shadowColor(selectedColorGlow); 
             selectedNode.shadowBlur(Number(glowBlurSlider.value));
-            selectedNode.shadowOffset({ x: 0, y: 0 }); // No offset for glow
+            selectedNode.shadowOffset({ x: 0, y: 0 }); 
             selectedNode.shadowOpacity(Number(glowOpacitySlider.value));
         } else {
-            // Only disable shadow if shadow is also disabled
             if (!dropShadowBtn?.classList.contains('active')) {
                 selectedNode.shadowEnabled(false);
             }
@@ -760,7 +727,6 @@ export default function KonvaEditor() {
         const fontFamily = textFontFamilySelect.value;
         const color = textColorPicker.value;
         
-        // Advanced text properties
         const letterSpacing = Number(letterSpacingSlider.value);
         const lineHeight = Number(lineHeightSlider.value);
         const activeAlignButton = document.querySelector('#text-align-container button.active');
@@ -781,7 +747,6 @@ export default function KonvaEditor() {
           align: align,
         });
         
-        // Apply styles
         const isBold = boldBtn.classList.contains('active');
         const isItalic = italicBtn.classList.contains('active');
         const isUnderline = underlineBtn.classList.contains('active');
@@ -825,10 +790,8 @@ export default function KonvaEditor() {
         const color = textColorPicker.value;
         const fontFamily = textFontFamilySelect.value;
 
-        // Font size scales with radius, with a minimum of 10pt for readability
         const fontSize = Math.max(10, Math.floor(radius / 5));
 
-        // Kerning factor to adjust straight text (curvature ~ 0) spacing. 
         const STRAIGHT_KERNING_FACTOR = 0.85;
 
         if (!textValue) return;
@@ -848,59 +811,49 @@ export default function KonvaEditor() {
         const tempText = new window.Konva.Text({ text: textValue, fontSize: fontSize, fontFamily: fontFamily });
         const charHeight = tempText.height();
 
-        // --- Dynamic Curvature Logic ---
 
-        // Total angle in radians the text should span. 
         const maxAngleRadians = 2 * Math.PI * (curvatureValue / 100);
 
-        // Get total flat width (before kerning adjustment)
         let totalFlatWidth = 0;
         for (const char of textValue) {
           tempText.text(char);
           totalFlatWidth += tempText.width();
         }
 
-        // Angle subtended by the flat text if placed on the circle
         const totalFlatAngle = totalFlatWidth / radius;
 
-        // Scale factor to compress/expand the text to fit the maxAngleRadians arc
         const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
 
         let cumulativeAngle = 0;
-        let linearOffset = 0; // Used only for straight line placement
+        let linearOffset = 0; 
 
         for (let i = 0; i < textValue.length; i++) {
           const char = textValue[i];
           tempText.text(char);
           let charWidth = tempText.width();
 
-          // Apply kerning for straight text
           const adjustedCharWidth = (curvatureValue < 1) ? charWidth * STRAIGHT_KERNING_FACTOR : charWidth;
 
-          // Angular width of the character
           const charAngularWidth = charWidth / radius;
 
-          // Scaled angular width (will be 0 if scaleFactor is 0)
           const scaledAngularWidth = charAngularWidth * scaleFactor;
           const centerAngle = cumulativeAngle + (scaledAngularWidth / 2);
 
           let x, y, rotationDegrees, offsetX;
 
-          if (curvatureValue < 1) { // Treat 0 curvature as strictly linear
-            // Linear placement for straight text
+          if (curvatureValue < 1) { 
             x = linearOffset;
             y = 0;
             rotationDegrees = 0;
-            offsetX = 0; // Align character to the start of its linear space
-            linearOffset += adjustedCharWidth; // Use adjusted width for spacing
+            offsetX = 0; 
+            linearOffset += adjustedCharWidth; 
 
           } else {
-            // Polar placement for curved text
-            const placementAngle = centerAngle - (Math.PI / 2); // Start rotation from top
+            const placementAngle = centerAngle - (Math.PI / 2); 
             x = radius * Math.cos(placementAngle);
             y = radius * Math.sin(placementAngle);
             rotationDegrees = centerAngle * 180 / Math.PI;
-            offsetX = charWidth / 2; // Center character on its radial line
+            offsetX = charWidth / 2; 
 
             cumulativeAngle += scaledAngularWidth;
           }
@@ -921,15 +874,12 @@ export default function KonvaEditor() {
           circularGroup.add(charNode);
         }
 
-        let finalFlatWidth = totalFlatWidth; // Default to unkerned width
+        let finalFlatWidth = totalFlatWidth; 
         if (curvatureValue < 1) {
-          // Recalculate total width based on adjusted spacing
           finalFlatWidth = linearOffset;
-          // Center the straight text group horizontally
           circularGroup.offsetX(finalFlatWidth / 2);
           circularGroup.rotation(0);
         } else {
-          // Center the curved text group by rotating it back half the total angle
           const totalArcWidth = cumulativeAngle;
           circularGroup.rotation(-totalArcWidth * 180 / (2 * Math.PI));
         }
@@ -943,9 +893,8 @@ export default function KonvaEditor() {
       const handleAddOrUpdateText = () => {
         const curvature = Number(circularTextCurvature.value);
         
-        // If we are updating a node, we need to handle replacing it.
         if (selectedNode) {
-            selectedNode.destroy(); // Remove the old node
+            selectedNode.destroy(); 
             deselectNode();
         }
 
@@ -1000,7 +949,7 @@ export default function KonvaEditor() {
       
       const applyFilter = (filter: any) => {
           if (!selectedNode || !selectedNode.hasName('image')) return;
-          selectedNode.cache(); // Cache is required for filters
+          selectedNode.cache(); 
           selectedNode.filters(filter ? [filter] : []);
           layer.draw();
       };
@@ -1008,14 +957,11 @@ export default function KonvaEditor() {
 
       // --- 7. Konva Dependent Event Handlers ---
 
-      // Initial resize
       resizeCanvas(canvasSizeSelect.value); 
-      // Attach listeners
       window.addEventListener('resize', () => { resizeCanvas(currentCanvasSize); });
       canvasSizeSelect.addEventListener('change', e => resizeCanvas((e.target as HTMLSelectElement).value));
       
 
-      // Color Picker Logic (Update state variables and visible swatch)
       textColorPicker?.addEventListener('input', e => {
         selectedColorText = (e.target as HTMLInputElement).value;
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
@@ -1038,7 +984,6 @@ export default function KonvaEditor() {
         selectedColorShape = (e.target as HTMLInputElement).value;
         if(colorPreviewShape) colorPreviewShape.style.backgroundColor = selectedColorShape;
         
-        // If we're editing a shape, update its color live
         if (selectedNode && selectedNode.hasName('shape')) {
             const shapeType = selectedNode.getAttr('data-type');
             if (shapeType === 'line' || shapeType === 'arrow') {
@@ -1087,11 +1032,9 @@ export default function KonvaEditor() {
       });
 
 
-      // Unified Text Dialog Add/Update
       addTextBtn?.addEventListener('click', handleAddOrUpdateText);
 
 
-      // Shape Dialog Selection
       shapeDialog?.addEventListener('click', e => {
         const target = e.target as HTMLElement;
         const shapeType = target.closest('[data-shape]')?.getAttribute('data-shape');
@@ -1145,7 +1088,6 @@ export default function KonvaEditor() {
         }
       });
       
-      // Image Dialog Add
       imageFileInput?.addEventListener('change', () => {
           if (imageFileInput.files && imageFileInput.files.length > 0) {
               const file = imageFileInput.files[0];
@@ -1153,14 +1095,13 @@ export default function KonvaEditor() {
               reader.onload = () => {
                   addImageFromSource(reader.result as string);
                   if (imageDialog) imageDialog.style.display = 'none';
-                  imageFileInput.value = ''; // Reset file input
+                  imageFileInput.value = ''; 
               };
               reader.readAsDataURL(file);
           }
       });
 
 
-      // Text Format Handlers
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       underlineBtn?.addEventListener('click', () => { 
@@ -1174,7 +1115,6 @@ export default function KonvaEditor() {
         updateSelectedTextStyle(); 
       });
       
-      // Advanced Text Handlers
       letterSpacingSlider?.addEventListener('input', updateSelectedTextStyle);
       lineHeightSlider?.addEventListener('input', updateSelectedTextStyle);
       textAlignContainer?.addEventListener('click', (e) => {
@@ -1182,14 +1122,12 @@ export default function KonvaEditor() {
           const button = target.closest('button');
           if (!button) return;
 
-          // Remove active class from all buttons and add to the clicked one
           if(textAlignContainer) textAlignContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
           button.classList.add('active');
           updateSelectedTextStyle();
       });
 
 
-      // Shadow Controls
       dropShadowBtn?.addEventListener('click', () => {
         dropShadowBtn.classList.toggle('active');
         if (dropShadowBtn.classList.contains('active')) {
@@ -1213,7 +1151,6 @@ export default function KonvaEditor() {
         updateSelectedTextStyle();
       });
 
-      // Glow Controls
       glowBtn?.addEventListener('click', () => {
         glowBtn.classList.toggle('active');
         if (glowBtn.classList.contains('active')) {
@@ -1241,7 +1178,6 @@ export default function KonvaEditor() {
         }
       });
 
-      // --- Object Properties Panel Handlers ---
       const alignObject = (position: string) => {
         if (!selectedNode) return;
         const box = selectedNode.getClientRect({ relativeTo: stage });
@@ -1280,13 +1216,11 @@ export default function KonvaEditor() {
         layer.draw();
       });
 
-      // Image Filter Handlers
       imageFiltersPanel?.addEventListener('click', (e) => {
           const target = e.target as HTMLElement;
           const button = target.closest('.filter-btn');
           if (!button) return;
 
-          // Remove active class from all filter buttons
           imageFiltersPanel.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
           const filterType = button.getAttribute('data-filter');
@@ -1320,9 +1254,7 @@ export default function KonvaEditor() {
         document.body.removeChild(link);
       });
 
-      // --- Selection and Transformation Logic ---
       stage.on('click tap', (e: any) => {
-        // Check if clicking outside objects
         if (e.target === stage || e.target === canvasBackground) {
           deselectNode();
           return;
@@ -1330,11 +1262,9 @@ export default function KonvaEditor() {
 
         let nodeToSelect = e.target;
 
-        // Special handling for frames
         if (e.target.getParent()?.hasName('frame')) {
             nodeToSelect = e.target.getParent();
         }
-        // If a character in a circular group is clicked, select the parent group
         else if (e.target.parent?.hasName('circularText')) {
           nodeToSelect = e.target.parent;
         }
@@ -1342,7 +1272,6 @@ export default function KonvaEditor() {
         selectNode(nodeToSelect);
       });
       
-      // Update layers panel after drag ends.
       stage.on('dragend', () => {
         updateLayersPanel();
       });
@@ -1353,10 +1282,6 @@ export default function KonvaEditor() {
   };
   
   useEffect(() => {
-    // This effect hook runs once after the component mounts.
-    // We check if the Konva script has already been loaded by a previous render.
-    // If it has, we initialize the editor. If not, the `onLoad` prop of the <Script>
-    // component will handle the initialization once the script is fetched.
     if ((window as any).Konva) {
       initializeKonva();
     }
@@ -1401,7 +1326,6 @@ export default function KonvaEditor() {
                             <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
                         </div>
                     </div>
-                     {/* Object Properties Panel */}
                     <div id="object-properties" className="hidden">
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                         <div className="alignment-controls">
@@ -1425,7 +1349,6 @@ export default function KonvaEditor() {
                             <label htmlFor="opacity-slider">Opacity</label>
                             <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
                         </div>
-                         {/* Image Filters Panel */}
                         <div id="image-filters-panel" className="hidden">
                             <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4">Image Filters</h4>
                             <div className="filter-buttons-container">
@@ -1447,12 +1370,10 @@ export default function KonvaEditor() {
             <div id="layers-panel">
                 <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
                 <ul id="layers-list">
-                    {/* Layer items will be dynamically inserted here */}
                 </ul>
             </div>
         </div>
 
-        {/* Unified Text Dialog */}
         <div id="text-dialog" className="dialog-overlay">
             <div className="dialog">
                 <div className="dialog-content">
@@ -1567,7 +1488,6 @@ export default function KonvaEditor() {
             </div>
         </div>
 
-        {/* Shape Dialog */}
         <div id="shape-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 id="shape-dialog-title" className="text-lg font-semibold mb-4">Add a Shape</h3>
@@ -1624,7 +1544,6 @@ export default function KonvaEditor() {
             </div>
         </div>
         
-        {/* Image Dialog */}
         <div id="image-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">Add an Image</h3>
@@ -1638,7 +1557,6 @@ export default function KonvaEditor() {
             </div>
         </div>
 
-        {/* Add Item Dialog */}
         <div id="add-item-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
@@ -1669,7 +1587,6 @@ export default function KonvaEditor() {
             </div>
         </div>
 
-        {/* Frame Dialog */}
         <div id="frame-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">Add a Frame</h3>
@@ -1706,6 +1623,4 @@ export default function KonvaEditor() {
     </>
   );
 }
-    
-
     
