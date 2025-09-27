@@ -252,10 +252,6 @@ export default function KonvaEditor() {
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
             
-            // Re-apply clip to make sure it respects new dimensions
-            const type = frameGroup.getAttr('data-type');
-            const size = frameShape.width() || frameShape.radius() * 2; // Approximate size
-            
             frameGroup.clipFunc((ctx: any) => {
                 const clipShape = frameGroup.findOne('.frame-shape');
                 // Use a clone for drawing to avoid transform issues
@@ -378,12 +374,11 @@ export default function KonvaEditor() {
 
             } else if (node.hasName('frame')) {
                 // When a frame is double-clicked, open the image file dialog
-                imageFileInput.onchange = (e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (!target || !target.files || target.files.length === 0) {
+                imageFileInput.onchange = () => {
+                    if (!imageFileInput.files || imageFileInput.files.length === 0) {
                         return;
                     }
-                    const file = target.files[0];
+                    const file = imageFileInput.files[0];
                     const reader = new FileReader();
                     reader.onload = () => {
                         addImageToFrame(node, reader.result as string);
@@ -479,21 +474,6 @@ export default function KonvaEditor() {
       if(circularTextCurvature) circularTextCurvature.value = '0';
     };
 
-    // --- 4. Core Button Listeners (Dialog Control) ---
-    addItemBtn?.addEventListener('click', () => {
-        if (addItemDialog) addItemDialog.style.display = 'flex';
-    });
-
-    cancelAddItemBtn?.addEventListener('click', () => {
-        if (addItemDialog) addItemDialog.style.display = 'none';
-    });
-    
-    // --- 5. Konva Initialization ---
-    if (typeof window.Konva === 'undefined') {
-      console.error('Konva library is not loaded. Canvas features are disabled.');
-      return;
-    }
-
     const addFrame = (type: string) => {
         const frameWidth = Number(frameWidthSlider.value);
         const color = selectedColorFrame;
@@ -515,7 +495,7 @@ export default function KonvaEditor() {
             case 'star':
                 clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
                 break;
-            default:
+            default: // rect
                 clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
                 break;
         }
@@ -556,6 +536,21 @@ export default function KonvaEditor() {
         frameDialog.style.display = 'none';
     };
 
+
+    // --- 4. Core Button Listeners (Dialog Control) ---
+    addItemBtn?.addEventListener('click', () => {
+        if (addItemDialog) addItemDialog.style.display = 'flex';
+    });
+
+    cancelAddItemBtn?.addEventListener('click', () => {
+        if (addItemDialog) addItemDialog.style.display = 'none';
+    });
+    
+    // --- 5. Konva Initialization ---
+    if (typeof window.Konva === 'undefined') {
+      console.error('Konva library is not loaded. Canvas features are disabled.');
+      return;
+    }
 
     addItemOptions?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-item-type]');
@@ -1668,9 +1663,9 @@ export default function KonvaEditor() {
                     </div>
                     <div className="flex-grow">
                         <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
-                            Width (<span id="frame-width-value">0</span>px)
+                            Width (<span id="frame-width-value">10</span>px)
                         </label>
-                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
+                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="10" className="w-full" />
                     </div>
                 </div>
                 <div id="frame-buttons-container" className="shape-button-container mt-4">
@@ -1693,3 +1688,5 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
