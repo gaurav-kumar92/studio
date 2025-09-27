@@ -485,35 +485,63 @@ export default function KonvaEditor() {
         const frameWidth = Number(frameWidthSlider.value);
         const color = selectedColorFrame;
         const size = 150;
-        let clipShape; // The invisible shape for clipping
-        let borderShape; // The visible border
+        let clipShape;
 
         const group = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
             draggable: true,
             name: 'frame',
-            'data-type': type
+            'data-type': type,
+            // The clipping function is defined on the group
+            clipFunc: (ctx: any) => {
+                // The drawing commands for the clipping shape are executed here
+                // relative to the group's origin (0,0).
+                switch (type) {
+                    case 'circle':
+                        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
+                        break;
+                    case 'star':
+                        const innerRadius = size / 4;
+                        const outerRadius = size / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(size / 2, size / 2 - outerRadius);
+                        for (let i = 0; i < 5; i++) {
+                            ctx.lineTo(
+                                size / 2 + Math.cos((18 + i * 72) / 180 * Math.PI) * outerRadius,
+                                size / 2 - Math.sin((18 + i * 72) / 180 * Math.PI) * outerRadius
+                            );
+                            ctx.lineTo(
+                                size / 2 + Math.cos((54 + i * 72) / 180 * Math.PI) * innerRadius,
+                                size / 2 - Math.sin((54 + i * 72) / 180 * Math.PI) * innerRadius
+                            );
+                        }
+                        ctx.closePath();
+                        break;
+                    default: // rect
+                        ctx.rect(0, 0, size, size);
+                        break;
+                }
+            }
         });
-        
+
+        // The visible border shape is added to the group
+        let borderShape;
         switch (type) {
             case 'circle':
-                clipShape = new window.Konva.Circle({ radius: size / 2 });
-                borderShape = new window.Konva.Circle({ radius: size / 2, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, stroke: color, strokeWidth: frameWidth });
                 break;
             case 'star':
-                clipShape = new window.Konva.Star({ numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
-                borderShape = new window.Konva.Star({ numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth });
                 break;
             default: // rect
-                clipShape = new window.Konva.Rect({ width: size, height: size });
-                borderShape = new window.Konva.Rect({ width: size, height: size, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, stroke: color, strokeWidth: frameWidth });
                 break;
         }
 
         borderShape.name('frame-shape');
         group.add(borderShape);
-        
+
         // Add a placeholder icon
         window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder) => {
             placeholder.setAttrs({
@@ -528,13 +556,6 @@ export default function KonvaEditor() {
             layer.draw();
         });
         
-        // Clipping function
-        group.clipFunc((ctx: any) => {
-            // Reset transform before drawing the clip shape
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            clipShape.drawScene(ctx, group);
-        });
-
         layer.add(group);
         updateLayersPanel();
         layer.draw();
