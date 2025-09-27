@@ -383,3 +383,9 @@ body {
 #opacity-slider {
     width: 100%;
 }
+
+.frame-controls-container {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}

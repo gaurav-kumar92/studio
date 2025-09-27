@@ -78,6 +78,12 @@ export default function KonvaEditor() {
     // Image Specific
     const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
 
+    // Frame Specific
+    const frameColorPicker = document.getElementById('frame-color-picker') as HTMLInputElement;
+    const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
+    const frameWidthSlider = document.getElementById('frame-width-slider') as HTMLInputElement;
+    const frameWidthValue = document.getElementById('frame-width-value');
+
     // Object Properties panel
     const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
     const alignTopBtn = document.getElementById('align-top-btn');
@@ -88,7 +94,7 @@ export default function KonvaEditor() {
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
     // --- 2. Global State Variables ---
-    let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
+    let stage: any, layer: any, canvasBackground: any, frameRect: any, tr: any; // Konva objects
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
     
@@ -96,6 +102,7 @@ export default function KonvaEditor() {
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
     let selectedColorBackground = backgroundColorPicker.value;
+    let selectedColorFrame = frameColorPicker.value;
 
     // --- 3. UI Helper Functions ---
     const deselectNode = () => {
@@ -201,6 +208,19 @@ export default function KonvaEditor() {
         name: 'background'
       });
       layer.add(canvasBackground);
+      
+      frameRect = new window.Konva.Rect({
+          x: 0,
+          y: 0,
+          width: stage.width(),
+          height: stage.height(),
+          stroke: selectedColorFrame,
+          strokeWidth: Number(frameWidthSlider.value),
+          name: 'frame',
+          listening: false, // Don't let it be selected
+      });
+      layer.add(frameRect);
+
       layer.draw();
 
       // --- 6. Konva Dependent Functions ---
@@ -234,6 +254,8 @@ export default function KonvaEditor() {
           stage.height(newHeight);
           canvasBackground.width(newWidth);
           canvasBackground.height(newHeight);
+          frameRect.width(newWidth);
+          frameRect.height(newHeight);
           stage.draw();
       };
 
@@ -537,6 +559,25 @@ export default function KonvaEditor() {
             layer.draw();
         }
       });
+      
+      frameColorPicker?.addEventListener('input', e => {
+          selectedColorFrame = (e.target as HTMLInputElement).value;
+          if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
+          if (frameRect) {
+              frameRect.stroke(selectedColorFrame);
+              layer.draw();
+          }
+      });
+
+      frameWidthSlider?.addEventListener('input', e => {
+          const newWidth = Number((e.target as HTMLInputElement).value);
+          if(frameWidthValue) frameWidthValue.textContent = String(newWidth);
+          if (frameRect) {
+              frameRect.strokeWidth(newWidth);
+              layer.draw();
+          }
+      });
+
 
       // Unified Text Dialog Add/Update
       addTextBtn?.addEventListener('click', handleAddOrUpdateText);
@@ -787,6 +828,23 @@ export default function KonvaEditor() {
                         <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
                     </div>
                 </div>
+                 {/* Frame Controls */}
+                <div id="frame-controls" className="frame-controls-container mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Frame</h4>
+                    <div className="flex items-center gap-4">
+                        <div className="color-picker-container-inline">
+                            <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
+                            <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
+                            <input type="color" id="frame-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
+                        </div>
+                        <div className="flex-grow">
+                            <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
+                                Width (<span id="frame-width-value">0</span>px)
+                            </label>
+                            <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
+                        </div>
+                    </div>
+                </div>
                  {/* Object Properties Panel */}
                 <div id="object-properties" className="hidden">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
@@ -981,9 +1039,3 @@ export default function KonvaEditor() {
     </>
   );
 }
-
-    
-
-    
-
-    
