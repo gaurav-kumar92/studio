@@ -30,6 +30,7 @@ export default function KonvaEditor() {
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
     const shapeDialog = document.getElementById('shape-dialog') as HTMLElement;
     const imageDialog = document.getElementById('image-dialog') as HTMLElement;
+    const frameDialog = document.getElementById('frame-dialog') as HTMLElement;
 
     // Buttons
     const addItemBtn = document.getElementById('add-item-btn');
@@ -38,6 +39,7 @@ export default function KonvaEditor() {
     const cancelShapeBtn = document.getElementById('cancel-shape-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
+    const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addTextBtn = document.getElementById('add-btn');
     const addImageBtn = document.getElementById('add-image-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
@@ -171,6 +173,8 @@ export default function KonvaEditor() {
             shapeDialog.style.display = 'flex';
         } else if (itemType === 'image') {
             imageDialog.style.display = 'flex';
+        } else if (itemType === 'frame') {
+            frameDialog.style.display = 'flex';
         }
     });
 
@@ -180,6 +184,7 @@ export default function KonvaEditor() {
         imageDialog.style.display = 'none';
         if (imageFileInput) imageFileInput.value = ''; // Reset file input
     });
+    cancelFrameBtn?.addEventListener('click', () => { frameDialog.style.display = 'none'; });
 
     // --- 5. Konva Initialization ---
     if (typeof window.Konva === 'undefined') {
@@ -828,23 +833,6 @@ export default function KonvaEditor() {
                         <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
                     </div>
                 </div>
-                 {/* Frame Controls */}
-                <div id="frame-controls" className="frame-controls-container mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Frame</h4>
-                    <div className="flex items-center gap-4">
-                        <div className="color-picker-container-inline">
-                            <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
-                            <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                            <input type="color" id="frame-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
-                        </div>
-                        <div className="flex-grow">
-                            <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
-                                Width (<span id="frame-width-value">0</span>px)
-                            </label>
-                            <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
-                        </div>
-                    </div>
-                </div>
                  {/* Object Properties Panel */}
                 <div id="object-properties" className="hidden">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
@@ -1024,6 +1012,10 @@ export default function KonvaEditor() {
                         <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                         <span>Image</span>
                     </button>
+                    <button className="add-item-card" data-item-type="frame">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                        <span>Frame</span>
+                    </button>
                      <button className="add-item-card" data-item-type="qr" disabled>
                         <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
                         <span>QR Code</span>
@@ -1035,6 +1027,28 @@ export default function KonvaEditor() {
             </div>
         </div>
 
+        {/* Frame Dialog */}
+        <div id="frame-dialog" className="dialog-overlay">
+            <div className="dialog">
+                <h3 className="text-lg font-semibold mb-4">Frame Settings</h3>
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="color-picker-container-inline">
+                        <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
+                        <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
+                        <input type="color" id="frame-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
+                    </div>
+                    <div className="flex-grow">
+                        <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
+                            Width (<span id="frame-width-value">0</span>px)
+                        </label>
+                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
+                    </div>
+                </div>
+                <div className="dialog-actions flex justify-end gap-2 mt-4">
+                    <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
+                </div>
+            </div>
+        </div>
       </main>
     </>
   );

@@ -335,6 +335,9 @@ body {
 .add-item-card[data-item-type="image"]:not(:disabled) svg {
     color: #3b82f6; /* Example color for enabled image icon */
 }
+.add-item-card[data-item-type="frame"]:not(:disabled) svg {
+    color: #8b5cf6; /* Example color for enabled frame icon */
+}
 
 
 #object-properties {
@@ -382,10 +385,4 @@ body {
 
 #opacity-slider {
     width: 100%;
-}
-
-.frame-controls-container {
-    border-top: 1px solid #e5e7eb;
-    margin-top: 1rem;
-    padding-top: 1rem;
 }
