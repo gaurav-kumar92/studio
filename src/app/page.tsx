@@ -370,24 +370,22 @@ export default function KonvaEditor() {
 
             } else if (node.hasName('frame')) {
                 // When a frame is double-clicked, open the image file dialog
-                const handleFileSelect = (e: Event) => {
+                imageFileInput.onchange = (e) => {
                     const target = e.target as HTMLInputElement;
-                    if (target.files && target.files.length > 0) {
-                        const file = target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            addImageToFrame(node, reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                        // Reset input to allow selecting the same file again
-                        target.value = '';
+                    if (!target || !target.files || target.files.length === 0) {
+                        return;
                     }
-                    // Remove the listener to prevent memory leaks
-                    target.removeEventListener('change', handleFileSelect);
-                };
+                    const file = target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        addImageToFrame(node, reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
 
-                // Add a fresh event listener each time
-                imageFileInput.addEventListener('change', handleFileSelect, { once: true });
+                    // Clean up to ensure it works next time
+                    target.value = '';
+                    target.onchange = null;
+                };
                 imageFileInput.click();
             }
         });
@@ -1707,15 +1705,3 @@ export default function KonvaEditor() {
     </>
   );
 }
-
-    
-
-
-
-    
-
-    
-
-    
-
-    
