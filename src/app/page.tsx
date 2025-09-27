@@ -133,8 +133,10 @@ export default function KonvaEditor() {
             return node.name() !== 'background' && node.className !== 'Transformer';
         });
 
+        const nodeCount = nodes.length;
+
         // Iterate backwards to show top layer first
-        nodes.reverse().forEach((node: any) => {
+        nodes.reverse().forEach((node: any, index: number) => {
             const li = document.createElement('li');
             li.className = 'layer-item';
             li.setAttribute('data-id', node.id());
@@ -156,16 +158,54 @@ export default function KonvaEditor() {
                 iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
                 name = 'Frame';
             }
+            
+            const layerInfo = document.createElement('div');
+            layerInfo.className = 'layer-info';
+            layerInfo.innerHTML = `${iconSvg}<span class="name">${name}</span>`;
 
-            li.innerHTML = `${iconSvg}<span class="name">${name}</span>`;
+            layerInfo.addEventListener('click', () => {
+                selectNode(node);
+            });
+
+            // Action buttons container
+            const actions = document.createElement('div');
+            actions.className = 'layer-actions';
+            
+            // Move Up Button
+            const upBtn = document.createElement('button');
+            upBtn.className = 'layer-action-btn';
+            upBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>`;
+            upBtn.title = 'Move Up';
+            if (index === 0) upBtn.disabled = true; // Already at the top
+            upBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                node.moveUp();
+                updateLayersPanel();
+                layer.draw();
+            });
+
+            // Move Down Button
+            const downBtn = document.createElement('button');
+            downBtn.className = 'layer-action-btn';
+            downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
+            downBtn.title = 'Move Down';
+            if (index === nodeCount - 1) downBtn.disabled = true; // Already at the bottom
+            downBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                node.moveDown();
+                updateLayersPanel();
+                layer.draw();
+            });
+            
+            actions.appendChild(upBtn);
+            actions.appendChild(downBtn);
+            
+            li.appendChild(layerInfo);
+            li.appendChild(actions);
 
             if (node === selectedNode) {
                 li.classList.add('selected');
             }
-
-            li.addEventListener('click', () => {
-                selectNode(node);
-            });
 
             layersList.appendChild(li);
         });
@@ -667,6 +707,8 @@ export default function KonvaEditor() {
         const y = stage.height() / 4;
         const size = 100;
         const color = selectedColorShape;
+        const thickness = Number(shapeThicknessSlider.value);
+
 
         switch (type) {
           case 'rect':
@@ -679,7 +721,7 @@ export default function KonvaEditor() {
             newShape = new window.Konva.RegularPolygon({ x, y, sides: 3, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'line':
-            newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: 5, draggable: true, name: 'shape', 'data-type': type });
+            newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: thickness, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'star':
             newShape = new window.Konva.Star({ x, y, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: color, draggable: true, name: 'shape', 'data-type': type });
@@ -688,7 +730,7 @@ export default function KonvaEditor() {
             newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'arrow':
-            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: 4, draggable: true, name: 'shape', 'data-type': type });
+            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: thickness, draggable: true, name: 'shape', 'data-type': type });
             break;
         }
         if(newShape) layer.add(newShape);
@@ -1223,7 +1265,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 4v16M8 4H4v16h4M16 4h4v16h-4"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
