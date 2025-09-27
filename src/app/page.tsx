@@ -533,7 +533,7 @@ export default function KonvaEditor() {
         updateLayersPanel();
         layer.draw();
         selectNode(group);
-        frameDialog.style.display = 'none';
+        if (frameDialog) frameDialog.style.display = 'none';
     };
 
 
