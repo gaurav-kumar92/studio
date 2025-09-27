@@ -1011,7 +1011,7 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="line" title="Line">
-                       <svg viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M3 12h18"/></svg>
+                       <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M3 12h18"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="star" title="Star">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1020,7 +1020,7 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24"><path d="M12 2.5l9.51 6.91-3.63 11.09H6.12l-3.63-11.09L12 2.5z"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="arrow" title="Arrow">
-                        <svg viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
                     </button>
                 </div>
                 <div className="dialog-actions mt-4">
