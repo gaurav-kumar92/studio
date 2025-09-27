@@ -141,8 +141,11 @@ export default function KonvaEditor() {
     // Forward declare functions that are called by others before they are defined
     let selectNode: (node: any) => void;
     let updateLayersPanel: () => void;
+    let addImageToFrame: (frameGroup: any, src: string) => void;
+    let addFrame: (type: string) => void;
 
-    const addImageToFrame = (frameGroup: any, src: string) => {
+
+    addImageToFrame = (frameGroup: any, src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
             const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
             if (existingImage) {
@@ -164,14 +167,13 @@ export default function KonvaEditor() {
                 x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
                 y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
             });
-
+            
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
             
             // Re-apply clip function to ensure it is rendered correctly
-            const clipShape = frameGroup.findOne('.frame-shape');
-            const clipShapeForCtx = clipShape.clone({ visible: false }); // Use an invisible clone for clipping
             frameGroup.clipFunc((ctx: any) => {
+                 const clipShapeForCtx = frameShape.clone({ visible: false });
                  clipShapeForCtx.drawScene(ctx);
             });
 
@@ -180,8 +182,8 @@ export default function KonvaEditor() {
             selectNode(frameGroup); // re-select the frame to update the transformer
         });
     };
-
-    const addFrame = (type: string) => {
+    
+    addFrame = (type: string) => {
         if (!type) return;
         const frameWidth = Number(frameWidthSlider.value);
         const color = selectedColorFrame;
@@ -216,7 +218,8 @@ export default function KonvaEditor() {
         });
         group.add(borderShape);
 
-        const clipShapeForCtx = clipShape.clone({ visible: false });
+        // Use a clone for clipping to avoid adding it to the group
+        const clipShapeForCtx = clipShape.clone({ visible: false }); 
         group.clipFunc((ctx: any) => {
             clipShapeForCtx.drawScene(ctx);
         });
@@ -1595,8 +1598,7 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="arrow" title="Arrow">
-                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
-                    </button>
+                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>                    </button>
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-shape-btn" className="dialog-button dialog-button-secondary">Cancel</button>
@@ -1642,7 +1644,7 @@ export default function KonvaEditor() {
                         <span>Frame</span>
                     </button>
                      <button className="add-item-card" data-item-type="qr" disabled>
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
+                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://wwww3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
                         <span>QR Code</span>
                     </button>                </div>
                 <div className="dialog-actions mt-6">
@@ -1686,7 +1688,5 @@ export default function KonvaEditor() {
         </div>
       </main>
     </>
-  );
+  )
 }
-
-    
