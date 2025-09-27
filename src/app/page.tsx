@@ -258,34 +258,9 @@ export default function KonvaEditor() {
             
             frameGroup.clipFunc((ctx: any) => {
                 const clipShape = frameGroup.findOne('.frame-shape');
-                const pos = clipShape.position();
-                const size = clipShape.size();
-
-                ctx.beginPath();
-                 switch (type) {
-                    case 'circle':
-                        ctx.arc(pos.x, pos.y, size.width / 2, 0, Math.PI * 2, false);
-                        break;
-                    case 'star':
-                        const innerRadius = size.width / 4;
-                        const outerRadius = size.width / 2;
-                        ctx.moveTo(pos.x, pos.y - outerRadius);
-                        for (let i = 0; i < 5; i++) {
-                             ctx.lineTo(
-                                pos.x + Math.cos((18 + i * 72 - 90) / 180 * Math.PI) * outerRadius,
-                                pos.y + Math.sin((18 + i * 72 - 90) / 180 * Math.PI) * outerRadius
-                            );
-                            ctx.lineTo(
-                                pos.x + Math.cos((54 + i * 72 - 90) / 180 * Math.PI) * innerRadius,
-                                pos.y + Math.sin((54 + i * 72 - 90) / 180 * Math.PI) * innerRadius
-                            );
-                        }
-                        break;
-                    default: // rect
-                        ctx.rect(pos.x - size.width/2, pos.y - size.height/2, size.width, size.height);
-                        break;
-                }
-                ctx.closePath();
+                // Use a clone for drawing to avoid transform issues
+                const clipShapeForCtx = clipShape.clone(); 
+                clipShapeForCtx.drawScene(ctx);
             });
 
 
@@ -546,7 +521,8 @@ export default function KonvaEditor() {
         }
         
         group.clipFunc((ctx: any) => {
-            const clipShapeForCtx = clipShape.clone();
+            // Use a clone for drawing to avoid transform issues
+            const clipShapeForCtx = clipShape.clone(); 
             clipShapeForCtx.drawScene(ctx);
         });
 
@@ -1703,6 +1679,7 @@ export default function KonvaEditor() {
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
+_BODY_
                     </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1717,5 +1694,7 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
 
     
