@@ -91,7 +91,7 @@ export default function KonvaEditor() {
     const shapeButtonsContainer = document.getElementById('shape-buttons-container');
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
-    const shapeThicknessControls = documentgetElementById('shape-thickness-controls') as HTMLElement;
+    const shapeThicknessControls = document.getElementById('shape-thickness-controls') as HTMLElement;
     const shapeThicknessSlider = document.getElementById('shape-thickness-slider') as HTMLInputElement;
     const shapeThicknessValue = document.getElementById('shape-thickness-value');
     const shapeSidesControls = document.getElementById('shape-sides-controls') as HTMLElement;
@@ -481,11 +481,11 @@ export default function KonvaEditor() {
 
     // --- 4. Core Button Listeners (Dialog Control) ---
     addItemBtn?.addEventListener('click', () => {
-        addItemDialog.style.display = 'flex';
+        if (addItemDialog) addItemDialog.style.display = 'flex';
     });
 
     cancelAddItemBtn?.addEventListener('click', () => {
-        addItemDialog.style.display = 'none';
+        if (addItemDialog) addItemDialog.style.display = 'none';
     });
     
     // --- 5. Konva Initialization ---
@@ -562,29 +562,29 @@ export default function KonvaEditor() {
         if (!target) return;
 
         const itemType = target.getAttribute('data-item-type');
-        addItemDialog.style.display = 'none'; // Close the main add dialog
+        if (addItemDialog) addItemDialog.style.display = 'none'; // Close the main add dialog
 
         deselectNode(); // Deselect any active object
         if (itemType === 'text') {
             resetTextDialog();
-            textDialog.style.display = 'flex';
+            if (textDialog) textDialog.style.display = 'flex';
         } else if (itemType === 'shape') {
             resetShapeDialog();
-            shapeDialog.style.display = 'flex';
+            if (shapeDialog) shapeDialog.style.display = 'flex';
         } else if (itemType === 'image') {
-            imageDialog.style.display = 'flex';
+            if (imageDialog) imageDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
-            frameDialog.style.display = 'flex';
+            if (frameDialog) frameDialog.style.display = 'flex';
         }
     });
 
-    cancelShapeBtn?.addEventListener('click', () => { shapeDialog.style.display = 'none'; });
-    cancelTextBtn?.addEventListener('click', () => { textDialog.style.display = 'none'; });
+    cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) shapeDialog.style.display = 'none'; });
+    cancelTextBtn?.addEventListener('click', () => { if (textDialog) textDialog.style.display = 'none'; });
     cancelImageBtn?.addEventListener('click', () => { 
-        imageDialog.style.display = 'none';
+        if (imageDialog) imageDialog.style.display = 'none';
         if (imageFileInput) imageFileInput.value = ''; // Reset file input
     });
-    cancelFrameBtn?.addEventListener('click', () => { frameDialog.style.display = 'none'; });
+    cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
     
     frameButtonsContainer?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-frame-shape]');
