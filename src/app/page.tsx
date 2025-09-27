@@ -229,8 +229,8 @@ export default function KonvaEditor() {
     
     const addImageToFrame = (frameGroup: any, src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
-            // Remove existing image if there is one
-            const existingImage = frameGroup.findOne('.frame-image');
+            // Remove existing image/placeholder if there is one
+            const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
             if (existingImage) {
                 existingImage.destroy();
             }
@@ -513,6 +513,20 @@ export default function KonvaEditor() {
 
         borderShape.name('frame-shape');
         group.add(borderShape);
+        
+        // Add a placeholder icon
+        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder) => {
+            placeholder.setAttrs({
+                name: 'frame-placeholder',
+                x: (size - 64) / 2,
+                y: (size - 64) / 2,
+                width: 64,
+                height: 64,
+            });
+            group.add(placeholder);
+            placeholder.moveToBottom();
+            layer.draw();
+        });
         
         // Clipping function
         group.clipFunc((ctx: any) => {
@@ -1641,8 +1655,8 @@ export default function KonvaEditor() {
                  <div className="flex items-center gap-4 mb-4">
                     <div className="color-picker-container-inline">
                         <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
-                        <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                        <input type="color" id="frame-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
+                        <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
+                        <input type="color" id="frame-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                     </div>
                     <div className="flex-grow">
                         <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
@@ -1675,5 +1689,7 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
