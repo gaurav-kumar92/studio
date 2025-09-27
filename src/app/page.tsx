@@ -103,6 +103,7 @@ export default function KonvaEditor() {
     const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
 
     // Frame Specific
+    const frameButtonsContainer = document.getElementById('frame-buttons-container');
     const frameColorPicker = document.getElementById('frame-color-picker') as HTMLInputElement;
     const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
     const frameWidthSlider = document.getElementById('frame-width-slider') as HTMLInputElement;
@@ -159,18 +160,19 @@ export default function KonvaEditor() {
             let name = 'Object';
 
             if (node.hasName('text') || node.hasName('circularText')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
                 name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
             } else if (node.hasName('shape')) {
                 const shapeType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
                 name = `Shape: ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
             } else if (node.hasName('image')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
                 name = 'Image';
             } else if (node.hasName('frame')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
-                name = 'Frame';
+                const frameType = node.getAttr('data-type');
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                name = `Frame: ${frameType.charAt(0).toUpperCase() + frameType.slice(1)}`;
             }
             
             const layerInfo = document.createElement('div');
@@ -224,6 +226,40 @@ export default function KonvaEditor() {
             layersList.appendChild(li);
         });
     };
+    
+    const addImageToFrame = (frameGroup: any, src: string) => {
+        window.Konva.Image.fromURL(src, (imageNode: any) => {
+            // Remove existing image if there is one
+            const existingImage = frameGroup.findOne('.frame-image');
+            if (existingImage) {
+                existingImage.destroy();
+            }
+
+            imageNode.setAttrs({
+                name: 'frame-image',
+                draggable: true // Draggable within the group
+            });
+
+            const frameShape = frameGroup.findOne('.frame-shape');
+            const frameBounds = frameShape.getClientRect();
+
+            // Scale image to fill the frame
+            const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
+            imageNode.scale({ x: ratio, y: ratio });
+
+            // Center image within the frame initially
+            imageNode.position({
+                x: (frameBounds.width - imageNode.width() * ratio) / 2,
+                y: (frameBounds.height - imageNode.height() * ratio) / 2
+            });
+
+            frameGroup.add(imageNode);
+            imageNode.moveToBottom();
+            layer.draw();
+            selectNode(frameGroup);
+        });
+    };
+
 
     const selectNode = (node: any) => {
         // If it's already selected, do nothing.
@@ -248,9 +284,21 @@ export default function KonvaEditor() {
             }
         }
         
+        // If selecting an image within a frame, allow dragging it, but transform the parent group
+        let nodeToTransform = node;
+        if (node.hasName('frame-image')) {
+            node.draggable(true);
+            nodeToTransform = node.getParent(); // select the group
+            selectedNode = nodeToTransform; // Make sure the group is the globally selected node
+        } else if (node.hasName('frame')) {
+            // If the frame itself is selected, disable dragging for any internal image
+            const internalImage = node.findOne('.frame-image');
+            if (internalImage) internalImage.draggable(false);
+        }
+        
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
-        tr.nodes([node]);
+        tr.nodes([nodeToTransform]);
 
         // Double-click handler for editing
         node.on('dblclick dbltap', () => {
@@ -321,15 +369,19 @@ export default function KonvaEditor() {
 
 
             } else if (node.hasName('frame')) {
-                frameDialog.style.display = 'flex';
-                // Populate dialog with current frame properties
-                const frameColor = node.stroke();
-                const frameWidth = node.strokeWidth();
-                if (frameColorPicker) frameColorPicker.value = frameColor;
-                if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = frameColor;
-                if (frameWidthSlider) frameWidthSlider.value = String(frameWidth);
-                if (frameWidthValue) frameWidthValue.textContent = String(frameWidth);
-                selectedColorFrame = frameColor;
+                // When a frame is double-clicked, open the image file dialog
+                imageFileInput.onchange = () => {
+                    if (imageFileInput.files && imageFileInput.files.length > 0) {
+                        const file = imageFileInput.files[0];
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            addImageToFrame(node, reader.result as string);
+                            if (imageFileInput) imageFileInput.value = ''; // Reset file input
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+                imageFileInput.click();
             }
         });
 
@@ -342,6 +394,13 @@ export default function KonvaEditor() {
         if (transformer) {
             transformer.destroy();
         }
+
+        // If the selected node was a frame, make its internal image non-draggable
+        if (selectedNode && selectedNode.hasName('frame')) {
+            const internalImage = selectedNode.findOne('.frame-image');
+            if (internalImage) internalImage.draggable(false);
+        }
+
         selectedNode = null;
         deleteBtn.classList.add('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
@@ -422,31 +481,53 @@ export default function KonvaEditor() {
       return;
     }
 
-    const addFrame = () => {
-      const frameWidth = Number(frameWidthSlider.value);
-      let newFrame;
-       if (selectedNode && selectedNode.hasName('frame')) {
-            selectedNode.stroke(selectedColorFrame);
-            selectedNode.strokeWidth(frameWidth);
-            newFrame = selectedNode;
-        } else {
-          newFrame = new window.Konva.Rect({
-              x: stage.width() / 4,
-              y: stage.height() / 4,
-              width: stage.width() / 2,
-              height: stage.height() / 2,
-              stroke: selectedColorFrame,
-              strokeWidth: frameWidth,
-              draggable: true,
-              name: 'frame'
-          });
-          layer.add(newFrame);
+    const addFrame = (type: string) => {
+        const frameWidth = Number(frameWidthSlider.value);
+        const color = selectedColorFrame;
+        const size = 150;
+        let clipShape; // The invisible shape for clipping
+        let borderShape; // The visible border
+
+        const group = new window.Konva.Group({
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            draggable: true,
+            name: 'frame',
+            'data-type': type
+        });
+        
+        switch (type) {
+            case 'circle':
+                clipShape = new window.Konva.Circle({ radius: size / 2 });
+                borderShape = new window.Konva.Circle({ radius: size / 2, stroke: color, strokeWidth: frameWidth });
+                break;
+            case 'star':
+                clipShape = new window.Konva.Star({ numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                borderShape = new window.Konva.Star({ numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth });
+                break;
+            default: // rect
+                clipShape = new window.Konva.Rect({ width: size, height: size });
+                borderShape = new window.Konva.Rect({ width: size, height: size, stroke: color, strokeWidth: frameWidth });
+                break;
         }
+
+        borderShape.name('frame-shape');
+        group.add(borderShape);
+        
+        // Clipping function
+        group.clipFunc((ctx: any) => {
+            // Reset transform before drawing the clip shape
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            clipShape.drawScene(ctx, group);
+        });
+
+        layer.add(group);
         updateLayersPanel();
         layer.draw();
+        selectNode(group);
         frameDialog.style.display = 'none';
-        selectNode(newFrame);
     };
+
 
     addItemOptions?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-item-type]');
@@ -476,7 +557,15 @@ export default function KonvaEditor() {
         if (imageFileInput) imageFileInput.value = ''; // Reset file input
     });
     cancelFrameBtn?.addEventListener('click', () => { frameDialog.style.display = 'none'; });
-    addFrameBtn?.addEventListener('click', addFrame);
+    
+    frameButtonsContainer?.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement).closest('[data-frame-shape]');
+        if (target) {
+            const shapeType = target.getAttribute('data-frame-shape');
+            if (shapeType) addFrame(shapeType);
+        }
+    });
+
 
 
     try {
@@ -933,8 +1022,11 @@ export default function KonvaEditor() {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
           if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.stroke(selectedColorFrame);
-              layer.draw();
+              const border = selectedNode.findOne('.frame-shape');
+              if (border) {
+                  border.stroke(selectedColorFrame);
+                  layer.draw();
+              }
           }
       });
 
@@ -942,8 +1034,11 @@ export default function KonvaEditor() {
           const newWidth = Number((e.target as HTMLInputElement).value);
           if(frameWidthValue) frameWidthValue.textContent = String(newWidth);
           if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.strokeWidth(newWidth);
-              layer.draw();
+              const border = selectedNode.findOne('.frame-shape');
+              if (border) {
+                  border.strokeWidth(newWidth);
+                  layer.draw();
+              }
           }
       });
 
@@ -1191,15 +1286,22 @@ export default function KonvaEditor() {
 
         let nodeToTransform = e.target;
 
+        // Special handling for frames
+        if (e.target.getParent()?.hasName('frame')) {
+            if (e.target.hasName('frame-image')) {
+                // If the image inside the frame is clicked, select it but prepare to transform the group
+                nodeToTransform = e.target;
+            } else {
+                // If the frame border is clicked, select the group
+                nodeToTransform = e.target.getParent();
+            }
+        }
         // If a character in a circular group is clicked, select the parent group
-        if (e.target.parent?.hasName('circularText')) {
+        else if (e.target.parent?.hasName('circularText')) {
           nodeToTransform = e.target.parent;
         }
 
-        // Don't re-select if it's already selected. Just call selectNode to ensure consistency.
-        if (nodeToTransform !== selectedNode) {
-            selectNode(nodeToTransform);
-        }
+        selectNode(nodeToTransform);
       });
       
       // Update layers panel after drag ends.
@@ -1535,8 +1637,8 @@ export default function KonvaEditor() {
         {/* Frame Dialog */}
         <div id="frame-dialog" className="dialog-overlay">
             <div className="dialog">
-                <h3 className="text-lg font-semibold mb-4">Frame Settings</h3>
-                <div className="flex items-center gap-4 mb-4">
+                <h3 className="text-lg font-semibold mb-4">Add a Frame</h3>
+                 <div className="flex items-center gap-4 mb-4">
                     <div className="color-picker-container-inline">
                         <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
                         <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
@@ -1549,9 +1651,19 @@ export default function KonvaEditor() {
                         <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="10" className="w-full" />
                     </div>
                 </div>
+                <div id="frame-buttons-container" className="shape-button-container mt-4">
+                    <button className="shape-btn" data-frame-shape="rect" title="Rectangle Frame">
+                        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-frame-shape="star" title="Star Frame">
+                        <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    </button>
+                </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
-                    <button id="add-frame-btn" className="dialog-button dialog-button-primary">Add/Update Frame</button>
                 </div>
             </div>
         </div>
@@ -1562,3 +1674,6 @@ export default function KonvaEditor() {
 
     
 
+
+
+    
