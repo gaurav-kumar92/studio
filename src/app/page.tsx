@@ -91,7 +91,7 @@ export default function KonvaEditor() {
     const shapeButtonsContainer = document.getElementById('shape-buttons-container');
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
-    const shapeThicknessControls = document.getElementById('shape-thickness-controls') as HTMLElement;
+    const shapeThicknessControls = documentgetElementById('shape-thickness-controls') as HTMLElement;
     const shapeThicknessSlider = document.getElementById('shape-thickness-slider') as HTMLInputElement;
     const shapeThicknessValue = document.getElementById('shape-thickness-value');
     const shapeSidesControls = document.getElementById('shape-sides-controls') as HTMLElement;
@@ -1679,7 +1679,6 @@ export default function KonvaEditor() {
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
-_BODY_
                     </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1694,7 +1693,3 @@ _BODY_
     </>
   );
 }
-
-    
-
-    
