@@ -157,6 +157,27 @@ export default function KonvaEditor() {
         addItemDialog.style.display = 'none';
     });
     
+    // --- 5. Konva Initialization ---
+    if (typeof window.Konva === 'undefined') {
+      console.error('Konva library is not loaded. Canvas features are disabled.');
+      return;
+    }
+    
+    const addFrame = () => {
+        const newFrame = new window.Konva.Rect({
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            width: stage.width() / 2,
+            height: stage.height() / 2,
+            stroke: '#000000',
+            strokeWidth: 10,
+            draggable: true,
+            name: 'frame'
+        });
+        layer.add(newFrame);
+        layer.draw();
+    };
+
     addItemOptions?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-item-type]');
         if (!target) return;
@@ -186,11 +207,6 @@ export default function KonvaEditor() {
     });
     cancelFrameBtn?.addEventListener('click', () => { frameDialog.style.display = 'none'; });
 
-    // --- 5. Konva Initialization ---
-    if (typeof window.Konva === 'undefined') {
-      console.error('Konva library is not loaded. Canvas features are disabled.');
-      return;
-    }
 
     try {
       // Get the parent container for sizing
@@ -509,21 +525,6 @@ export default function KonvaEditor() {
             layer.add(imageNode);
             layer.draw();
         });
-      };
-
-      const addFrame = () => {
-          const newFrame = new window.Konva.Rect({
-              x: stage.width() / 4,
-              y: stage.height() / 4,
-              width: stage.width() / 2,
-              height: stage.height() / 2,
-              stroke: '#000000',
-              strokeWidth: 10,
-              draggable: true,
-              name: 'frame'
-          });
-          layer.add(newFrame);
-          layer.draw();
       };
 
       // --- 7. Konva Dependent Event Handlers ---
