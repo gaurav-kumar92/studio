@@ -37,6 +37,7 @@ export default function KonvaEditor() {
     const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
     const addItemOptions = document.getElementById('add-item-options');
     const cancelShapeBtn = document.getElementById('cancel-shape-btn');
+    const addShapeBtn = document.getElementById('add-shape-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
     const cancelImageBtn = document.getElementById('cancel-image-btn');
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
@@ -93,6 +94,9 @@ export default function KonvaEditor() {
     const shapeThicknessControls = document.getElementById('shape-thickness-controls') as HTMLElement;
     const shapeThicknessSlider = document.getElementById('shape-thickness-slider') as HTMLInputElement;
     const shapeThicknessValue = document.getElementById('shape-thickness-value');
+    const shapeSidesControls = document.getElementById('shape-sides-controls') as HTMLElement;
+    const shapeSidesSlider = document.getElementById('shape-sides-slider') as HTMLInputElement;
+    const shapeSidesValue = document.getElementById('shape-sides-value');
 
     // Image Specific
     const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
@@ -120,6 +124,7 @@ export default function KonvaEditor() {
     let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
+    let activeShapeForAddition: string | null = null;
     
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
@@ -277,6 +282,7 @@ export default function KonvaEditor() {
               shapeDialog.style.display = 'flex';
               if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
               if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); // Hide shape selection
+              if(addShapeBtn) addShapeBtn.classList.add('hidden');
 
               const shapeColor = node.fill() || node.stroke();
               if(shapeColorPicker) shapeColorPicker.value = shapeColor;
@@ -292,6 +298,15 @@ export default function KonvaEditor() {
               } else {
                   if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
               }
+              if (shapeType === 'polygon') {
+                if(shapeSidesControls) shapeSidesControls.classList.remove('hidden');
+                const currentSides = node.sides();
+                if(shapeSidesSlider) shapeSidesSlider.value = String(currentSides);
+                if(shapeSidesValue) shapeSidesValue.textContent = String(currentSides);
+              } else {
+                if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
+              }
+
 
             } else if (node.hasName('frame')) {
                 frameDialog.style.display = 'flex';
@@ -329,12 +344,17 @@ export default function KonvaEditor() {
     const resetShapeDialog = () => {
       if(shapeDialogTitle) shapeDialogTitle.textContent = 'Add a Shape';
       if(shapeButtonsContainer) shapeButtonsContainer.classList.remove('hidden');
+      if(addShapeBtn) addShapeBtn.classList.add('hidden');
       if(shapeColorPicker) shapeColorPicker.value = '#3b82f6';
       if(colorPreviewShape) colorPreviewShape.style.backgroundColor = '#3b82f6';
       selectedColorShape = '#3b82f6';
       if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
       if(shapeThicknessSlider) shapeThicknessSlider.value = '5';
       if(shapeThicknessValue) shapeThicknessValue.textContent = '5';
+      if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
+      if(shapeSidesSlider) shapeSidesSlider.value = '6';
+      if(shapeSidesValue) shapeSidesValue.textContent = '6';
+      activeShapeForAddition = null;
     };
 
     const resetTextDialog = () => {
@@ -390,23 +410,30 @@ export default function KonvaEditor() {
     }
 
     const addFrame = () => {
-        const newFrame = new window.Konva.Rect({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            width: stage.width() / 2,
-            height: stage.height() / 2,
-            stroke: selectedColorFrame,
-            strokeWidth: Number(frameWidthSlider.value),
-            draggable: true,
-            name: 'frame'
-        });
-        layer.add(newFrame);
+      const frameWidth = Number(frameWidthSlider.value);
+      let newFrame;
+       if (selectedNode && selectedNode.hasName('frame')) {
+            selectedNode.stroke(selectedColorFrame);
+            selectedNode.strokeWidth(frameWidth);
+            newFrame = selectedNode;
+        } else {
+          newFrame = new window.Konva.Rect({
+              x: stage.width() / 4,
+              y: stage.height() / 4,
+              width: stage.width() / 2,
+              height: stage.height() / 2,
+              stroke: selectedColorFrame,
+              strokeWidth: frameWidth,
+              draggable: true,
+              name: 'frame'
+          });
+          layer.add(newFrame);
+        }
         updateLayersPanel();
         layer.draw();
         frameDialog.style.display = 'none';
         selectNode(newFrame);
     };
-    
 
     addItemOptions?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-item-type]');
@@ -425,7 +452,7 @@ export default function KonvaEditor() {
         } else if (itemType === 'image') {
             imageDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
-            addFrame();
+            frameDialog.style.display = 'flex';
         }
     });
 
@@ -676,7 +703,7 @@ export default function KonvaEditor() {
           tempText.text(char);
           let charWidth = tempText.width();
 
-          // Apply kerning factor for straight text
+          // Apply kerning for straight text
           const adjustedCharWidth = (curvatureValue < 1) ? charWidth * STRAIGHT_KERNING_FACTOR : charWidth;
 
           // Angular width of the character
@@ -760,7 +787,7 @@ export default function KonvaEditor() {
       };
 
 
-      const addShape = (type: string) => {
+      const addShape = (type: string, options: any = {}) => {
         let newShape;
         const x = stage.width() / 4;
         const y = stage.height() / 4;
@@ -787,6 +814,9 @@ export default function KonvaEditor() {
             break;
           case 'pentagon':
             newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
+            break;
+          case 'polygon':
+            newShape = new window.Konva.RegularPolygon({ x, y, sides: options.sides || 6, radius: size/2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'arrow':
             newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: thickness, draggable: true, name: 'shape', 'data-type': type });
@@ -905,7 +935,25 @@ export default function KonvaEditor() {
         const target = e.target as HTMLElement;
         const shapeType = target.closest('[data-shape]')?.getAttribute('data-shape');
         if (shapeType) {
-          addShape(shapeType);
+          if (shapeType === 'polygon') {
+            activeShapeForAddition = 'polygon';
+            shapeButtonsContainer.classList.add('hidden');
+            shapeSidesControls.classList.remove('hidden');
+            addShapeBtn.classList.remove('hidden');
+          } else {
+            addShape(shapeType);
+            shapeDialog.style.display = 'none';
+          }
+        }
+      });
+      
+      addShapeBtn?.addEventListener('click', () => {
+        if(activeShapeForAddition) {
+          let options = {};
+          if(activeShapeForAddition === 'polygon') {
+            options = { sides: Number(shapeSidesSlider.value) };
+          }
+          addShape(activeShapeForAddition, options);
           shapeDialog.style.display = 'none';
         }
       });
@@ -919,6 +967,15 @@ export default function KonvaEditor() {
                 selectedNode.strokeWidth(newThickness);
                 layer.draw();
             }
+        }
+      });
+      
+      shapeSidesSlider?.addEventListener('input', (e) => {
+        const newSides = Number((e.target as HTMLInputElement).value);
+        if(shapeSidesValue) shapeSidesValue.textContent = String(newSides);
+        if (selectedNode && selectedNode.getAttr('data-type') === 'polygon') {
+            selectedNode.sides(newSides);
+            layer.draw();
         }
       });
       
@@ -1322,6 +1379,13 @@ export default function KonvaEditor() {
                     <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" defaultValue="5" className="w-full" />
                 </div>
 
+                 <div id="shape-sides-controls" className="shape-slider-container hidden">
+                    <label htmlFor="shape-sides-slider" className="block text-sm font-medium text-gray-700">
+                        Sides (<span id="shape-sides-value">6</span>)
+                    </label>
+                    <input type="range" id="shape-sides-slider" min="3" max="12" step="1" defaultValue="6" className="w-full" />
+                </div>
+
                 <div id="shape-buttons-container" className="shape-button-container mt-4">
                     <button className="shape-btn" data-shape="rect" title="Rectangle">
                         <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
@@ -1342,12 +1406,16 @@ export default function KonvaEditor() {
                     <button className="shape-btn" data-shape="pentagon" title="Pentagon">
                         <svg viewBox="0 0 24 24"><path d="M12 2.5l9.51 6.91-3.63 11.09H6.12l-3.63-11.09L12 2.5z"/></svg>
                     </button>
+                    <button className="shape-btn" data-shape="polygon" title="Polygon">
+                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
+                    </button>
                     <button className="shape-btn" data-shape="arrow" title="Arrow">
                         <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
                     </button>
                 </div>
-                <div className="dialog-actions mt-4">
+                <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-shape-btn" className="dialog-button dialog-button-secondary">Cancel</button>
+                    <button id="add-shape-btn" className="dialog-button dialog-button-primary hidden">Add Shape</button>
                 </div>
             </div>
         </div>
@@ -1373,7 +1441,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 4.2v15.6M7.2 4.2h9.6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
