@@ -136,9 +136,112 @@ export default function KonvaEditor() {
     let selectedColorFrame = frameColorPicker.value;
     let selectedColorGlow = glowColorPicker.value;
 
-    // --- 3. UI Helper Functions ---
+    // --- 3. UI and Helper Functions (Declared after variables) ---
 
-    const updateLayersPanel = () => {
+    // Forward declare functions that are called by others before they are defined
+    let selectNode: (node: any) => void;
+    let updateLayersPanel: () => void;
+
+    const addImageToFrame = (frameGroup: any, src: string) => {
+        window.Konva.Image.fromURL(src, (imageNode: any) => {
+            const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
+            if (existingImage) {
+                existingImage.destroy();
+            }
+
+            imageNode.setAttrs({
+                name: 'frame-image',
+                draggable: true,
+            });
+
+            const frameShape = frameGroup.findOne('.frame-shape');
+            const frameBounds = frameShape.getClientRect({ relativeTo: frameGroup });
+
+            const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
+            imageNode.scale({ x: ratio, y: ratio });
+
+            imageNode.position({
+                x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
+                y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
+            });
+
+            frameGroup.add(imageNode);
+            imageNode.moveToBottom();
+            
+            // Re-apply clip function to ensure it is rendered correctly
+            const clipShape = frameGroup.findOne('.frame-shape');
+            const clipShapeForCtx = clipShape.clone({ visible: false }); // Use an invisible clone for clipping
+            frameGroup.clipFunc((ctx: any) => {
+                 clipShapeForCtx.drawScene(ctx);
+            });
+
+
+            layer.batchDraw();
+            selectNode(frameGroup); // re-select the frame to update the transformer
+        });
+    };
+
+    const addFrame = (type: string) => {
+        if (!type) return;
+        const frameWidth = Number(frameWidthSlider.value);
+        const color = selectedColorFrame;
+        const size = 150;
+
+        const group = new window.Konva.Group({
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            draggable: true,
+            name: 'frame',
+            'data-type': type,
+        });
+
+        let clipShape;
+        switch(type) {
+            case 'circle':
+                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
+                break;
+            case 'star':
+                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
+                break;
+            default: // rect
+                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
+                break;
+        }
+
+        const borderShape = clipShape.clone({
+            name: 'frame-shape',
+            fillEnabled: false,
+            stroke: color,
+            strokeWidth: frameWidth,
+        });
+        group.add(borderShape);
+
+        const clipShapeForCtx = clipShape.clone({ visible: false });
+        group.clipFunc((ctx: any) => {
+            clipShapeForCtx.drawScene(ctx);
+        });
+
+        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
+            placeholder.setAttrs({
+                name: 'frame-placeholder',
+                x: (size - 64) / 2,
+                y: (size - 64) / 2,
+                width: 64,
+                height: 64,
+            });
+            group.add(placeholder);
+            placeholder.moveToBottom();
+            layer.draw();
+        });
+        
+        layer.add(group);
+        updateLayersPanel();
+        layer.draw();
+        selectNode(group);
+        if (frameDialog) frameDialog.style.display = 'none';
+    };
+
+    updateLayersPanel = () => {
         if (!layersList) return;
         layersList.innerHTML = ''; // Clear the list
 
@@ -226,47 +329,31 @@ export default function KonvaEditor() {
         });
     };
     
-    const addImageToFrame = (frameGroup: any, src: string) => {
-        window.Konva.Image.fromURL(src, (imageNode: any) => {
-            const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
-            if (existingImage) {
-                existingImage.destroy();
-            }
+    const deselectNode = (updateLayers = true) => {
+        const transformer = stage?.findOne('Transformer');
+        if (transformer) {
+            transformer.destroy();
+        }
 
-            imageNode.setAttrs({
-                name: 'frame-image',
-                draggable: true,
-            });
+        // If the selected node was a frame, make its internal image non-draggable
+        if (selectedNode && selectedNode.hasName('frame')) {
+            const internalImage = selectedNode.findOne('.frame-image');
+            if (internalImage) internalImage.draggable(false);
+        }
 
-            const frameShape = frameGroup.findOne('.frame-shape');
-            const frameBounds = frameShape.getClientRect({ relativeTo: frameGroup });
+        selectedNode = null;
+        deleteBtn.classList.add('hidden');
+        if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
+        if (imageFiltersPanel) imageFiltersPanel.classList.add('hidden');
+        
+        if(updateLayers) {
+            updateLayersPanel();
+        }
 
-            const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
-            imageNode.scale({ x: ratio, y: ratio });
-
-            imageNode.position({
-                x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
-                y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
-            });
-
-            frameGroup.add(imageNode);
-            imageNode.moveToBottom();
-            
-            // Re-apply clip function to ensure it is rendered correctly
-            const clipShape = frameGroup.findOne('.frame-shape');
-            const clipShapeForCtx = clipShape.clone();
-            frameGroup.clipFunc((ctx: any) => {
-                 clipShapeForCtx.drawScene(ctx);
-            });
-
-
-            layer.batchDraw();
-            selectNode(frameGroup); // re-select the frame to update the transformer
-        });
+        layer?.draw();
     };
 
-
-    const selectNode = (node: any) => {
+    selectNode = (node: any) => {
         // If it's already selected, do nothing.
         if (node === selectedNode) {
             return;
@@ -396,30 +483,6 @@ export default function KonvaEditor() {
         updateLayersPanel();
         layer.draw();
     };
-
-    const deselectNode = (updateLayers = true) => {
-        const transformer = stage?.findOne('Transformer');
-        if (transformer) {
-            transformer.destroy();
-        }
-
-        // If the selected node was a frame, make its internal image non-draggable
-        if (selectedNode && selectedNode.hasName('frame')) {
-            const internalImage = selectedNode.findOne('.frame-image');
-            if (internalImage) internalImage.draggable(false);
-        }
-
-        selectedNode = null;
-        deleteBtn.classList.add('hidden');
-        if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
-        if (imageFiltersPanel) imageFiltersPanel.classList.add('hidden');
-        
-        if(updateLayers) {
-            updateLayersPanel();
-        }
-
-        layer?.draw();
-    };
     
     const resetShapeDialog = () => {
       if(shapeDialogTitle) shapeDialogTitle.textContent = 'Add a Shape';
@@ -472,68 +535,6 @@ export default function KonvaEditor() {
       // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
       if(circularTextCurvature) circularTextCurvature.value = '0';
-    };
-
-    const addFrame = (type: string) => {
-        if (!type) return;
-        const frameWidth = Number(frameWidthSlider.value);
-        const color = selectedColorFrame;
-        const size = 150;
-
-        const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            draggable: true,
-            name: 'frame',
-            'data-type': type,
-        });
-
-        let clipShape;
-        switch(type) {
-            case 'circle':
-                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
-                break;
-            case 'star':
-                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
-                break;
-            default: // rect
-                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
-                break;
-        }
-
-        const borderShape = clipShape.clone({
-            name: 'frame-shape',
-            fillEnabled: false,
-            stroke: color,
-            strokeWidth: frameWidth,
-        });
-        group.add(borderShape);
-
-        // The clipShape itself is NOT added to the group. It is only used for clipping.
-        // We use a clone of it for the clipping function to avoid transform issues.
-        const clipShapeForCtx = clipShape.clone();
-        group.clipFunc((ctx: any) => {
-            clipShapeForCtx.drawScene(ctx);
-        });
-
-        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
-            placeholder.setAttrs({
-                name: 'frame-placeholder',
-                x: (size - 64) / 2,
-                y: (size - 64) / 2,
-                width: 64,
-                height: 64,
-            });
-            group.add(placeholder);
-            placeholder.moveToBottom();
-            layer.draw();
-        });
-        
-        layer.add(group);
-        updateLayersPanel();
-        layer.draw();
-        selectNode(group);
-        if (frameDialog) frameDialog.style.display = 'none';
     };
 
 
