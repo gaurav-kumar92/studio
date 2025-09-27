@@ -96,7 +96,7 @@ export default function KonvaEditor() {
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
     // --- 2. Global State Variables ---
-    let stage: any, layer: any, canvasBackground: any, frameRect: any, tr: any; // Konva objects
+    let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
     
@@ -174,7 +174,7 @@ export default function KonvaEditor() {
         } else if (itemType === 'image') {
             imageDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
-            frameDialog.style.display = 'flex';
+            addFrame();
         }
     });
 
@@ -213,19 +213,6 @@ export default function KonvaEditor() {
         name: 'background'
       });
       layer.add(canvasBackground);
-      
-      frameRect = new window.Konva.Rect({
-          x: 0,
-          y: 0,
-          width: stage.width(),
-          height: stage.height(),
-          stroke: selectedColorFrame,
-          strokeWidth: Number(frameWidthSlider.value),
-          name: 'frame',
-          listening: false, // Don't let it be selected
-      });
-      layer.add(frameRect);
-
       layer.draw();
 
       // --- 6. Konva Dependent Functions ---
@@ -259,8 +246,6 @@ export default function KonvaEditor() {
           stage.height(newHeight);
           canvasBackground.width(newWidth);
           canvasBackground.height(newHeight);
-          frameRect.width(newWidth);
-          frameRect.height(newHeight);
           stage.draw();
       };
 
@@ -526,6 +511,21 @@ export default function KonvaEditor() {
         });
       };
 
+      const addFrame = () => {
+          const newFrame = new window.Konva.Rect({
+              x: stage.width() / 4,
+              y: stage.height() / 4,
+              width: stage.width() / 2,
+              height: stage.height() / 2,
+              stroke: '#000000',
+              strokeWidth: 10,
+              draggable: true,
+              name: 'frame'
+          });
+          layer.add(newFrame);
+          layer.draw();
+      };
+
       // --- 7. Konva Dependent Event Handlers ---
 
       // Initial resize
@@ -568,8 +568,8 @@ export default function KonvaEditor() {
       frameColorPicker?.addEventListener('input', e => {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
-          if (frameRect) {
-              frameRect.stroke(selectedColorFrame);
+          if (selectedNode && selectedNode.hasName('frame')) {
+              selectedNode.stroke(selectedColorFrame);
               layer.draw();
           }
       });
@@ -577,8 +577,8 @@ export default function KonvaEditor() {
       frameWidthSlider?.addEventListener('input', e => {
           const newWidth = Number((e.target as HTMLInputElement).value);
           if(frameWidthValue) frameWidthValue.textContent = String(newWidth);
-          if (frameRect) {
-              frameRect.strokeWidth(newWidth);
+          if (selectedNode && selectedNode.hasName('frame')) {
+              selectedNode.strokeWidth(newWidth);
               layer.draw();
           }
       });
@@ -716,7 +716,7 @@ export default function KonvaEditor() {
           return;
         }
 
-        if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText') || nodeToTransform.hasName('image')) {
+        if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText') || nodeToTransform.hasName('image') || nodeToTransform.hasName('frame')) {
           deselectNode();
 
           selectedNode = nodeToTransform;
@@ -768,6 +768,16 @@ export default function KonvaEditor() {
               if(shapeColorPicker) shapeColorPicker.value = shapeColor;
               if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
               selectedColorShape = shapeColor;
+            } else if (nodeToTransform.hasName('frame')) {
+                frameDialog.style.display = 'flex';
+                // Populate dialog with current frame properties
+                const frameColor = nodeToTransform.stroke();
+                const frameWidth = nodeToTransform.strokeWidth();
+                if (frameColorPicker) frameColorPicker.value = frameColor;
+                if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = frameColor;
+                if (frameWidthSlider) frameWidthSlider.value = String(frameWidth);
+                if (frameWidthValue) frameWidthValue.textContent = String(frameWidth);
+                selectedColorFrame = frameColor;
             }
           });
 
@@ -1039,9 +1049,9 @@ export default function KonvaEditor() {
                     </div>
                     <div className="flex-grow">
                         <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
-                            Width (<span id="frame-width-value">0</span>px)
+                            Width (<span id="frame-width-value">10</span>px)
                         </label>
-                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
+                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="10" className="w-full" />
                     </div>
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
@@ -1053,3 +1063,5 @@ export default function KonvaEditor() {
     </>
   );
 }
+
+    
