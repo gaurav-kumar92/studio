@@ -106,6 +106,10 @@ export default function KonvaEditor() {
     const alignBottomBtn = document.getElementById('align-bottom-btn');
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
+    // Layers Panel
+    const layersList = document.getElementById('layers-list') as HTMLElement;
+
+
     // --- 2. Global State Variables ---
     let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
     let selectedNode: any = null;
@@ -119,15 +123,151 @@ export default function KonvaEditor() {
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI Helper Functions ---
-    const deselectNode = () => {
-      const transformer = stage?.findOne('Transformer');
-      if (transformer) {
-        transformer.destroy();
-      }
-      selectedNode = null;
-      deleteBtn.classList.add('hidden');
-      if(objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
-      layer?.draw();
+
+    const updateLayersPanel = () => {
+        if (!layersList) return;
+        layersList.innerHTML = ''; // Clear the list
+
+        // Get all nodes except the background and transformer
+        const nodes = layer.getChildren((node: any) => {
+            return node.name() !== 'background' && node.className !== 'Transformer';
+        });
+
+        // Iterate backwards to show top layer first
+        nodes.reverse().forEach((node: any) => {
+            const li = document.createElement('li');
+            li.className = 'layer-item';
+            li.setAttribute('data-id', node.id());
+
+            let iconSvg = '';
+            let name = 'Object';
+
+            if (node.hasName('text') || node.hasName('circularText')) {
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
+                name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
+            } else if (node.hasName('shape')) {
+                const shapeType = node.getAttr('data-type');
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+                name = `Shape: ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
+            } else if (node.hasName('image')) {
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                name = 'Image';
+            } else if (node.hasName('frame')) {
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                name = 'Frame';
+            }
+
+            li.innerHTML = `${iconSvg}<span class="name">${name}</span>`;
+
+            if (node === selectedNode) {
+                li.classList.add('selected');
+            }
+
+            li.addEventListener('click', () => {
+                selectNode(node);
+            });
+
+            layersList.appendChild(li);
+        });
+    };
+
+    const selectNode = (node: any) => {
+        // If it's already selected, do nothing.
+        if (node === selectedNode) {
+            return;
+        }
+
+        // Clean up previous selection
+        deselectNode(false); // Pass false to prevent redundant layer update
+
+        selectedNode = node;
+        deleteBtn.classList.remove('hidden');
+        if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
+        if (opacitySlider) opacitySlider.value = String(selectedNode.opacity());
+        
+        tr = new window.Konva.Transformer({ rotateEnabled: true });
+        layer.add(tr);
+        tr.nodes([node]);
+
+        // Double-click handler for editing
+        node.on('dblclick dbltap', () => {
+             if (node.hasName('text') || node.hasName('circularText')) {
+              textDialog.style.display = 'flex';
+              if (dialogTitle) dialogTitle.textContent = 'Update Text';
+              if (addTextBtn) addTextBtn.textContent = 'Update';
+
+              if (node.hasName('text')) {
+                  // Populate dialog for standard text
+                  if(textInput) textInput.value = node.text();
+                  if(textFontSizeInput) textFontSizeInput.value = node.fontSize();
+                  if(textFontFamilySelect) textFontFamilySelect.value = node.fontFamily();
+                  if(textColorPicker) textColorPicker.value = node.fill();
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = node.fill();
+                  
+                  // Set curvature to 0 for standard text
+                  if(circularTextCurvature) circularTextCurvature.value = '0';
+                  if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
+
+              } else if (node.hasName('circularText')) {
+                  // Populate dialog for circular text
+                  if(textInput) textInput.value = node.getAttr('data-text');
+                  if(circularTextCurvature) circularTextCurvature.value = node.getAttr('data-curvature');
+                  if(circularTextRadius) circularTextRadius.value = node.getAttr('data-radius');
+                  if(textColorPicker) textColorPicker.value = node.getAttr('data-color');
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = node.getAttr('data-color');
+                  if(textFontFamilySelect) textFontFamilySelect.value = node.getAttr('data-font-family');
+              }
+            } else if (node.hasName('shape')) {
+              shapeDialog.style.display = 'flex';
+              if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
+              if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); // Hide shape selection
+
+              const shapeColor = node.fill() || node.stroke();
+              if(shapeColorPicker) shapeColorPicker.value = shapeColor;
+              if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
+              selectedColorShape = shapeColor;
+
+              const shapeType = node.getAttr('data-type');
+              if (shapeType === 'line' || shapeType === 'arrow') {
+                  if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
+                  const currentThickness = node.strokeWidth();
+                  if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
+                  if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
+              } else {
+                  if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
+              }
+
+            } else if (node.hasName('frame')) {
+                frameDialog.style.display = 'flex';
+                // Populate dialog with current frame properties
+                const frameColor = node.stroke();
+                const frameWidth = node.strokeWidth();
+                if (frameColorPicker) frameColorPicker.value = frameColor;
+                if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = frameColor;
+                if (frameWidthSlider) frameWidthSlider.value = String(frameWidth);
+                if (frameWidthValue) frameWidthValue.textContent = String(frameWidth);
+                selectedColorFrame = frameColor;
+            }
+        });
+
+        updateLayersPanel();
+        layer.draw();
+    };
+
+    const deselectNode = (updateLayers = true) => {
+        const transformer = stage?.findOne('Transformer');
+        if (transformer) {
+            transformer.destroy();
+        }
+        selectedNode = null;
+        deleteBtn.classList.add('hidden');
+        if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
+        
+        if(updateLayers) {
+            updateLayersPanel();
+        }
+
+        layer?.draw();
     };
     
     const resetShapeDialog = () => {
@@ -195,6 +335,7 @@ export default function KonvaEditor() {
             name: 'frame'
         });
         layer.add(newFrame);
+        updateLayersPanel();
         layer.draw();
     };
     
@@ -250,6 +391,7 @@ export default function KonvaEditor() {
         name: 'background'
       });
       layer.add(canvasBackground);
+      updateLayersPanel(); // Initial layers update
       layer.draw();
 
       // --- 6. Konva Dependent Functions ---
@@ -375,6 +517,7 @@ export default function KonvaEditor() {
         }
 
         layer.add(newText);
+        updateLayersPanel();
         layer.draw();
       };
 
@@ -496,6 +639,7 @@ export default function KonvaEditor() {
 
 
         layer.add(circularGroup);
+        updateLayersPanel();
         layer.draw();
       };
       
@@ -548,6 +692,7 @@ export default function KonvaEditor() {
             break;
         }
         if(newShape) layer.add(newShape);
+        updateLayersPanel();
         layer.draw();
       };
       
@@ -570,6 +715,7 @@ export default function KonvaEditor() {
             }
 
             layer.add(imageNode);
+            updateLayersPanel();
             layer.draw();
         });
       };
@@ -743,6 +889,7 @@ export default function KonvaEditor() {
         if (selectedNode) {
           selectedNode.destroy();
           deselectNode();
+          updateLayersPanel();
         }
       });
 
@@ -812,96 +959,17 @@ export default function KonvaEditor() {
           nodeToTransform = e.target.parent;
         }
 
-        // Don't re-select if it's already selected
-        if (nodeToTransform === selectedNode) {
-          return;
-        }
-
-        if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText') || nodeToTransform.hasName('image') || nodeToTransform.hasName('frame')) {
-          deselectNode();
-
-          selectedNode = nodeToTransform;
-          deleteBtn.classList.remove('hidden');
-          if(objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
-
-          // Update opacity slider to match selected node's opacity
-          if(opacitySlider) opacitySlider.value = selectedNode.opacity();
-
-
-          tr = new window.Konva.Transformer({ rotateEnabled: true });
-          layer.add(tr);
-          tr.nodes([nodeToTransform]);
-
-          // Open and populate dialog ONLY for text/shape objects on double click
-          nodeToTransform.on('dblclick dbltap', () => {
-            if (nodeToTransform.hasName('text') || nodeToTransform.hasName('circularText')) {
-              textDialog.style.display = 'flex';
-              if (dialogTitle) dialogTitle.textContent = 'Update Text';
-              if (addTextBtn) addTextBtn.textContent = 'Update';
-
-              if (nodeToTransform.hasName('text')) {
-                  // Populate dialog for standard text
-                  if(textInput) textInput.value = nodeToTransform.text();
-                  if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
-                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
-                  if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
-                  
-                  // Set curvature to 0 for standard text
-                  if(circularTextCurvature) circularTextCurvature.value = '0';
-                  if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
-
-              } else if (nodeToTransform.hasName('circularText')) {
-                  // Populate dialog for circular text
-                  if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
-                  if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
-                  if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
-                  if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
-                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
-              }
-            } else if (nodeToTransform.hasName('shape')) {
-              shapeDialog.style.display = 'flex';
-              if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
-              if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); // Hide shape selection
-
-              const shapeColor = nodeToTransform.fill() || nodeToTransform.stroke();
-              if(shapeColorPicker) shapeColorPicker.value = shapeColor;
-              if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
-              selectedColorShape = shapeColor;
-
-              const shapeType = nodeToTransform.getAttr('data-type');
-              if (shapeType === 'line' || shapeType === 'arrow') {
-                  if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
-                  const currentThickness = nodeToTransform.strokeWidth();
-                  if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
-                  if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
-              } else {
-                  if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
-              }
-
-            } else if (nodeToTransform.hasName('frame')) {
-                frameDialog.style.display = 'flex';
-                // Populate dialog with current frame properties
-                const frameColor = nodeToTransform.stroke();
-                const frameWidth = nodeToTransform.strokeWidth();
-                if (frameColorPicker) frameColorPicker.value = frameColor;
-                if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = frameColor;
-                if (frameWidthSlider) frameWidthSlider.value = String(frameWidth);
-                if (frameWidthValue) frameWidthValue.textContent = String(frameWidth);
-                selectedColorFrame = frameColor;
-            }
-          });
-
-
-          layer.draw();
-
-          // Update original Y position after drag ends so the slider position (50) remains center.
-          nodeToTransform.on('dragend', () => {
-            layer.draw();
-          });
+        // Don't re-select if it's already selected. Just call selectNode to ensure consistency.
+        if (nodeToTransform !== selectedNode) {
+            selectNode(nodeToTransform);
         }
       });
+      
+      // Update layers panel after drag ends.
+      stage.on('dragend', () => {
+        updateLayersPanel();
+      });
+
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
@@ -927,64 +995,73 @@ export default function KonvaEditor() {
       />
       <main>
         <div id="editor-ui">
-            <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
-            
-            <div className="relative-canvas">
-                <div id="canvas-container"></div>
+            <div className="editor-main-column">
+                <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
+                
+                <div className="relative-canvas">
+                    <div id="canvas-container"></div>
+                </div>
+                
+                <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
+                    <div className="mb-4">
+                        <label htmlFor="canvas-size" className="block text-sm font-medium text-gray-700 mb-2">Select Canvas Size</label>
+                        <select id="canvas-size" className="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="500x500">Square (500x500)</option>
+                            <option value="375x667">Phone (375x667)</option>
+                            <option value="1920x1080">HD Screen (1920x1080)</option>
+                            <option value="1366x768">Laptop (1366x768)</option>
+                            <option value="842x1191">A4 (842x1191)</option>
+                            <option value="1191x1684">A3 (1191x1684)</option>
+                            <option value="595x842">A5 (595x842)</option>
+                            <option value="1684x2384">A2 (1684x2384)</option>
+                            <option value="2384x3370">A1 (2384x3370)</option>
+                        </select>
+                    </div>
+                    <div className="mb-4">
+                        <div className="color-picker-container-inline">
+                            <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
+                            <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
+                            <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
+                        </div>
+                    </div>
+                     {/* Object Properties Panel */}
+                    <div id="object-properties" className="hidden">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
+                        <div className="alignment-controls">
+                            <button id="align-top-btn" className="align-btn" title="Align Top">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="3"></line><line x1="5" y1="5" x2="19" y2="5"></line><rect x="5" y="9" width="14" height="10" rx="2"></rect></svg>
+                            </button>
+                            <button id="align-left-btn" className="align-btn" title="Align Left">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="3" y2="12"></line><line x1="5" y1="5" x2="5" y2="19"></line><rect y="5" x="9" width="10" height="14" rx="2"></rect></svg>
+                            </button>
+                            <button id="align-center-btn" className="align-btn" title="Center on Canvas">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
+                            </button>
+                            <button id="align-right-btn" className="align-btn" title="Align Right">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="21" y2="12"></line><line x1="19" y1="5" x2="19" y2="19"></line><rect y="5" x="5" width="10" height="14" rx="2"></rect></svg>
+                            </button>
+                             <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="21"></line><line x1="5" y1="19" x2="19" y2="19"></line><rect x="5" y="5" width="14" height="10" rx="2"></rect></svg>
+                            </button>
+                        </div>
+                        <div className="opacity-controls">
+                            <label htmlFor="opacity-slider">Opacity</label>
+                            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+                        <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
+                        <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
+                        <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
+                    </div>
+                </div>
             </div>
-            
-            <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
-                <div className="mb-4">
-                    <label htmlFor="canvas-size" className="block text-sm font-medium text-gray-700 mb-2">Select Canvas Size</label>
-                    <select id="canvas-size" className="w-full p-2 border border-gray-300 rounded-md">
-                        <option value="500x500">Square (500x500)</option>
-                        <option value="375x667">Phone (375x667)</option>
-                        <option value="1920x1080">HD Screen (1920x1080)</option>
-                        <option value="1366x768">Laptop (1366x768)</option>
-                        <option value="842x1191">A4 (842x1191)</option>
-                        <option value="1191x1684">A3 (1191x1684)</option>
-                        <option value="595x842">A5 (595x842)</option>
-                        <option value="1684x2384">A2 (1684x2384)</option>
-                        <option value="2384x3370">A1 (2384x3370)</option>
-                    </select>
-                </div>
-                <div className="mb-4">
-                    <div className="color-picker-container-inline">
-                        <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
-                        <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
-                        <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
-                    </div>
-                </div>
-                 {/* Object Properties Panel */}
-                <div id="object-properties" className="hidden">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
-                    <div className="alignment-controls">
-                        <button id="align-top-btn" className="align-btn" title="Align Top">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="3"></line><line x1="5" y1="5" x2="19" y2="5"></line><rect x="5" y="9" width="14" height="10" rx="2"></rect></svg>
-                        </button>
-                        <button id="align-left-btn" className="align-btn" title="Align Left">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="3" y2="12"></line><line x1="5" y1="5" x2="5" y2="19"></line><rect y="5" x="9" width="10" height="14" rx="2"></rect></svg>
-                        </button>
-                        <button id="align-center-btn" className="align-btn" title="Center on Canvas">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
-                        </button>
-                        <button id="align-right-btn" className="align-btn" title="Align Right">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="21" y2="12"></line><line x1="19" y1="5" x2="19" y2="19"></line><rect y="5" x="5" width="10" height="14" rx="2"></rect></svg>
-                        </button>
-                         <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="21"></line><line x1="5" y1="19" x2="19" y2="19"></line><rect x="5" y="5" width="14" height="10" rx="2"></rect></svg>
-                        </button>
-                    </div>
-                    <div className="opacity-controls">
-                        <label htmlFor="opacity-slider">Opacity</label>
-                        <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
-                    </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
-                    <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
-                    <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
-                    <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
-                </div>
+
+            <div id="layers-panel">
+                <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
+                <ul id="layers-list">
+                    {/* Layer items will be dynamically inserted here */}
+                </ul>
             </div>
         </div>
 

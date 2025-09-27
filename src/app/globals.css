@@ -102,13 +102,23 @@ body {
 }
 
 #editor-ui {
-    display: flex; 
-    flex-direction: column; 
-    flex-grow: 1; 
+    display: flex;
+    flex-direction: row; /* Changed to row */
+    flex-wrap: wrap; /* Allow wrapping for responsiveness */
+    gap: 1.5rem; /* Add gap between elements */
+    flex-grow: 1;
     width: 100%;
-    max-width: 100%; 
-    min-height: 50vh; 
+    max-width: 100%;
+    min-height: 50vh;
 }
+
+.editor-main-column {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 300px; /* Minimum width for the main column */
+}
+
 
 .relative-canvas {
     position: relative;
@@ -117,14 +127,14 @@ body {
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    flex-grow: 1; 
+    flex-grow: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 300px;
     padding: 1rem; /* Added padding to ensure the container has space */
 }
-        
+
 /* This ensures the canvas itself gets the rounded corners */
 #canvas-container canvas {
     border-radius: 1rem;
@@ -147,6 +157,64 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-top: 1.5rem;
 }
+
+/* --- Layers Panel --- */
+#layers-panel {
+    width: 280px; /* Fixed width for the layers panel */
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    align-self: flex-start; /* Align to the top of the flex container */
+    max-height: 80vh; /* Set a max height */
+    display: flex;
+    flex-direction: column;
+}
+
+#layers-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto; /* Allow scrolling if layers overflow */
+    flex-grow: 1;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 0.875rem;
+}
+
+.layer-item:hover {
+    background-color: #f3f4f6;
+}
+
+.layer-item.selected {
+    background-color: #e0e7ff;
+    border-color: #4f46e5;
+    font-weight: 600;
+}
+
+.layer-item .icon {
+    margin-right: 0.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #4f46e5;
+}
+
+.layer-item .name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 .button {
     display: block;
@@ -261,7 +329,7 @@ body {
 
 .color-picker-container {
     /* Ensures the color picker input can be positioned relative to this */
-    position: relative; 
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -284,7 +352,7 @@ body {
     top: 0;
     left: 0;
     /* Make the input invisible but clickable */
-    opacity: 0; 
+    opacity: 0;
     cursor: pointer;
 }
 
