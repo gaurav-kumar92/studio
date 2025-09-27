@@ -147,8 +147,8 @@ export default function KonvaEditor() {
 
     addFrame = (type: string) => {
         if (!stage || !layer) {
-            console.error("Stage or Layer not initialized yet.");
-            return;
+          console.error("Stage or Layer not initialized yet.");
+          return;
         }
 
         if (!type) return;
@@ -616,23 +616,23 @@ export default function KonvaEditor() {
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
     
     document.querySelectorAll('[data-frame-shape]').forEach(button => {
-        button.addEventListener('click', () => {
-            try {
-                if (!stage || !layer) {
-                    console.error("Konva stage not ready yet");
-                    return;
-                }
-                console.log('Frame button clicked, attempting to create frame with type:', button.getAttribute('data-frame-shape'));
-                const shapeType = button.getAttribute('data-frame-shape');
-                if (shapeType) {
-                    addFrame(shapeType);
-                } else {
-                    console.error('Could not determine shapeType from button:', button);
-                }
-            } catch (error) {
-                console.error('An error occurred while creating the frame:', error);
-            }
-        });
+      button.addEventListener('click', () => {
+        try {
+          if (!stage || !layer) {
+              console.error("Konva stage not ready yet");
+              return;
+          }
+          console.log('Frame button clicked, attempting to create frame...');
+          const shapeType = button.getAttribute('data-frame-shape');
+          if (shapeType) {
+              addFrame(shapeType);
+          } else {
+              console.error('Could not determine shapeType from button:', button);
+          }
+        } catch (error) {
+            console.error('An error occurred while creating the frame:', error);
+        }
+      });
     });
 
 
@@ -1704,7 +1704,7 @@ export default function KonvaEditor() {
         </div>
       </main>
     </>
-  )
+  );
 }
     
 
