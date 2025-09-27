@@ -252,16 +252,16 @@ export default function KonvaEditor() {
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
             
+            // Re-apply clip function to ensure it is rendered correctly
+            const clipShape = frameGroup.findOne('.frame-shape');
+            const clipShapeForCtx = clipShape.clone();
             frameGroup.clipFunc((ctx: any) => {
-                const clipShape = frameGroup.findOne('.frame-shape');
-                // Use a clone for drawing to avoid transform issues
-                const clipShapeForCtx = clipShape.clone(); 
-                clipShapeForCtx.drawScene(ctx);
+                 clipShapeForCtx.drawScene(ctx);
             });
 
 
             layer.batchDraw();
-            selectNode(frameGroup);
+            selectNode(frameGroup); // re-select the frame to update the transformer
         });
     };
 
@@ -500,12 +500,6 @@ export default function KonvaEditor() {
                 clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
                 break;
         }
-        
-        group.clipFunc((ctx: any) => {
-            // Use a clone for drawing to avoid transform issues
-            const clipShapeForCtx = clipShape.clone(); 
-            clipShapeForCtx.drawScene(ctx);
-        });
 
         const borderShape = clipShape.clone({
             name: 'frame-shape',
@@ -513,8 +507,14 @@ export default function KonvaEditor() {
             stroke: color,
             strokeWidth: frameWidth,
         });
-
         group.add(borderShape);
+
+        // The clipShape itself is NOT added to the group. It is only used for clipping.
+        // We use a clone of it for the clipping function to avoid transform issues.
+        const clipShapeForCtx = clipShape.clone();
+        group.clipFunc((ctx: any) => {
+            clipShapeForCtx.drawScene(ctx);
+        });
 
         window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
             placeholder.setAttrs({
