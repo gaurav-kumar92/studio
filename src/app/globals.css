@@ -301,6 +301,15 @@ body {
     cursor: not-allowed;
     transform: none;
 }
+.add-item-card:disabled:hover {
+    background-color: #e5e7eb;
+    box-shadow: none;
+    transform: none;
+}
+.add-item-card[data-item-type="image"]:not(:disabled) svg {
+    color: #3b82f6; /* Example color for enabled image icon */
+}
+
 
 #object-properties {
     border-top: 1px solid #e5e7eb;

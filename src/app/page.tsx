@@ -25,50 +25,58 @@ export default function KonvaEditor() {
     // --- 1. Element References ---
     const canvasContainer = document.getElementById('canvas-container') as HTMLElement;
     
-    // New "Add Item" button and dialog
-    const addItemBtn = document.getElementById('add-item-btn');
+    // Dialogs and Controls
     const addItemDialog = document.getElementById('add-item-dialog');
-    const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
-    const addItemOptions = document.getElementById('add-item-options');
-
-
-    const addTextBtn = document.getElementById('add-text-btn');
-    const addShapeBtn = document.getElementById('add-shape-btn');
-    const canvasSizeSelect = document.getElementById('canvas-size') as HTMLSelectElement;
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
     const shapeDialog = document.getElementById('shape-dialog') as HTMLElement;
+    const imageDialog = document.getElementById('image-dialog') as HTMLElement;
+
+    // Buttons
+    const addItemBtn = document.getElementById('add-item-btn');
+    const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
+    const addItemOptions = document.getElementById('add-item-options');
     const cancelShapeBtn = document.getElementById('cancel-shape-btn');
-    const dialogTitle = document.getElementById('dialog-title');
-    const textInput = document.getElementById('text-input') as HTMLInputElement;
-    const circularTextInput = document.getElementById('circular-text-input') as HTMLInputElement;
-    const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
-    const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
-    const addBtn = document.getElementById('add-btn');
-    const cancelBtn = document.getElementById('cancel-btn');
+    const cancelTextBtn = document.getElementById('cancel-btn');
+    const cancelImageBtn = document.getElementById('cancel-image-btn');
+    const addTextBtn = document.getElementById('add-btn');
+    const addImageBtn = document.getElementById('add-image-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
-    const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
-    const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
+
+    // Canvas & Background
+    const canvasSizeSelect = document.getElementById('canvas-size') as HTMLSelectElement;
     const colorPreviewBackground = document.getElementById('color-preview-background') as HTMLElement;
+    const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
+    
+    // Text Specific
+    const dialogTitle = document.getElementById('dialog-title');
+    const textInput = document.getElementById('text-input') as HTMLInputElement;
     const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
     const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
     const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
-    const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
-    const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
+    const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
+    const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
+    const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
     const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
+    const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
     const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
     const shadowBlurSlider = document.getElementById('shadow-blur-slider') as HTMLInputElement;
     const shadowDistanceSlider = document.getElementById('shadow-distance-slider') as HTMLInputElement;
     const shadowOpacitySlider = document.getElementById('shadow-opacity-slider') as HTMLInputElement;
-    const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
-    
     const shadowBlurValue = document.getElementById('shadow-blur-value');
     const shadowDistanceValue = document.getElementById('shadow-distance-value');
     const shadowOpacityValue = document.getElementById('shadow-opacity-value');
-      
-    // New Object Properties panel
+    
+    // Shape Specific
+    const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
+    const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
+
+    // Image Specific
+    const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
+
+    // Object Properties panel
     const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
     const alignTopBtn = document.getElementById('align-top-btn');
     const alignLeftBtn = document.getElementById('align-left-btn');
@@ -101,7 +109,7 @@ export default function KonvaEditor() {
 
     const resetTextDialog = () => {
       if(dialogTitle) dialogTitle.textContent = 'Add Text';
-      if(addBtn) addBtn.textContent = 'Add';
+      if(addTextBtn) addTextBtn.textContent = 'Add';
       
       // Reset standard text fields
       if(textInput) textInput.value = '';
@@ -137,18 +145,23 @@ export default function KonvaEditor() {
         const itemType = target.getAttribute('data-item-type');
         addItemDialog.style.display = 'none'; // Close the main add dialog
 
+        deselectNode(); // Deselect any active object
         if (itemType === 'text') {
-            deselectNode();
             resetTextDialog();
             textDialog.style.display = 'flex';
         } else if (itemType === 'shape') {
-            deselectNode();
             shapeDialog.style.display = 'flex';
+        } else if (itemType === 'image') {
+            imageDialog.style.display = 'flex';
         }
     });
 
     cancelShapeBtn?.addEventListener('click', () => { shapeDialog.style.display = 'none'; });
-    cancelBtn?.addEventListener('click', () => { textDialog.style.display = 'none'; });
+    cancelTextBtn?.addEventListener('click', () => { textDialog.style.display = 'none'; });
+    cancelImageBtn?.addEventListener('click', () => { 
+        imageDialog.style.display = 'none';
+        if (imageFileInput) imageFileInput.value = ''; // Reset file input
+    });
 
     // --- 5. Konva Initialization ---
     if (typeof window.Konva === 'undefined') {
@@ -442,6 +455,29 @@ export default function KonvaEditor() {
         if(newShape) layer.add(newShape);
         layer.draw();
       };
+      
+      const addImageFromSource = (src: string) => {
+        window.Konva.Image.fromURL(src, (imageNode: any) => {
+            imageNode.setAttrs({
+                x: stage.width() / 4,
+                y: stage.height() / 4,
+                draggable: true,
+                name: 'image'
+            });
+
+            // Scale image to fit if it's too large
+            const maxWidth = stage.width() * 0.5;
+            const maxHeight = stage.height() * 0.5;
+            const ratio = Math.min(maxWidth / imageNode.width(), maxHeight / imageNode.height());
+            if (ratio < 1) {
+                imageNode.width(imageNode.width() * ratio);
+                imageNode.height(imageNode.height() * ratio);
+            }
+
+            layer.add(imageNode);
+            layer.draw();
+        });
+      };
 
       // --- 7. Konva Dependent Event Handlers ---
 
@@ -471,7 +507,7 @@ export default function KonvaEditor() {
       });
 
       // Unified Text Dialog Add/Update
-      addBtn?.addEventListener('click', handleAddOrUpdateText);
+      addTextBtn?.addEventListener('click', handleAddOrUpdateText);
 
 
       // Shape Dialog Selection
@@ -483,6 +519,21 @@ export default function KonvaEditor() {
           shapeDialog.style.display = 'none';
         }
       });
+      
+      // Image Dialog Add
+      addImageBtn?.addEventListener('click', () => {
+          if (imageFileInput?.files && imageFileInput.files.length > 0) {
+              const file = imageFileInput.files[0];
+              const reader = new FileReader();
+              reader.onload = () => {
+                  addImageFromSource(reader.result as string);
+                  imageDialog.style.display = 'none';
+                  imageFileInput.value = ''; // Reset file input
+              };
+              reader.readAsDataURL(file);
+          }
+      });
+
 
       // Text Format Handlers
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
@@ -587,7 +638,7 @@ export default function KonvaEditor() {
           return;
         }
 
-        if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText')) {
+        if (nodeToTransform.hasName('text') || nodeToTransform.hasName('shape') || nodeToTransform.hasName('circularText') || nodeToTransform.hasName('image')) {
           deselectNode();
 
           selectedNode = nodeToTransform;
@@ -606,7 +657,7 @@ export default function KonvaEditor() {
           if (nodeToTransform.hasName('text') || nodeToTransform.hasName('circularText')) {
             textDialog.style.display = 'flex';
             if (dialogTitle) dialogTitle.textContent = 'Update Text';
-            if (addBtn) addBtn.textContent = 'Update';
+            if (addTextBtn) addTextBtn.textContent = 'Update';
 
             if (nodeToTransform.hasName('text')) {
                 // Populate dialog for standard text
@@ -697,19 +748,19 @@ export default function KonvaEditor() {
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                     <div className="alignment-controls">
                         <button id="align-top-btn" className="align-btn" title="Align Top">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2H2"/><path d="M7 10v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10H7z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="3" y2="3"></line><rect height="8" width="12" x="6" y="7"></rect><line x1="21" x2="3" y1="21" y2="21"></line></svg>
                         </button>
                         <button id="align-left-btn" className="align-btn" title="Align Left">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 2v20"/><path d="M14 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="3" y1="21" y2="3"></line><rect height="12" width="8" x="7" y="6"></rect><line x1="21" x2="21" y1="21" y2="3"></line></svg>
                         </button>
                         <button id="align-center-btn" className="align-btn" title="Center">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20"/><path d="M17 7h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/><path d="M8 7H7a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/></svg>
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"></line><line x1="12" x2="12" y1="3" y2="21"></line></svg>
                         </button>
                         <button id="align-right-btn" className="align-btn" title="Align Right">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2v20"/><path d="M10 7H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="21" y1="21" y2="3"></line><rect height="12" width="8" x="9" y="6"></rect><line x1="3" x2="3" y1="21" y2="3"></line></svg>
                         </button>
                          <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22h20"/><path d="M7 14V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v10H7z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="21" y2="21"></line><rect height="8" width="12" x="6" y="9"></rect><line x1="3" x2="21" y1="3" y2="3"></line></svg>
                         </button>
                     </div>
                     <div className="opacity-controls">
@@ -731,7 +782,7 @@ export default function KonvaEditor() {
                 <div className="dialog-content">
                     <h3 id="dialog-title" className="text-lg font-semibold mb-4">Add Text</h3>
                     
-                    <div id="text-content">
+                    <div id="text-content" style={{maxHeight: '70vh', overflowY: 'auto'}}>
                         <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
                         <div id="text-controls" className="mt-4 pt-4 relative">
                            <div className="color-picker-container-inline">
@@ -820,6 +871,21 @@ export default function KonvaEditor() {
                 </div>
             </div>
         </div>
+        
+        {/* Image Dialog */}
+        <div id="image-dialog" className="dialog-overlay">
+            <div className="dialog">
+                <h3 className="text-lg font-semibold mb-4">Add an Image</h3>
+                <div className="mb-4">
+                    <label htmlFor="image-file-input" className="block text-sm font-medium text-gray-700 mb-2">Upload from computer</label>
+                    <input type="file" id="image-file-input" className="w-full p-2 border rounded-md text-sm" accept="image/png, image/jpeg, image/gif, image/svg+xml" />
+                </div>
+                <div className="dialog-actions flex justify-end gap-2 mt-4">
+                    <button id="cancel-image-btn" className="dialog-button dialog-button-secondary">Cancel</button>
+                    <button id="add-image-btn" className="dialog-button dialog-button-primary">Add Image</button>
+                </div>
+            </div>
+        </div>
 
         {/* Add Item Dialog */}
         <div id="add-item-dialog" className="dialog-overlay">
@@ -834,8 +900,8 @@ export default function KonvaEditor() {
                         <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                         <span>Shape</span>
                     </button>
-                     <button className="add-item-card" data-item-type="image" disabled>
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                     <button className="add-item-card" data-item-type="image">
+                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                         <span>Image</span>
                     </button>
                      <button className="add-item-card" data-item-type="qr" disabled>
@@ -853,5 +919,3 @@ export default function KonvaEditor() {
     </>
   );
 }
-
-    
