@@ -138,12 +138,12 @@ export default function KonvaEditor() {
     // --- 3. UI and Helper Functions (Declared after variables) ---
 
     // Forward declare functions that are called by others before they are defined
-    let selectNode: (node: any) => void;
-    let updateLayersPanel: () => void;
-    let addImageToFrame: (frameGroup: any, src: string) => void;
     let addFrame: (type: string) => void;
-    let deselectNode: (updateLayers?: boolean) => void;
     let addImageFromSource: (src: string) => void;
+    let addImageToFrame: (frameGroup: any, src: string) => void;
+    let updateLayersPanel: () => void;
+    let selectNode: (node: any) => void;
+    let deselectNode: (updateLayers?: boolean) => void;
 
     addFrame = (type: string) => {
         if (!type) return;
@@ -228,7 +228,7 @@ export default function KonvaEditor() {
             updateLayersPanel();
             layer.draw();
         });
-      };
+    };
 
     addImageToFrame = (frameGroup: any, src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
@@ -609,12 +609,19 @@ export default function KonvaEditor() {
     });
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
     
-    // Correct way to handle frame button clicks
+    // Correct way to handle frame button clicks with error handling
     document.querySelectorAll('[data-frame-shape]').forEach(button => {
         button.addEventListener('click', () => {
-            const shapeType = button.getAttribute('data-frame-shape');
-            if (shapeType) {
-                addFrame(shapeType);
+            try {
+                console.log('Frame button clicked, attempting to create frame with type:', button.getAttribute('data-frame-shape'));
+                const shapeType = button.getAttribute('data-frame-shape');
+                if (shapeType) {
+                    addFrame(shapeType);
+                } else {
+                    console.error('Could not determine shapeType from button:', button);
+                }
+            } catch (error) {
+                console.error('An error occurred while creating the frame:', error);
             }
         });
     });
@@ -1690,3 +1697,4 @@ export default function KonvaEditor() {
     </>
   )
 }
+
