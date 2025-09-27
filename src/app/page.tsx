@@ -42,7 +42,6 @@ export default function KonvaEditor() {
     const cancelImageBtn = document.getElementById('cancel-image-btn');
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addTextBtn = document.getElementById('add-btn');
-    const addImageBtn = document.getElementById('add-image-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
 
@@ -143,7 +142,33 @@ export default function KonvaEditor() {
     let updateLayersPanel: () => void;
     let addImageToFrame: (frameGroup: any, src: string) => void;
     let addFrame: (type: string) => void;
+    let deselectNode: (updateLayers?: boolean) => void;
+    let addImageFromSource: (src: string) => void;
 
+
+    addImageFromSource = (src: string) => {
+        window.Konva.Image.fromURL(src, (imageNode: any) => {
+            imageNode.setAttrs({
+                x: stage.width() / 4,
+                y: stage.height() / 4,
+                draggable: true,
+                name: 'image'
+            });
+
+            // Scale image to fit if it's too large
+            const maxWidth = stage.width() * 0.5;
+            const maxHeight = stage.height() * 0.5;
+            const ratio = Math.min(maxWidth / imageNode.width(), maxHeight / imageNode.height());
+            if (ratio < 1) {
+                imageNode.width(imageNode.width() * ratio);
+                imageNode.height(imageNode.height() * ratio);
+            }
+
+            layer.add(imageNode);
+            updateLayersPanel();
+            layer.draw();
+        });
+      };
 
     addImageToFrame = (frameGroup: any, src: string) => {
         window.Konva.Image.fromURL(src, (imageNode: any) => {
@@ -332,7 +357,7 @@ export default function KonvaEditor() {
         });
     };
     
-    const deselectNode = (updateLayers = true) => {
+    deselectNode = (updateLayers = true) => {
         const transformer = stage?.findOne('Transformer');
         if (transformer) {
             transformer.destroy();
@@ -957,30 +982,6 @@ export default function KonvaEditor() {
         layer.draw();
       };
       
-      const addImageFromSource = (src: string) => {
-        window.Konva.Image.fromURL(src, (imageNode: any) => {
-            imageNode.setAttrs({
-                x: stage.width() / 4,
-                y: stage.height() / 4,
-                draggable: true,
-                name: 'image'
-            });
-
-            // Scale image to fit if it's too large
-            const maxWidth = stage.width() * 0.5;
-            const maxHeight = stage.height() * 0.5;
-            const ratio = Math.min(maxWidth / imageNode.width(), maxHeight / imageNode.height());
-            if (ratio < 1) {
-                imageNode.width(imageNode.width() * ratio);
-                imageNode.height(imageNode.height() * ratio);
-            }
-
-            layer.add(imageNode);
-            updateLayersPanel();
-            layer.draw();
-        });
-      };
-      
       const applyFilter = (filter: any) => {
           if (!selectedNode || !selectedNode.hasName('image')) return;
           selectedNode.cache(); // Cache is required for filters
@@ -1129,14 +1130,14 @@ export default function KonvaEditor() {
       });
       
       // Image Dialog Add
-      addImageBtn?.addEventListener('click', () => {
-          if (imageFileInput?.files && imageFileInput.files.length > 0) {
+      imageFileInput?.addEventListener('change', () => {
+          if (imageFileInput.files && imageFileInput.files.length > 0) {
               const file = imageFileInput.files[0];
               const reader = new FileReader();
               reader.onload = () => {
                   addImageFromSource(reader.result as string);
-                  imageDialog.style.display = 'none';
-                  if (imageFileInput) imageFileInput.value = ''; // Reset file input
+                  if (imageDialog) imageDialog.style.display = 'none';
+                  imageFileInput.value = ''; // Reset file input
               };
               reader.readAsDataURL(file);
           }
@@ -1508,7 +1509,7 @@ export default function KonvaEditor() {
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
                                         </button>
                                         <button data-align="center" className="p-2 border rounded-md" title="Align Center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
+                                            <svg xmlns="http://wwwLAGUNA_CORAL.svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
                                         </button>
                                         <button data-align="right" className="p-2 border rounded-md" title="Align Right">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
@@ -1617,7 +1618,6 @@ export default function KonvaEditor() {
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-image-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                    <button id="add-image-btn" className="dialog-button dialog-button-primary">Add Image</button>
                 </div>
             </div>
         </div>
@@ -1690,3 +1690,5 @@ export default function KonvaEditor() {
     </>
   )
 }
+
+    
