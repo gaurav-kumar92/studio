@@ -451,6 +451,15 @@ export default function KonvaEditor() {
           case 'line':
             newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: 5, draggable: true, name: 'shape' });
             break;
+          case 'star':
+            newShape = new window.Konva.Star({ x, y, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: color, draggable: true, name: 'shape' });
+            break;
+          case 'pentagon':
+            newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape' });
+            break;
+          case 'arrow':
+            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: 4, draggable: true, name: 'shape' });
+            break;
         }
         if(newShape) layer.add(newShape);
         layer.draw();
@@ -574,20 +583,20 @@ export default function KonvaEditor() {
 
         switch (position) {
             case 'top':
-                selectedNode.y(0);
+                selectedNode.y(0 + box.height / 2 - box.y);
                 break;
             case 'left':
-                selectedNode.x(0);
+                selectedNode.x(0 + box.width / 2 - box.x);
                 break;
             case 'center':
-                selectedNode.x(stage.width() / 2 - box.width / 2);
-                selectedNode.y(stage.height() / 2 - box.height / 2);
+                selectedNode.x(stage.width() / 2);
+                selectedNode.y(stage.height() / 2);
                 break;
             case 'right':
-                selectedNode.x(stage.width() - box.width);
+                selectedNode.x(stage.width() - box.width / 2 - (selectedNode.x() - box.x));
                 break;
             case 'bottom':
-                selectedNode.y(stage.height() - box.height);
+                selectedNode.y(stage.height() - box.height / 2 - (selectedNode.y() - box.y));
                 break;
         }
         layer.draw();
@@ -653,34 +662,37 @@ export default function KonvaEditor() {
           layer.add(tr);
           tr.nodes([nodeToTransform]);
 
-          // Open and populate dialog ONLY for text objects
-          if (nodeToTransform.hasName('text') || nodeToTransform.hasName('circularText')) {
-            textDialog.style.display = 'flex';
-            if (dialogTitle) dialogTitle.textContent = 'Update Text';
-            if (addTextBtn) addTextBtn.textContent = 'Update';
+          // Open and populate dialog ONLY for text objects on double click
+          nodeToTransform.on('dblclick dbltap', () => {
+            if (nodeToTransform.hasName('text') || nodeToTransform.hasName('circularText')) {
+              textDialog.style.display = 'flex';
+              if (dialogTitle) dialogTitle.textContent = 'Update Text';
+              if (addTextBtn) addTextBtn.textContent = 'Update';
 
-            if (nodeToTransform.hasName('text')) {
-                // Populate dialog for standard text
-                if(textInput) textInput.value = nodeToTransform.text();
-                if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
-                if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
-                if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
-                if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
-                
-                // Set curvature to 0 for standard text
-                if(circularTextCurvature) circularTextCurvature.value = '0';
-                if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
+              if (nodeToTransform.hasName('text')) {
+                  // Populate dialog for standard text
+                  if(textInput) textInput.value = nodeToTransform.text();
+                  if(textFontSizeInput) textFontSizeInput.value = nodeToTransform.fontSize();
+                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.fontFamily();
+                  if(textColorPicker) textColorPicker.value = nodeToTransform.fill();
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.fill();
+                  
+                  // Set curvature to 0 for standard text
+                  if(circularTextCurvature) circularTextCurvature.value = '0';
+                  if(circularTextRadius) circularTextRadius.value = '150'; // Default radius
 
-            } else if (nodeToTransform.hasName('circularText')) {
-                // Populate dialog for circular text
-                if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
-                if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
-                if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
-                if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
-                if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
-                if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
+              } else if (nodeToTransform.hasName('circularText')) {
+                  // Populate dialog for circular text
+                  if(textInput) textInput.value = nodeToTransform.getAttr('data-text');
+                  if(circularTextCurvature) circularTextCurvature.value = nodeToTransform.getAttr('data-curvature');
+                  if(circularTextRadius) circularTextRadius.value = nodeToTransform.getAttr('data-radius');
+                  if(textColorPicker) textColorPicker.value = nodeToTransform.getAttr('data-color');
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToTransform.getAttr('data-color');
+                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToTransform.getAttr('data-font-family');
+              }
             }
-          }
+          });
+
 
           layer.draw();
 
@@ -748,19 +760,19 @@ export default function KonvaEditor() {
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                     <div className="alignment-controls">
                         <button id="align-top-btn" className="align-btn" title="Align Top">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="3" y2="3"></line><rect height="8" width="12" x="6" y="7"></rect><line x1="21" x2="3" y1="21" y2="21"></line></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="3" x2="3" y2="3"/><rect x="6" y="7" width="12" height="8" rx="1"/><line x1="21" y1="21" x2="3" y2="21"/></svg>
                         </button>
                         <button id="align-left-btn" className="align-btn" title="Align Left">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="3" y1="21" y2="3"></line><rect height="12" width="8" x="7" y="6"></rect><line x1="21" x2="21" y1="21" y2="3"></line></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="21" x2="3" y2="3"/><rect x="7" y="6" width="8" height="12" rx="1"/><line x1="21" y1="21" x2="21" y2="3"/></svg>
                         </button>
-                        <button id="align-center-btn" className="align-btn" title="Center">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"></line><line x1="12" x2="12" y1="3" y2="21"></line></svg>
+                        <button id="align-center-btn" className="align-btn" title="Center on Canvas">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
                         </button>
                         <button id="align-right-btn" className="align-btn" title="Align Right">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="21" y1="21" y2="3"></line><rect height="12" width="8" x="9" y="6"></rect><line x1="3" x2="3" y1="21" y2="3"></line></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="21" x2="21" y2="3"/><rect x="9" y="6" width="8" height="12" rx="1"/><line x1="3" y1="21" x2="3" y2="3"/></svg>
                         </button>
                          <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="21" y2="21"></line><rect height="8" width="12" x="6" y="9"></rect><line x1="3" x2="21" y1="3" y2="3"></line></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><rect x="6" y="9" width="12" height="8" rx="1"/><line x1="3" y1="3" x2="21" y2="3"/></svg>
                         </button>
                     </div>
                     <div className="opacity-controls">
@@ -861,10 +873,28 @@ export default function KonvaEditor() {
                 </div>
 
                 <div className="shape-button-container mt-4">
-                    <button id="rect-btn" className="button-primary p-2 rounded-lg font-semibold" data-shape="rect">Rect</button>
-                    <button id="circle-btn" className="button-primary p-2 rounded-lg font-semibold" data-shape="circle">Circle</button>
-                    <button id="triangle-btn" className="button-primary p-2 rounded-lg font-semibold" data-shape="triangle">Tri</button>
-                    <button id="line-btn" className="button-primary p-2 rounded-lg font-semibold" data-shape="line">Line</button>
+                    <button className="shape-btn" data-shape="rect" title="Rectangle">
+                        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-shape="circle" title="Circle">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
+    
+                    </button>
+                    <button className="shape-btn" data-shape="triangle" title="Triangle">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-shape="line" title="Line">
+                       <svg viewBox="0 0 24 24"><path d="M3 12h18"/></svg>
+                    </button>
+                    <button className="shape-btn" data-shape="star" title="Star">
+                        <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-shape="pentagon" title="Pentagon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2.5l9.51 6.91-3.63 11.09H6.12l-3.63-11.09L12 2.5z"/></svg>
+                    </button>
+                    <button className="shape-btn" data-shape="arrow" title="Arrow">
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                    </button>
                 </div>
                 <div className="dialog-actions mt-4">
                     <button id="cancel-shape-btn" className="dialog-button dialog-button-secondary">Cancel</button>
