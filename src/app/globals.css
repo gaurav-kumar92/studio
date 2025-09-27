@@ -103,14 +103,19 @@ body {
 
 #editor-ui {
     display: flex;
-    flex-direction: row; /* Changed to row */
-    flex-wrap: wrap; /* Allow wrapping for responsiveness */
-    gap: 1.5rem; /* Add gap between elements */
-    flex-grow: 1;
+    flex-direction: column; /* Default to column for mobile */
+    gap: 1.5rem;
     width: 100%;
     max-width: 100%;
-    min-height: 50vh;
 }
+
+@media (min-width: 1024px) { /* Apply row layout on larger screens */
+    #editor-ui {
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+}
+
 
 .editor-main-column {
     display: flex;
@@ -160,16 +165,25 @@ body {
 
 /* --- Layers Panel --- */
 #layers-panel {
-    width: 280px; /* Fixed width for the layers panel */
+    width: 100%; /* Full width on mobile */
     background-color: #fff;
     padding: 1.5rem;
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    align-self: flex-start; /* Align to the top of the flex container */
-    max-height: 80vh; /* Set a max height */
+    max-height: 50vh; /* Adjust max height for mobile */
     display: flex;
     flex-direction: column;
+    flex-shrink: 0; /* Prevent shrinking on flex containers */
 }
+
+@media (min-width: 1024px) { /* Apply fixed width on larger screens */
+    #layers-panel {
+        width: 280px;
+        align-self: flex-start;
+        max-height: 80vh;
+    }
+}
+
 
 #layers-list {
     list-style: none;
@@ -468,3 +482,6 @@ body {
     text-align: left;
     margin-bottom: 0.5rem;
 }
+
+
+    
