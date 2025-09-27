@@ -386,3 +386,15 @@ body {
 #opacity-slider {
     width: 100%;
 }
+
+.shape-slider-container {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.shape-slider-container label {
+    display: block;
+    text-align: left;
+    margin-bottom: 0.5rem;
+}
+

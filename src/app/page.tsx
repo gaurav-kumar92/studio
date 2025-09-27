@@ -76,6 +76,9 @@ export default function KonvaEditor() {
     const shapeButtonsContainer = document.getElementById('shape-buttons-container');
     const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
     const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
+    const shapeThicknessControls = document.getElementById('shape-thickness-controls') as HTMLElement;
+    const shapeThicknessSlider = document.getElementById('shape-thickness-slider') as HTMLInputElement;
+    const shapeThicknessValue = document.getElementById('shape-thickness-value');
 
     // Image Specific
     const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
@@ -124,6 +127,9 @@ export default function KonvaEditor() {
       if(shapeColorPicker) shapeColorPicker.value = '#3b82f6';
       if(colorPreviewShape) colorPreviewShape.style.backgroundColor = '#3b82f6';
       selectedColorShape = '#3b82f6';
+      if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
+      if(shapeThicknessSlider) shapeThicknessSlider.value = '5';
+      if(shapeThicknessValue) shapeThicknessValue.textContent = '5';
     };
 
     const resetTextDialog = () => {
@@ -162,7 +168,7 @@ export default function KonvaEditor() {
       console.error('Konva library is not loaded. Canvas features are disabled.');
       return;
     }
-    
+
     const addFrame = () => {
         const newFrame = new window.Konva.Rect({
             x: stage.width() / 4,
@@ -177,6 +183,7 @@ export default function KonvaEditor() {
         layer.add(newFrame);
         layer.draw();
     };
+    
 
     addItemOptions?.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-item-type]');
@@ -479,25 +486,25 @@ export default function KonvaEditor() {
 
         switch (type) {
           case 'rect':
-            newShape = new window.Konva.Rect({ x, y, width: size, height: size, fill: color, draggable: true, name: 'shape' });
+            newShape = new window.Konva.Rect({ x, y, width: size, height: size, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'circle':
-            newShape = new window.Konva.Circle({ x, y, radius: size / 2, fill: color, draggable: true, name: 'shape' });
+            newShape = new window.Konva.Circle({ x, y, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'triangle':
-            newShape = new window.Konva.RegularPolygon({ x, y, sides: 3, radius: size / 2, fill: color, draggable: true, name: 'shape' });
+            newShape = new window.Konva.RegularPolygon({ x, y, sides: 3, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'line':
-            newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: 5, draggable: true, name: 'shape' });
+            newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: 5, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'star':
-            newShape = new window.Konva.Star({ x, y, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: color, draggable: true, name: 'shape' });
+            newShape = new window.Konva.Star({ x, y, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'pentagon':
-            newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape' });
+            newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
             break;
           case 'arrow':
-            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: 4, draggable: true, name: 'shape' });
+            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: 4, draggable: true, name: 'shape', 'data-type': type });
             break;
         }
         if(newShape) layer.add(newShape);
@@ -548,7 +555,8 @@ export default function KonvaEditor() {
         
         // If we're editing a shape, update its color live
         if (selectedNode && selectedNode.hasName('shape')) {
-            if (selectedNode.name() === 'line' || selectedNode.name() === 'arrow') {
+            const shapeType = selectedNode.getAttr('data-type');
+            if (shapeType === 'line' || shapeType === 'arrow') {
                 selectedNode.stroke(selectedColorShape);
             } else {
                 selectedNode.fill(selectedColorShape);
@@ -596,6 +604,18 @@ export default function KonvaEditor() {
         if (shapeType) {
           addShape(shapeType);
           shapeDialog.style.display = 'none';
+        }
+      });
+
+      shapeThicknessSlider?.addEventListener('input', (e) => {
+        const newThickness = Number((e.target as HTMLInputElement).value);
+        if(shapeThicknessValue) shapeThicknessValue.textContent = String(newThickness);
+        if (selectedNode && selectedNode.hasName('shape')) {
+            const shapeType = selectedNode.getAttr('data-type');
+            if (shapeType === 'line' || shapeType === 'arrow') {
+                selectedNode.strokeWidth(newThickness);
+                layer.draw();
+            }
         }
       });
       
@@ -769,6 +789,17 @@ export default function KonvaEditor() {
               if(shapeColorPicker) shapeColorPicker.value = shapeColor;
               if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
               selectedColorShape = shapeColor;
+
+              const shapeType = nodeToTransform.getAttr('data-type');
+              if (shapeType === 'line' || shapeType === 'arrow') {
+                  if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
+                  const currentThickness = nodeToTransform.strokeWidth();
+                  if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
+                  if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
+              } else {
+                  if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
+              }
+
             } else if (nodeToTransform.hasName('frame')) {
                 frameDialog.style.display = 'flex';
                 // Populate dialog with current frame properties
@@ -849,19 +880,19 @@ export default function KonvaEditor() {
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                     <div className="alignment-controls">
                         <button id="align-top-btn" className="align-btn" title="Align Top">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="3" y1="3" y2="3"/><rect x="7" y="7" width="10" height="14" rx="1"/><path d="M12 7V3"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14"/><rect x="7" y="7" width="10" height="14" rx="2"/><path d="M12 7V3"/></svg>
                         </button>
                         <button id="align-left-btn" className="align-btn" title="Align Left">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="3" y1="21" y2="3"/><rect x="7" y="7" width="14" height="10" rx="1"/><path d="M7 12H3"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><rect x="7" y="7" width="14" height="10" rx="2"/><path d="M7 12H3"/></svg>
                         </button>
                         <button id="align-center-btn" className="align-btn" title="Center on Canvas">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
                         </button>
                         <button id="align-right-btn" className="align-btn" title="Align Right">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="21" y1="21" y2="3"/><rect x="3" y="7" width="14" height="10" rx="1"/><path d="M17 12h4"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 5v14"/><rect x="3" y="7" width="14" height="10" rx="2"/><path d="M17 12h4"/></svg>
                         </button>
                          <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="21" y2="21"/><rect x="7" y="3" width="10" height="14" rx="1"/><path d="M12 17v4"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 21h14"/><rect x="7" y="3" width="10" height="14" rx="2"/><path d="M12 17v4"/></svg>
                         </button>
                     </div>
                     <div className="opacity-controls">
@@ -961,6 +992,13 @@ export default function KonvaEditor() {
                     <input type="color" id="shape-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                 </div>
 
+                <div id="shape-thickness-controls" className="shape-slider-container hidden">
+                    <label htmlFor="shape-thickness-slider" className="block text-sm font-medium text-gray-700">
+                        Thickness (<span id="shape-thickness-value">5</span>px)
+                    </label>
+                    <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" defaultValue="5" className="w-full" />
+                </div>
+
                 <div id="shape-buttons-container" className="shape-button-container mt-4">
                     <button className="shape-btn" data-shape="rect" title="Rectangle">
                         <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
@@ -973,7 +1011,7 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="line" title="Line">
-                       <svg viewBox="0 0 24 24"><path d="M3 12h18"/></svg>
+                       <svg viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M3 12h18"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="star" title="Star">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -982,7 +1020,7 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24"><path d="M12 2.5l9.51 6.91-3.63 11.09H6.12l-3.63-11.09L12 2.5z"/></svg>
                     </button>
                     <button className="shape-btn" data-shape="arrow" title="Arrow">
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                        <svg viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
                     </button>
                 </div>
                 <div className="dialog-actions mt-4">
@@ -1012,7 +1050,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M17 6.1H7v11.8h10V6.1zM12 6.1v11.8"/><path d="M15.4 12H8.6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
@@ -1064,7 +1102,3 @@ export default function KonvaEditor() {
     </>
   );
 }
-
-    
-
-    
