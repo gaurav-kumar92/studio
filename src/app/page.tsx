@@ -475,6 +475,7 @@ export default function KonvaEditor() {
     };
 
     const addFrame = (type: string) => {
+        if (!type) return;
         const frameWidth = Number(frameWidthSlider.value);
         const color = selectedColorFrame;
         const size = 150;
@@ -506,8 +507,7 @@ export default function KonvaEditor() {
             clipShapeForCtx.drawScene(ctx);
         });
 
-        const borderShape = clipShape.clone();
-        borderShape.setAttrs({
+        const borderShape = clipShape.clone({
             name: 'frame-shape',
             fillEnabled: false,
             stroke: color,
@@ -1643,8 +1643,7 @@ export default function KonvaEditor() {
                      <button className="add-item-card" data-item-type="qr" disabled>
                         <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
                         <span>QR Code</span>
-                    </button>
-                </div>
+                    </button>                </div>
                 <div className="dialog-actions mt-6">
                     <button id="cancel-add-item-btn" className="dialog-button dialog-button-secondary">Cancel</button>
                 </div>
