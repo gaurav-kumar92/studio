@@ -241,7 +241,7 @@ export default function KonvaEditor() {
             });
 
             const frameShape = frameGroup.findOne('.frame-shape');
-            const frameBounds = frameShape.getClientRect();
+            const frameBounds = frameShape.getClientRect({relativeTo: frameGroup});
 
             // Scale image to fill the frame
             const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
@@ -370,20 +370,22 @@ export default function KonvaEditor() {
 
             } else if (node.hasName('frame')) {
                 // When a frame is double-clicked, open the image file dialog
-                const handleFileSelect = () => {
-                    if (imageFileInput.files && imageFileInput.files.length > 0) {
-                        const file = imageFileInput.files[0];
+                const handleFileSelect = (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.files && target.files.length > 0) {
+                        const file = target.files[0];
                         const reader = new FileReader();
                         reader.onload = () => {
                             addImageToFrame(node, reader.result as string);
-                            if (imageFileInput) imageFileInput.value = ''; // Reset file input
+                            if (imageFileInput) imageFileInput.value = ''; // Reset file input to allow re-uploading the same file
                         };
                         reader.readAsDataURL(file);
                     }
-                    // Clean up the event listener to prevent it from firing multiple times
-                    imageFileInput.removeEventListener('change', handleFileSelect);
+                    // The 'change' event will only fire once, no need to remove it here as we are replacing it next time
                 };
-                imageFileInput.addEventListener('change', handleFileSelect);
+                
+                // Replace any old listener with a new one
+                imageFileInput.onchange = handleFileSelect;
                 imageFileInput.click();
             }
         });
@@ -488,7 +490,6 @@ export default function KonvaEditor() {
         const frameWidth = Number(frameWidthSlider.value);
         const color = selectedColorFrame;
         const size = 150;
-        let clipShape;
 
         const group = new window.Konva.Group({
             x: stage.width() / 4,
@@ -496,10 +497,8 @@ export default function KonvaEditor() {
             draggable: true,
             name: 'frame',
             'data-type': type,
-            // The clipping function is defined on the group
             clipFunc: (ctx: any) => {
-                // The drawing commands for the clipping shape are executed here
-                // relative to the group's origin (0,0).
+                ctx.beginPath();
                 switch (type) {
                     case 'circle':
                         ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
@@ -507,7 +506,6 @@ export default function KonvaEditor() {
                     case 'star':
                         const innerRadius = size / 4;
                         const outerRadius = size / 2;
-                        ctx.beginPath();
                         ctx.moveTo(size / 2, size / 2 - outerRadius);
                         for (let i = 0; i < 5; i++) {
                             ctx.lineTo(
@@ -519,30 +517,28 @@ export default function KonvaEditor() {
                                 size / 2 - Math.sin((54 + i * 72) / 180 * Math.PI) * innerRadius
                             );
                         }
-                        ctx.closePath();
                         break;
                     default: // rect
                         ctx.rect(0, 0, size, size);
                         break;
                 }
+                ctx.closePath();
             }
         });
-
-        // The visible border shape is added to the group
+        
         let borderShape;
         switch (type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
                 break;
             default: // rect
-                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, stroke: color, strokeWidth: frameWidth });
+                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
                 break;
         }
 
-        borderShape.name('frame-shape');
         group.add(borderShape);
 
         // Add a placeholder icon
@@ -1713,6 +1709,8 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
 
