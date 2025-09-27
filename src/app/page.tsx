@@ -609,14 +609,15 @@ export default function KonvaEditor() {
     });
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
     
-    frameButtonsContainer?.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).closest('[data-frame-shape]');
-        if (target) {
-            const shapeType = target.getAttribute('data-frame-shape');
-            if (shapeType) addFrame(shapeType);
-        }
+    // Correct way to handle frame button clicks
+    document.querySelectorAll('[data-frame-shape]').forEach(button => {
+        button.addEventListener('click', () => {
+            const shapeType = button.getAttribute('data-frame-shape');
+            if (shapeType) {
+                addFrame(shapeType);
+            }
+        });
     });
-
 
 
     try {
@@ -1689,5 +1690,3 @@ export default function KonvaEditor() {
     </>
   )
 }
-
-    
