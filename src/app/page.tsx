@@ -70,6 +70,12 @@ export default function KonvaEditor() {
     const shadowBlurValue = document.getElementById('shadow-blur-value');
     const shadowDistanceValue = document.getElementById('shadow-distance-value');
     const shadowOpacityValue = document.getElementById('shadow-opacity-value');
+    const glowBtn = document.getElementById('glow-btn') as HTMLElement;
+    const glowControls = document.getElementById('glow-controls') as HTMLElement;
+    const glowBlurSlider = document.getElementById('glow-blur-slider') as HTMLInputElement;
+    const glowOpacitySlider = document.getElementById('glow-opacity-slider') as HTMLInputElement;
+    const glowBlurValue = document.getElementById('glow-blur-value');
+    const glowOpacityValue = document.getElementById('glow-opacity-value');
     
     // Shape Specific
     const shapeDialogTitle = document.getElementById('shape-dialog-title');
@@ -148,6 +154,8 @@ export default function KonvaEditor() {
       underlineBtn.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
       if(shadowControls) shadowControls.classList.add('hidden');
+      glowBtn?.classList.remove('active');
+      if(glowControls) glowControls.classList.add('hidden');
 
       // Reset circular/curvature text fields
       if(circularTextRadius) circularTextRadius.value = '150';
@@ -288,16 +296,32 @@ export default function KonvaEditor() {
         
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
+          selectedNode.shadowEnabled(true);
           selectedNode.shadowColor('#000000');
           selectedNode.shadowBlur(Number(shadowBlurSlider.value));
           selectedNode.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
           selectedNode.shadowOpacity(Number(shadowOpacitySlider.value));
         } else {
-          selectedNode.shadowColor('');
-          selectedNode.shadowBlur(0);
-          selectedNode.shadowOffset({ x: 0, y: 0 });
-          selectedNode.shadowOpacity(0);
+            // Only disable shadow if glow is also disabled
+            if (!glowBtn?.classList.contains('active')) {
+                selectedNode.shadowEnabled(false);
+            }
         }
+        
+        const isGlowActive = glowBtn?.classList.contains('active');
+        if (isGlowActive) {
+            selectedNode.shadowEnabled(true);
+            selectedNode.shadowColor(selectedNode.fill()); // Glow color is text color
+            selectedNode.shadowBlur(Number(glowBlurSlider.value));
+            selectedNode.shadowOffset({ x: 0, y: 0 }); // No offset for glow
+            selectedNode.shadowOpacity(Number(glowOpacitySlider.value));
+        } else {
+            // Only disable shadow if shadow is also disabled
+            if (!dropShadowBtn?.classList.contains('active')) {
+                selectedNode.shadowEnabled(false);
+            }
+        }
+
         layer.draw();
       };
 
@@ -325,13 +349,23 @@ export default function KonvaEditor() {
         newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
         newText.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
         
-        // Apply shadow if active
+        newText.shadowEnabled(false);
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
+          newText.shadowEnabled(true);
           newText.shadowColor('#000000');
           newText.shadowBlur(Number(shadowBlurSlider.value));
           newText.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
           newText.shadowOpacity(Number(shadowOpacitySlider.value));
+        }
+
+        const isGlowActive = glowBtn?.classList.contains('active');
+        if (isGlowActive) {
+            newText.shadowEnabled(true);
+            newText.shadowColor(color);
+            newText.shadowBlur(Number(glowBlurSlider.value));
+            newText.shadowOffset({ x: 0, y: 0 });
+            newText.shadowOpacity(Number(glowOpacitySlider.value));
         }
 
         layer.add(newText);
@@ -547,6 +581,14 @@ export default function KonvaEditor() {
       textColorPicker?.addEventListener('input', e => {
         selectedColorText = (e.target as HTMLInputElement).value;
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
+        if(selectedNode) {
+          selectedNode.fill(selectedColorText);
+           // If glow is active, update its color too
+          if (glowBtn?.classList.contains('active')) {
+              selectedNode.shadowColor(selectedColorText);
+          }
+          layer.draw();
+        }
       });
       
       shapeColorPicker?.addEventListener('input', e => {
@@ -642,6 +684,10 @@ export default function KonvaEditor() {
       // Shadow Controls
       dropShadowBtn?.addEventListener('click', () => {
         dropShadowBtn.classList.toggle('active');
+        if (dropShadowBtn.classList.contains('active')) {
+          glowBtn.classList.remove('active');
+          glowControls.classList.add('hidden');
+        }
         shadowControls.classList.toggle('hidden', !dropShadowBtn.classList.contains('active'));
         updateSelectedTextStyle();
       });
@@ -656,6 +702,26 @@ export default function KonvaEditor() {
       });
       shadowOpacitySlider?.addEventListener('input', () => {
         if(shadowOpacityValue) shadowOpacityValue.textContent = shadowOpacitySlider.value;
+        updateSelectedTextStyle();
+      });
+
+      // Glow Controls
+      glowBtn?.addEventListener('click', () => {
+        glowBtn.classList.toggle('active');
+        if (glowBtn.classList.contains('active')) {
+          dropShadowBtn.classList.remove('active');
+          shadowControls.classList.add('hidden');
+        }
+        glowControls.classList.toggle('hidden', !glowBtn.classList.contains('active'));
+        updateSelectedTextStyle();
+      });
+      
+      glowBlurSlider?.addEventListener('input', () => {
+        if(glowBlurValue) glowBlurValue.textContent = glowBlurSlider.value;
+        updateSelectedTextStyle();
+      });
+      glowOpacitySlider?.addEventListener('input', () => {
+        if(glowOpacityValue) glowOpacityValue.textContent = glowOpacitySlider.value;
         updateSelectedTextStyle();
       });
         
@@ -880,19 +946,19 @@ export default function KonvaEditor() {
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                     <div className="alignment-controls">
                         <button id="align-top-btn" className="align-btn" title="Align Top">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14"/><rect x="7" y="7" width="10" height="14" rx="2"/><path d="M12 7V3"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="3"></line><line x1="5" y1="5" x2="19" y2="5"></line><rect x="5" y="9" width="14" height="10" rx="2"></rect></svg>
                         </button>
                         <button id="align-left-btn" className="align-btn" title="Align Left">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><rect x="7" y="7" width="14" height="10" rx="2"/><path d="M7 12H3"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="3" y2="12"></line><line x1="5" y1="5" x2="5" y2="19"></line><rect y="5" x="9" width="10" height="14" rx="2"></rect></svg>
                         </button>
                         <button id="align-center-btn" className="align-btn" title="Center on Canvas">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
                         </button>
                         <button id="align-right-btn" className="align-btn" title="Align Right">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 5v14"/><rect x="3" y="7" width="14" height="10" rx="2"/><path d="M17 12h4"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="21" y2="12"></line><line x1="19" y1="5" x2="19" y2="19"></line><rect y="5" x="5" width="10" height="14" rx="2"></rect></svg>
                         </button>
                          <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 21h14"/><rect x="7" y="3" width="10" height="14" rx="2"/><path d="M12 17v4"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="21"></line><line x1="5" y1="19" x2="19" y2="19"></line><rect x="5" y="5" width="14" height="10" rx="2"></rect></svg>
                         </button>
                     </div>
                     <div className="opacity-controls">
@@ -961,6 +1027,7 @@ export default function KonvaEditor() {
                                     <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
                                     <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
                                     <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
+                                    <button id="glow-btn" className="p-2 border rounded-md shadow-sm">Glow</button>
                                 </div>
                             </div>
                             <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
@@ -970,6 +1037,12 @@ export default function KonvaEditor() {
                                 <input type="range" id="shadow-distance-slider" min="0" max="20" defaultValue="5" />
                                 <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
                                 <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
+                            </div>
+                             <div id="glow-controls" className="flex flex-col gap-2 mt-4 hidden">
+                                <label className="block text-sm font-medium text-gray-700">Glow Blur (Current: <span id="glow-blur-value">10</span>)</label>
+                                <input type="range" id="glow-blur-slider" min="0" max="20" defaultValue="10" />
+                                <label className="block text-sm font-medium text-gray-700">Glow Opacity (Current: <span id="glow-opacity-value">0.7</span>)</label>
+                                <input type="range" id="glow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.7" />
                             </div>
                         </div>
                     </div>
@@ -1050,7 +1123,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M5 4h14M12 4v16"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
