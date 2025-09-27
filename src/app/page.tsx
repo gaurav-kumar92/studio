@@ -62,6 +62,7 @@ export default function KonvaEditor() {
     const boldBtn = document.getElementById('bold-btn') as HTMLElement;
     const italicBtn = document.getElementById('italic-btn') as HTMLElement;
     const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
+    const strikethroughBtn = document.getElementById('strikethrough-btn') as HTMLElement;
     const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
     const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
     const shadowBlurSlider = document.getElementById('shadow-blur-slider') as HTMLInputElement;
@@ -350,6 +351,7 @@ export default function KonvaEditor() {
       boldBtn.classList.remove('active');
       italicBtn.classList.remove('active');
       underlineBtn.classList.remove('active');
+      strikethroughBtn?.classList.remove('active');
       dropShadowBtn?.classList.remove('active');
       if(shadowControls) shadowControls.classList.add('hidden');
       glowBtn?.classList.remove('active');
@@ -393,14 +395,16 @@ export default function KonvaEditor() {
             y: stage.height() / 4,
             width: stage.width() / 2,
             height: stage.height() / 2,
-            stroke: '#000000',
-            strokeWidth: 10,
+            stroke: selectedColorFrame,
+            strokeWidth: Number(frameWidthSlider.value),
             draggable: true,
             name: 'frame'
         });
         layer.add(newFrame);
         updateLayersPanel();
         layer.draw();
+        frameDialog.style.display = 'none';
+        selectNode(newFrame);
     };
     
 
@@ -421,7 +425,7 @@ export default function KonvaEditor() {
         } else if (itemType === 'image') {
             imageDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
-            frameDialog.style.display = 'flex';
+            addFrame();
         }
     });
 
@@ -503,8 +507,15 @@ export default function KonvaEditor() {
 
         const isBold = boldBtn.classList.contains('active');
         const isItalic = italicBtn.classList.contains('active');
+        const isUnderline = underlineBtn.classList.contains('active');
+        const isStrikethrough = strikethroughBtn.classList.contains('active');
+        
+        let decorations = [];
+        if (isUnderline) decorations.push('underline');
+        if (isStrikethrough) decorations.push('line-through');
+
         selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
-        selectedNode.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
+        selectedNode.textDecoration(decorations.join(' '));
         
         // Advanced properties
         selectedNode.letterSpacing(Number(letterSpacingSlider.value));
@@ -575,8 +586,15 @@ export default function KonvaEditor() {
         // Apply styles
         const isBold = boldBtn.classList.contains('active');
         const isItalic = italicBtn.classList.contains('active');
+        const isUnderline = underlineBtn.classList.contains('active');
+        const isStrikethrough = strikethroughBtn.classList.contains('active');
+        
+        let decorations = [];
+        if (isUnderline) decorations.push('underline');
+        if (isStrikethrough) decorations.push('line-through');
+
         newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
-        newText.textDecoration(underlineBtn.classList.contains('active') ? 'underline' : '');
+        newText.textDecoration(decorations.join(' '));
         
         newText.shadowEnabled(false);
         const isShadowActive = dropShadowBtn?.classList.contains('active');
@@ -922,7 +940,16 @@ export default function KonvaEditor() {
       // Text Format Handlers
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
-      underlineBtn?.addEventListener('click', () => { underlineBtn.classList.toggle('active'); updateSelectedTextStyle(); });
+      underlineBtn?.addEventListener('click', () => { 
+        underlineBtn.classList.toggle('active'); 
+        if(underlineBtn.classList.contains('active')) strikethroughBtn.classList.remove('active');
+        updateSelectedTextStyle(); 
+      });
+      strikethroughBtn?.addEventListener('click', () => { 
+        strikethroughBtn.classList.toggle('active');
+        if(strikethroughBtn.classList.contains('active')) underlineBtn.classList.remove('active');
+        updateSelectedTextStyle(); 
+      });
       
       // Advanced Text Handlers
       letterSpacingSlider?.addEventListener('input', updateSelectedTextStyle);
@@ -1215,6 +1242,7 @@ export default function KonvaEditor() {
                                     <button id="bold-btn" className="p-2 border rounded-md font-bold">B</button>
                                     <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
                                     <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
+                                    <button id="strikethrough-btn" className="p-2 border rounded-md line-through">S</button>
                                     <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
                                     <button id="glow-btn" className="p-2 border rounded-md shadow-sm">Glow</button>
                                 </div>
@@ -1345,7 +1373,7 @@ export default function KonvaEditor() {
                 <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
                 <div id="add-item-options" className="grid grid-cols-2 gap-4">
                     <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 4.2v15.6M7.2 4.2h9.6"/></svg>
                         <span>Text</span>
                     </button>
                     <button className="add-item-card" data-item-type="shape">
