@@ -43,6 +43,7 @@ export default function KonvaEditor() {
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addTextBtn = document.getElementById('add-btn');
     const addImageBtn = document.getElementById('add-image-btn');
+    const addFrameBtn = document.getElementById('add-frame-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
 
@@ -115,6 +116,8 @@ export default function KonvaEditor() {
     const alignRightBtn = document.getElementById('align-right-btn');
     const alignBottomBtn = document.getElementById('align-bottom-btn');
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
+    const imageFiltersPanel = document.getElementById('image-filters-panel');
+
 
     // Layers Panel
     const layersList = document.getElementById('layers-list') as HTMLElement;
@@ -236,6 +239,15 @@ export default function KonvaEditor() {
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
         if (opacitySlider) opacitySlider.value = String(selectedNode.opacity());
         
+        // Show/hide image filters panel
+        if (imageFiltersPanel) {
+            if (selectedNode.hasName('image')) {
+                imageFiltersPanel.classList.remove('hidden');
+            } else {
+                imageFiltersPanel.classList.add('hidden');
+            }
+        }
+        
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
         tr.nodes([node]);
@@ -333,6 +345,7 @@ export default function KonvaEditor() {
         selectedNode = null;
         deleteBtn.classList.add('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
+        if (imageFiltersPanel) imageFiltersPanel.classList.add('hidden');
         
         if(updateLayers) {
             updateLayersPanel();
@@ -463,6 +476,7 @@ export default function KonvaEditor() {
         if (imageFileInput) imageFileInput.value = ''; // Reset file input
     });
     cancelFrameBtn?.addEventListener('click', () => { frameDialog.style.display = 'none'; });
+    addFrameBtn?.addEventListener('click', addFrame);
 
 
     try {
@@ -850,6 +864,14 @@ export default function KonvaEditor() {
             layer.draw();
         });
       };
+      
+      const applyFilter = (filter: any) => {
+          if (!selectedNode || !selectedNode.hasName('image')) return;
+          selectedNode.cache(); // Cache is required for filters
+          selectedNode.filters(filter ? [filter] : []);
+          layer.draw();
+      };
+
 
       // --- 7. Konva Dependent Event Handlers ---
 
@@ -937,9 +959,14 @@ export default function KonvaEditor() {
         if (shapeType) {
           if (shapeType === 'polygon') {
             activeShapeForAddition = 'polygon';
-            shapeButtonsContainer.classList.add('hidden');
-            shapeSidesControls.classList.remove('hidden');
-            addShapeBtn.classList.remove('hidden');
+            if (shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden');
+            if (shapeSidesControls) shapeSidesControls.classList.remove('hidden');
+            if (addShapeBtn) addShapeBtn.classList.remove('hidden');
+          } else if (shapeType === 'line' || shapeType === 'arrow') {
+            activeShapeForAddition = shapeType;
+            if (shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden');
+            if (shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
+            if (addShapeBtn) addShapeBtn.classList.remove('hidden');
           } else {
             addShape(shapeType);
             shapeDialog.style.display = 'none';
@@ -987,7 +1014,7 @@ export default function KonvaEditor() {
               reader.onload = () => {
                   addImageFromSource(reader.result as string);
                   imageDialog.style.display = 'none';
-                  imageFileInput.value = ''; // Reset file input
+                  if (imageFileInput) imageFileInput.value = ''; // Reset file input
               };
               reader.readAsDataURL(file);
           }
@@ -999,7 +1026,7 @@ export default function KonvaEditor() {
       italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
       underlineBtn?.addEventListener('click', () => { 
         underlineBtn.classList.toggle('active'); 
-        if(underlineBtn.classList.contains('active')) strikethroughBtn.classList.remove('active');
+        if(underlineBtn.classList.contains('active') && strikethroughBtn) strikethroughBtn.classList.remove('active');
         updateSelectedTextStyle(); 
       });
       strikethroughBtn?.addEventListener('click', () => { 
@@ -1017,7 +1044,7 @@ export default function KonvaEditor() {
           if (!button) return;
 
           // Remove active class from all buttons and add to the clicked one
-          textAlignContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          if(textAlignContainer) textAlignContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
           button.classList.add('active');
           updateSelectedTextStyle();
       });
@@ -1028,9 +1055,9 @@ export default function KonvaEditor() {
         dropShadowBtn.classList.toggle('active');
         if (dropShadowBtn.classList.contains('active')) {
           glowBtn.classList.remove('active');
-          glowControls.classList.add('hidden');
+          if(glowControls) glowControls.classList.add('hidden');
         }
-        shadowControls.classList.toggle('hidden', !dropShadowBtn.classList.contains('active'));
+        if(shadowControls) shadowControls.classList.toggle('hidden', !dropShadowBtn.classList.contains('active'));
         updateSelectedTextStyle();
       });
 
@@ -1052,9 +1079,9 @@ export default function KonvaEditor() {
         glowBtn.classList.toggle('active');
         if (glowBtn.classList.contains('active')) {
           dropShadowBtn.classList.remove('active');
-          shadowControls.classList.add('hidden');
+          if(shadowControls) shadowControls.classList.add('hidden');
         }
-        glowControls.classList.toggle('hidden', !glowBtn.classList.contains('active'));
+        if(glowControls) glowControls.classList.toggle('hidden', !glowBtn.classList.contains('active'));
         updateSelectedTextStyle();
       });
       
@@ -1082,20 +1109,20 @@ export default function KonvaEditor() {
 
         switch (position) {
             case 'top':
-                selectedNode.y(0 + box.height / 2 - box.y);
+                selectedNode.y(selectedNode.y() - box.y);
                 break;
             case 'left':
-                selectedNode.x(0 + box.width / 2 - box.x);
+                selectedNode.x(selectedNode.x() - box.x);
                 break;
             case 'center':
                 selectedNode.x(stage.width() / 2);
                 selectedNode.y(stage.height() / 2);
                 break;
             case 'right':
-                selectedNode.x(stage.width() - box.width / 2 - (selectedNode.x() - box.x));
+                selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
                 break;
             case 'bottom':
-                selectedNode.y(stage.height() - box.height / 2 - (selectedNode.y() - box.y));
+                selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
                 break;
         }
         layer.draw();
@@ -1112,6 +1139,34 @@ export default function KonvaEditor() {
         const newOpacity = parseFloat((e.target as HTMLInputElement).value);
         selectedNode.opacity(newOpacity);
         layer.draw();
+      });
+
+      // Image Filter Handlers
+      imageFiltersPanel?.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const button = target.closest('.filter-btn');
+          if (!button) return;
+
+          // Remove active class from all filter buttons
+          imageFiltersPanel.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+
+          const filterType = button.getAttribute('data-filter');
+          if (filterType === 'none') {
+              applyFilter(null);
+          } else {
+              button.classList.add('active');
+              switch (filterType) {
+                  case 'grayscale':
+                      applyFilter(window.Konva.Filters.Grayscale);
+                      break;
+                  case 'sepia':
+                      applyFilter(window.Konva.Filters.Sepia);
+                      break;
+                  case 'invert':
+                      applyFilter(window.Konva.Filters.Invert);
+                      break;
+              }
+          }
       });
 
 
@@ -1229,6 +1284,16 @@ export default function KonvaEditor() {
                         <div className="opacity-controls">
                             <label htmlFor="opacity-slider">Opacity</label>
                             <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
+                        </div>
+                         {/* Image Filters Panel */}
+                        <div id="image-filters-panel" className="hidden">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4">Image Filters</h4>
+                            <div className="filter-buttons-container">
+                                <button className="filter-btn" data-filter="grayscale">Grayscale</button>
+                                <button className="filter-btn" data-filter="sepia">Sepia</button>
+                                <button className="filter-btn" data-filter="invert">Invert</button>
+                                <button className="filter-btn" data-filter="none">Reset</button>
+                            </div>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
@@ -1486,6 +1551,7 @@ export default function KonvaEditor() {
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
+                    <button id="add-frame-btn" className="dialog-button dialog-button-primary">Add/Update Frame</button>
                 </div>
             </div>
         </div>
@@ -1495,3 +1561,4 @@ export default function KonvaEditor() {
 }
 
     
+
