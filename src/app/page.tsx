@@ -43,7 +43,6 @@ export default function KonvaEditor() {
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addTextBtn = document.getElementById('add-btn');
     const addImageBtn = document.getElementById('add-image-btn');
-    const addFrameBtn = document.getElementById('add-frame-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
 
@@ -249,9 +248,10 @@ export default function KonvaEditor() {
 
             // Center image within the frame initially
             imageNode.position({
-                x: (frameBounds.width - imageNode.width() * ratio) / 2,
-                y: (frameBounds.height - imageNode.height() * ratio) / 2
+                x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
+                y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
             });
+
 
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
@@ -377,15 +377,17 @@ export default function KonvaEditor() {
                         const reader = new FileReader();
                         reader.onload = () => {
                             addImageToFrame(node, reader.result as string);
-                            if (imageFileInput) imageFileInput.value = ''; // Reset file input to allow re-uploading the same file
                         };
                         reader.readAsDataURL(file);
+                        // Reset input to allow selecting the same file again
+                        target.value = '';
                     }
-                    // The 'change' event will only fire once, no need to remove it here as we are replacing it next time
+                    // Remove the listener to prevent memory leaks
+                    target.removeEventListener('change', handleFileSelect);
                 };
-                
-                // Replace any old listener with a new one
-                imageFileInput.onchange = handleFileSelect;
+
+                // Add a fresh event listener each time
+                imageFileInput.addEventListener('change', handleFileSelect, { once: true });
                 imageFileInput.click();
             }
         });
@@ -506,9 +508,9 @@ export default function KonvaEditor() {
                     case 'star':
                         const innerRadius = size / 4;
                         const outerRadius = size / 2;
-                        ctx.moveTo(size / 2, size / 2 - outerRadius);
+                        ctx.moveTo(size / 2, 0);
                         for (let i = 0; i < 5; i++) {
-                            ctx.lineTo(
+                             ctx.lineTo(
                                 size / 2 + Math.cos((18 + i * 72) / 180 * Math.PI) * outerRadius,
                                 size / 2 - Math.sin((18 + i * 72) / 180 * Math.PI) * outerRadius
                             );
@@ -529,13 +531,13 @@ export default function KonvaEditor() {
         let borderShape;
         switch (type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
+                borderShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
+                borderShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
                 break;
             default: // rect
-                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, stroke: color, strokeWidth: frameWidth, name: 'frame-shape' });
+                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, name: 'frame-shape', fillEnabled: false, stroke: color, strokeWidth: frameWidth });
                 break;
         }
 
@@ -1680,9 +1682,9 @@ export default function KonvaEditor() {
                     </div>
                     <div className="flex-grow">
                         <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
-                            Width (<span id="frame-width-value">10</span>px)
+                            Width (<span id="frame-width-value">0</span>px)
                         </label>
-                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="10" className="w-full" />
+                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
                     </div>
                 </div>
                 <div id="frame-buttons-container" className="shape-button-container mt-4">
