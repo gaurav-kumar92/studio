@@ -142,112 +142,68 @@ export default function KonvaEditor() {
 
     // Forward declare functions that are called by others before they are defined
     let addFrame: (type: string) => void;
-    let addImageToFrame: (frameGroup: any, src: string) => void;
     let updateLayersPanel: () => void;
     let selectNode: (node: any) => void;
     let deselectNode: (updateLayers?: boolean) => void;
 
     addFrame = (type: string) => {
-        try {
-            if (!stage || !layer) {
-                console.error("Stage or Layer not initialized yet.");
-                return;
-            }
-            if (!type) return;
-            const frameWidth = Number(frameWidthSlider.value);
-            const color = selectedColorFrame;
-            const size = 150;
-    
-            let frameShape;
-            const x = stage.width() / 4;
-            const y = stage.height() / 4;
-            
-            switch (type) {
-                case 'circle':
-                    frameShape = new window.Konva.Circle({
-                        x,
-                        y,
-                        radius: size / 2
-                    });
-                    break;
-                case 'star':
-                    frameShape = new window.Konva.Star({
-                        x,
-                        y,
-                        numPoints: 5,
-                        innerRadius: size / 4,
-                        outerRadius: size / 2
-                    });
-                    break;
-                default:
-                    frameShape = new window.Konva.Rect({
-                        x,
-                        y,
-                        width: size,
-                        height: size,
-                        offsetX: size/2,
-                        offsetY: size/2
-                    });
-                    break;
-            }
-
-            frameShape.setAttrs({
-                name: 'frame',
-                'data-type': type,
-                draggable: true,
-                fillEnabled: false,
-                stroke: color,
-                strokeWidth: frameWidth,
-            });
-            layer.add(frameShape);
-            
-            updateLayersPanel();
-            layer.draw();
-            selectNode(frameShape);
-            if (frameDialog) frameDialog.style.display = 'none';
-            
-        } catch (error) {
-            console.error("Failed to create frame:", error);
+        if (!stage || !layer) {
+            console.error("Stage or Layer not initialized yet.");
+            return;
         }
-    };
+        if (!type) return;
 
-    addImageToFrame = (frameGroup: any, src: string) => {
-        window.Konva.Image.fromURL(src, (imageNode: any) => {
-            const existingImage = frameGroup.findOne('.frame-image') || frameGroup.findOne('.frame-placeholder');
-            if (existingImage) {
-                existingImage.destroy();
-            }
+        const frameWidth = Number(frameWidthSlider.value);
+        const color = selectedColorFrame;
+        const size = 150;
+        const x = stage.width() / 4;
+        const y = stage.height() / 4;
 
-            imageNode.setAttrs({
-                name: 'frame-image',
-                draggable: true, // Initially draggable to position it
-            });
+        let frameShape;
 
-            const frameShape = frameGroup.findOne('.frame-shape');
-            const frameBounds = frameShape.getClientRect({ relativeTo: frameGroup });
+        switch (type) {
+            case 'circle':
+                frameShape = new window.Konva.Circle({
+                    x,
+                    y,
+                    radius: size / 2,
+                });
+                break;
+            case 'star':
+                frameShape = new window.Konva.Star({
+                    x,
+                    y,
+                    numPoints: 5,
+                    innerRadius: size / 4,
+                    outerRadius: size / 2,
+                });
+                break;
+            default: // rect
+                frameShape = new window.Konva.Rect({
+                    x,
+                    y,
+                    width: size,
+                    height: size,
+                    offsetX: size / 2,
+                    offsetY: size / 2,
+                });
+                break;
+        }
 
-            // Fit the image to cover the frame's bounds
-            const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
-            imageNode.scale({ x: ratio, y: ratio });
-
-            // Center the image within the frame bounds
-            imageNode.position({
-                x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
-                y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
-            });
-            
-            frameGroup.add(imageNode);
-            imageNode.moveToBottom();
-
-            // Re-apply clip function to ensure it affects the new image
-            frameGroup.clipFunc((ctx: any) => {
-               const shape = frameGroup.findOne('.frame-shape');
-               shape._sceneFunc(ctx);
-            });
-
-            layer.batchDraw();
-            selectNode(frameGroup); 
+        frameShape.setAttrs({
+            name: 'frame',
+            'data-type': type,
+            draggable: true,
+            fillEnabled: false,
+            stroke: color,
+            strokeWidth: frameWidth,
         });
+
+        layer.add(frameShape);
+        updateLayersPanel();
+        layer.draw();
+        selectNode(frameShape);
+        if (frameDialog) frameDialog.style.display = 'none';
     };
     
     updateLayersPanel = () => {
@@ -339,11 +295,6 @@ export default function KonvaEditor() {
             tr.destroy();
             tr = null;
         }
-
-        if (selectedNode && selectedNode.hasName('frame')) {
-            const internalImage = selectedNode.findOne('.frame-image');
-            if (internalImage) internalImage.draggable(false);
-        }
         
         selectedNode = null;
         
@@ -372,7 +323,7 @@ export default function KonvaEditor() {
         if (opacitySlider) opacitySlider.value = String(selectedNode.opacity() ?? 1);
         
         if (imageFiltersPanel) {
-            if (selectedNode.hasName('image') || (selectedNode.hasName('frame') && selectedNode.findOne('.frame-image'))) {
+            if (selectedNode.hasName('image')) {
                 imageFiltersPanel.classList.remove('hidden');
             } else {
                 imageFiltersPanel.classList.add('hidden');
@@ -381,15 +332,7 @@ export default function KonvaEditor() {
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
-
-        if (node.hasName('frame-image')) {
-            node.draggable(true);
-            tr.nodes([node]);
-        } else if (node.hasName('frame')) {
-            tr.nodes([node]);
-        } else {
-            tr.nodes([node]);
-        }
+        tr.nodes([node]);
         
         // Remove previous listeners to avoid duplicates
         node.off('dblclick dbltap');
@@ -599,20 +542,9 @@ export default function KonvaEditor() {
     
     document.querySelectorAll('[data-frame-shape]').forEach(button => {
         button.addEventListener('click', () => {
-            try {
-                if (!stage || !layer) {
-                    console.error("Konva stage not ready yet");
-                    return;
-                }
-                console.log('Frame button clicked, attempting to create frame...');
-                const shapeType = button.getAttribute('data-frame-shape');
-                if (shapeType) {
-                    addFrame(shapeType);
-                } else {
-                    console.error('Could not determine shapeType from button:', button);
-                }
-            } catch (error) {
-                console.error('An error occurred while creating the frame:', error);
+            const shapeType = button.getAttribute('data-frame-shape');
+            if (shapeType) {
+                addFrame(shapeType);
             }
         });
     });
@@ -956,10 +888,7 @@ export default function KonvaEditor() {
       
       const applyFilter = (filter: any) => {
           let nodeToFilter = selectedNode;
-          if (selectedNode && selectedNode.hasName('frame')) {
-            nodeToFilter = selectedNode.findOne('.frame-image');
-          }
-          if (!nodeToFilter || (!nodeToFilter.hasName('image') && !nodeToFilter.hasName('frame-image'))) return;
+          if (!nodeToFilter || !nodeToFilter.hasName('image')) return;
 
           nodeToFilter.cache(); 
           nodeToFilter.filters(filter ? [filter] : []);
@@ -1025,11 +954,8 @@ export default function KonvaEditor() {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
           if (selectedNode && selectedNode.hasName('frame')) {
-              const border = selectedNode.findOne('.frame-shape');
-              if (border) {
-                  border.stroke(selectedColorFrame);
-                  layer.draw();
-              }
+              selectedNode.stroke(selectedColorFrame);
+              layer.draw();
           }
       });
 
@@ -1037,11 +963,8 @@ export default function KonvaEditor() {
           const newWidth = Number((e.target as HTMLInputElement).value);
           if(frameWidthValue) frameWidthValue.textContent = String(newWidth);
           if (selectedNode && selectedNode.hasName('frame')) {
-              const border = selectedNode.findOne('.frame-shape');
-              if (border) {
-                  border.strokeWidth(newWidth);
-                  layer.draw();
-              }
+              selectedNode.strokeWidth(newWidth);
+              layer.draw();
           }
       });
 
@@ -1263,11 +1186,8 @@ export default function KonvaEditor() {
         }
 
         let nodeToSelect = e.target;
-
-        if (e.target.getParent()?.hasName('frame')) {
-            nodeToSelect = e.target.getParent();
-        }
-        else if (e.target.parent?.hasName('circularText')) {
+        
+        if (e.target.parent?.hasName('circularText')) {
           nodeToSelect = e.target.parent;
         }
 
