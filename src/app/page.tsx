@@ -182,17 +182,17 @@ export default function KonvaEditor() {
     
             const borderShape = clipShape.clone({
                 name: 'frame-shape',
+                visible: true,
                 fillEnabled: false,
                 stroke: color,
                 strokeWidth: frameWidth,
             });
             group.add(borderShape);
+           
     
             group.clipFunc((ctx: any) => {
-                // Use the internal Konva method to draw the shape's path to the context for clipping
-                const shapeForClipping = clipShape.clone({ visible: false });
                 ctx.beginPath();
-                shapeForClipping._sceneFunc(ctx);
+                clipShape.drawPath(ctx);
                 ctx.closePath();
             });
             
@@ -272,11 +272,9 @@ export default function KonvaEditor() {
             imageNode.moveToBottom();
             
             // Re-apply clip function to ensure it affects the new image
-            const clipShapeForCtx = frameShape.clone({ visible: false });
-            group.clipFunc((ctx: any) => {
-                const shapeForClipping = clipShape.clone({ visible: false });
+            frameGroup.clipFunc((ctx: any) => {
                 ctx.beginPath();
-                shapeForClipping._sceneFunc(ctx);
+                frameShape.drawPath(ctx);
                 ctx.closePath();
             });
 
@@ -508,6 +506,7 @@ export default function KonvaEditor() {
                     imageFileInput.value = '';
                     imageFileInput.onchange = null;
                 };
+                imageFileInput.dataset.mode = 'frame';
                 imageFileInput.click();
             }
         });
@@ -1115,16 +1114,22 @@ export default function KonvaEditor() {
       });
       
       imageFileInput?.addEventListener('change', () => {
-          if (imageFileInput.files && imageFileInput.files.length > 0) {
-              const file = imageFileInput.files[0];
-              const reader = new FileReader();
-              reader.onload = () => {
-                  addImageFromSource(reader.result as string);
-                  imageFileInput.value = ''; 
-              };
-              reader.readAsDataURL(file);
-          }
-      });
+        // If this was triggered by frame double-click, skip
+        if (imageFileInput.dataset.mode === 'frame') {
+            delete imageFileInput.dataset.mode; // reset mode
+            return;
+        }
+    
+        if (imageFileInput.files && imageFileInput.files.length > 0) {
+            const file = imageFileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = () => {
+                addImageFromSource(reader.result as string);
+                imageFileInput.value = ''; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
 
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
