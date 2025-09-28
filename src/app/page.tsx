@@ -108,6 +108,7 @@ export default function KonvaEditor() {
     const frameButtonsContainer = document.getElementById('frame-buttons-container');
     const frameColorPicker = document.getElementById('frame-color-picker') as HTMLInputElement;
     const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
+    const frameThicknessControls = document.getElementById('frame-thickness-controls') as HTMLElement;
     const frameThicknessSlider = document.getElementById('frame-thickness-slider') as HTMLInputElement;
     const frameThicknessValue = document.getElementById('frame-thickness-value');
     const frameSidesControls = document.getElementById('frame-sides-controls') as HTMLElement;
@@ -122,7 +123,6 @@ export default function KonvaEditor() {
     const alignRightBtn = document.getElementById('align-right-btn');
     const alignBottomBtn = document.getElementById('align-bottom-btn');
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
-    const imageFiltersPanel = document.getElementById('image-filters-panel');
 
 
     // Layers Panel
@@ -192,6 +192,12 @@ export default function KonvaEditor() {
                     radius: size / 2,
                 });
                 break;
+            case 'diamond':
+                frameShape = new window.Konva.RegularPolygon({
+                    sides: 4,
+                    radius: size / Math.SQRT2,
+                });
+                break;
             default: // rect
                 frameShape = new window.Konva.Rect({
                     width: size,
@@ -212,8 +218,12 @@ export default function KonvaEditor() {
             stroke: color,
             strokeWidth: thickness,
         });
+
         if (options.sides) {
             frameShape.setAttr('data-sides', options.sides);
+        }
+        if (type === 'diamond') {
+            frameShape.setAttr('data-type', 'diamond');
         }
 
         layer.add(frameShape);
@@ -318,7 +328,6 @@ export default function KonvaEditor() {
         
         deleteBtn.classList.add('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
-        if (imageFiltersPanel) imageFiltersPanel.classList.add('hidden');
         
         if(updateLayers) {
             updateLayersPanel();
@@ -346,9 +355,6 @@ export default function KonvaEditor() {
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
         if (opacitySlider) opacitySlider.value = String(selectedNode.opacity() ?? 1);
         
-        if (imageFiltersPanel) {
-             imageFiltersPanel.classList.toggle('hidden', !selectedNode.hasName('image'));
-        }
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
@@ -443,18 +449,18 @@ export default function KonvaEditor() {
                 imageFileInput.click();
             } else if (selectedNode.hasName('frame')) {
                 frameDialog.style.display = 'flex';
-                frameButtonsContainer.classList.add('hidden');
-                addFrameBtn.classList.add('hidden');
+                if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
+                if(addFrameBtn) addFrameBtn.classList.add('hidden');
                 
                 const frameType = selectedNode.getAttr('data-type');
 
-                if (frameType === 'polygon') {
-                    frameSidesControls.classList.remove('hidden');
+                if (frameType === 'polygon' || frameType === 'diamond') {
+                    if(frameSidesControls) frameSidesControls.classList.remove('hidden');
                     const currentSides = selectedNode.sides();
-                    frameSidesSlider.value = String(currentSides);
-                    frameSidesValue.textContent = String(currentSides);
+                    if(frameSidesSlider) frameSidesSlider.value = String(currentSides);
+                    if(frameSidesValue) frameSidesValue.textContent = String(currentSides);
                 } else {
-                    frameSidesControls.classList.add('hidden');
+                    if(frameSidesControls) frameSidesControls.classList.add('hidden');
                 }
             }
         });
@@ -464,19 +470,20 @@ export default function KonvaEditor() {
     };
     
     resetFrameDialog = () => {
-        frameButtonsContainer.classList.remove('hidden');
-        addFrameBtn.classList.add('hidden');
-        frameSidesControls.classList.add('hidden');
+        if(frameButtonsContainer) frameButtonsContainer.classList.remove('hidden');
+        if(addFrameBtn) addFrameBtn.classList.add('hidden');
+        if(frameSidesControls) frameSidesControls.classList.add('hidden');
+        if(frameThicknessControls) frameThicknessControls.classList.remove('hidden');
         
-        frameColorPicker.value = '#3b82f6';
-        colorPreviewFrame.style.backgroundColor = '#3b82f6';
+        if(frameColorPicker) frameColorPicker.value = '#3b82f6';
+        if(colorPreviewFrame) colorPreviewFrame.style.backgroundColor = '#3b82f6';
         selectedColorFrame = '#3b82f6';
 
-        frameThicknessSlider.value = '10';
-        frameThicknessValue.textContent = '10';
+        if(frameThicknessSlider) frameThicknessSlider.value = '10';
+        if(frameThicknessValue) frameThicknessValue.textContent = '10';
         
-        frameSidesSlider.value = '6';
-        frameSidesValue.textContent = '6';
+        if(frameSidesSlider) frameSidesSlider.value = '6';
+        if(frameSidesValue) frameSidesValue.textContent = '6';
         
         activeFrameForAddition = null;
     };
@@ -598,11 +605,11 @@ export default function KonvaEditor() {
         const target = e.target as HTMLElement;
         const frameType = target.closest('[data-frame-shape]')?.getAttribute('data-frame-shape');
         if (frameType) {
-            if (frameType === 'polygon') {
-                activeFrameForAddition = 'polygon';
-                frameButtonsContainer.classList.add('hidden');
-                frameSidesControls.classList.remove('hidden');
-                addFrameBtn.classList.remove('hidden');
+            if (frameType === 'polygon' || frameType === 'diamond') {
+                activeFrameForAddition = frameType;
+                if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
+                if(frameSidesControls) frameSidesControls.classList.remove('hidden');
+                if(addFrameBtn) addFrameBtn.classList.remove('hidden');
             } else {
                 addFrame(frameType);
             }
@@ -610,9 +617,9 @@ export default function KonvaEditor() {
     });
     
     addFrameBtn?.addEventListener('click', () => {
-        if(activeFrameForAddition === 'polygon') {
+        if(activeFrameForAddition) {
             const options = { sides: Number(frameSidesSlider.value) };
-            addFrame('polygon', options);
+            addFrame(activeFrameForAddition, options);
         }
     });
 
@@ -1038,7 +1045,7 @@ export default function KonvaEditor() {
       frameSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(frameSidesValue) frameSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.getAttr('data-type') === 'polygon') {
+        if (selectedNode && (selectedNode.getAttr('data-type') === 'polygon' || selectedNode.getAttr('data-type') === 'diamond')) {
             selectedNode.sides(newSides);
             layer.draw();
         }
@@ -1217,32 +1224,6 @@ export default function KonvaEditor() {
         layer.draw();
       });
 
-      imageFiltersPanel?.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          const button = target.closest('.filter-btn');
-          if (!button) return;
-
-          imageFiltersPanel.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-
-          const filterType = button.getAttribute('data-filter');
-          if (filterType === 'none') {
-              applyFilter(null);
-          } else {
-              button.classList.add('active');
-              switch (filterType) {
-                  case 'grayscale':
-                      applyFilter(window.Konva.Filters.Grayscale);
-                      break;
-                  case 'sepia':
-                      applyFilter(window.Konva.Filters.Sepia);
-                      break;
-                  case 'invert':
-                      applyFilter(window.Konva.Filters.Invert);
-                      break;
-              }
-          }
-      });
-
 
       saveBtn?.addEventListener('click', () => {
         deselectNode();
@@ -1340,15 +1321,6 @@ export default function KonvaEditor() {
                         <div className="opacity-controls">
                             <label htmlFor="opacity-slider">Opacity</label>
                             <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
-                        </div>
-                        <div id="image-filters-panel" className="hidden">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4">Image Filters</h4>
-                            <div className="filter-buttons-container">
-                                <button className="filter-btn" data-filter="grayscale">Grayscale</button>
-                                <button className="filter-btn" data-filter="sepia">Sepia</button>
-                                <button className="filter-btn" data-filter="invert">Invert</button>
-                                <button className="filter-btn" data-filter="none">Reset</button>
-                            </div>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
@@ -1575,7 +1547,7 @@ export default function KonvaEditor() {
                         <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
                         <input type="color" id="frame-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                     </div>
-                    <div>
+                    <div id="frame-thickness-controls">
                         <label htmlFor="frame-thickness-slider" className="block text-sm font-medium text-gray-700">
                             Thickness (<span id="frame-thickness-value">10</span>px)
                         </label>
@@ -1605,6 +1577,9 @@ export default function KonvaEditor() {
                     <button className="shape-btn" data-frame-shape="polygon" title="Polygon Frame">
                         <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
                     </button>
+                    <button className="shape-btn" data-frame-shape="diamond" title="Diamond Frame">
+                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>
+                    </button>
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
@@ -1631,3 +1606,4 @@ export default function KonvaEditor() {
     
 
     
+
