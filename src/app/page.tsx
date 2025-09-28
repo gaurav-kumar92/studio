@@ -39,6 +39,7 @@ export default function KonvaEditor() {
     const addShapeBtn = document.getElementById('add-shape-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
+    const addFrameBtn = document.getElementById('add-frame-btn');
     const addTextBtn = document.getElementById('add-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
@@ -109,6 +110,9 @@ export default function KonvaEditor() {
     const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
     const frameThicknessSlider = document.getElementById('frame-thickness-slider') as HTMLInputElement;
     const frameThicknessValue = document.getElementById('frame-thickness-value');
+    const frameSidesControls = document.getElementById('frame-sides-controls') as HTMLElement;
+    const frameSidesSlider = document.getElementById('frame-sides-slider') as HTMLInputElement;
+    const frameSidesValue = document.getElementById('frame-sides-value');
 
     // Object Properties panel
     const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
@@ -130,6 +134,7 @@ export default function KonvaEditor() {
     let selectedNode: any = null;
     let currentCanvasSize = '500x500';
     let activeShapeForAddition: string | null = null;
+    let activeFrameForAddition: string | null = null;
     
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
@@ -141,12 +146,13 @@ export default function KonvaEditor() {
     // --- 3. UI and Helper Functions (Declared after variables) ---
 
     // Forward declare functions that are called by others before they are defined
-    let addFrame: (type: string) => void;
+    let addFrame: (type: string, options?: any) => void;
     let updateLayersPanel: () => void;
     let selectNode: (node: any) => void;
     let deselectNode: (updateLayers?: boolean) => void;
+    let resetFrameDialog: () => void;
 
-    addFrame = (type: string) => {
+    addFrame = (type: string, options: any = {}) => {
         if (!stage || !layer) {
             console.error("Stage or Layer not initialized yet.");
             return;
@@ -164,15 +170,11 @@ export default function KonvaEditor() {
         switch (type) {
             case 'circle':
                 frameShape = new window.Konva.Circle({
-                    x,
-                    y,
                     radius: size / 2,
                 });
                 break;
             case 'star':
                 frameShape = new window.Konva.Star({
-                    x,
-                    y,
                     numPoints: 5,
                     innerRadius: size / 4,
                     outerRadius: size / 2,
@@ -180,16 +182,18 @@ export default function KonvaEditor() {
                 break;
             case 'triangle':
                 frameShape = new window.Konva.RegularPolygon({
-                    x,
-                    y,
                     sides: 3,
+                    radius: size / 2,
+                });
+                break;
+            case 'polygon':
+                frameShape = new window.Konva.RegularPolygon({
+                    sides: options.sides || 6,
                     radius: size / 2,
                 });
                 break;
             default: // rect
                 frameShape = new window.Konva.Rect({
-                    x,
-                    y,
                     width: size,
                     height: size,
                     offsetX: size / 2,
@@ -199,6 +203,8 @@ export default function KonvaEditor() {
         }
 
         frameShape.setAttrs({
+            x: x,
+            y: y,
             name: 'frame',
             'data-type': type,
             draggable: true,
@@ -206,12 +212,16 @@ export default function KonvaEditor() {
             stroke: color,
             strokeWidth: thickness,
         });
+        if (options.sides) {
+            frameShape.setAttr('data-sides', options.sides);
+        }
 
         layer.add(frameShape);
         updateLayersPanel();
         layer.draw();
         selectNode(frameShape);
         if (frameDialog) frameDialog.style.display = 'none';
+        resetFrameDialog();
     };
     
     updateLayersPanel = () => {
@@ -318,50 +328,52 @@ export default function KonvaEditor() {
     };
 
     selectNode = (node: any) => {
-        if (node === selectedNode) {
+        // If it's a child of a circular text group, select the group.
+        let nodeToSelect = node;
+        if (node.parent?.hasName('circularText')) {
+          nodeToSelect = node.parent;
+        }
+
+        if (nodeToSelect === selectedNode) {
             return;
         }
 
         deselectNode(false); 
 
-        selectedNode = node;
+        selectedNode = nodeToSelect;
         
         deleteBtn.classList.remove('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
         if (opacitySlider) opacitySlider.value = String(selectedNode.opacity() ?? 1);
         
         if (imageFiltersPanel) {
-            if (selectedNode.hasName('image')) {
-                imageFiltersPanel.classList.remove('hidden');
-            } else {
-                imageFiltersPanel.classList.add('hidden');
-            }
+             imageFiltersPanel.classList.toggle('hidden', !selectedNode.hasName('image'));
         }
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
-        tr.nodes([node]);
+        tr.nodes([selectedNode]);
         
         // Remove previous listeners to avoid duplicates
-        node.off('dblclick dbltap');
-        node.on('dblclick dbltap', () => {
-             if (node.hasName('text') || node.hasName('circularText')) {
+        selectedNode.off('dblclick dbltap');
+        selectedNode.on('dblclick dbltap', () => {
+             if (selectedNode.hasName('text') || selectedNode.hasName('circularText')) {
               textDialog.style.display = 'flex';
               if (dialogTitle) dialogTitle.textContent = 'Update Text';
               if (addTextBtn) addTextBtn.textContent = 'Update';
 
-              if (node.hasName('text')) {
-                  if(textInput) textInput.value = node.text();
-                  if(textFontSizeInput) textFontSizeInput.value = node.fontSize();
-                  if(textFontFamilySelect) textFontFamilySelect.value = node.fontFamily();
-                  if(textColorPicker) textColorPicker.value = node.fill();
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = node.fill();
+              if (selectedNode.hasName('text')) {
+                  if(textInput) textInput.value = selectedNode.text();
+                  if(textFontSizeInput) textFontSizeInput.value = selectedNode.fontSize();
+                  if(textFontFamilySelect) textFontFamilySelect.value = selectedNode.fontFamily();
+                  if(textColorPicker) textColorPicker.value = selectedNode.fill();
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedNode.fill();
                   
-                  if(letterSpacingSlider) letterSpacingSlider.value = node.letterSpacing();
-                  if(lineHeightSlider) lineHeightSlider.value = node.lineHeight();
+                  if(letterSpacingSlider) letterSpacingSlider.value = selectedNode.letterSpacing();
+                  if(lineHeightSlider) lineHeightSlider.value = selectedNode.lineHeight();
                   document.querySelectorAll('#text-align-container button').forEach(btn => {
                     btn.classList.remove('active');
-                    if (btn.getAttribute('data-align') === node.align()) {
+                    if (btn.getAttribute('data-align') === selectedNode.align()) {
                         btn.classList.add('active');
                     }
                   });
@@ -369,29 +381,29 @@ export default function KonvaEditor() {
                   if(circularTextCurvature) circularTextCurvature.value = '0';
                   if(circularTextRadius) circularTextRadius.value = '150'; 
 
-              } else if (node.hasName('circularText')) {
-                  if(textInput) textInput.value = node.getAttr('data-text');
-                  if(circularTextCurvature) circularTextCurvature.value = node.getAttr('data-curvature');
-                  if(circularTextRadius) circularTextRadius.value = node.getAttr('data-radius');
-                  if(textColorPicker) textColorPicker.value = node.getAttr('data-color');
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = node.getAttr('data-color');
-                  if(textFontFamilySelect) textFontFamilySelect.value = node.getAttr('data-font-family');
+              } else if (selectedNode.hasName('circularText')) {
+                  if(textInput) textInput.value = selectedNode.getAttr('data-text');
+                  if(circularTextCurvature) circularTextCurvature.value = selectedNode.getAttr('data-curvature');
+                  if(circularTextRadius) circularTextRadius.value = selectedNode.getAttr('data-radius');
+                  if(textColorPicker) textColorPicker.value = selectedNode.getAttr('data-color');
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedNode.getAttr('data-color');
+                  if(textFontFamilySelect) textFontFamilySelect.value = selectedNode.getAttr('data-font-family');
               }
-            } else if (node.hasName('shape')) {
+            } else if (selectedNode.hasName('shape')) {
               shapeDialog.style.display = 'flex';
               if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
               if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); 
               if(addShapeBtn) addShapeBtn.classList.add('hidden');
 
-              const shapeColor = node.fill() || node.stroke();
+              const shapeColor = selectedNode.fill() || selectedNode.stroke();
               if(shapeColorPicker) shapeColorPicker.value = shapeColor;
               if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
               selectedColorShape = shapeColor;
 
-              const shapeType = node.getAttr('data-type');
+              const shapeType = selectedNode.getAttr('data-type');
               if (shapeType === 'line' || shapeType === 'arrow') {
                   if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
-                  const currentThickness = node.strokeWidth();
+                  const currentThickness = selectedNode.strokeWidth();
                   if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
                   if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
               } else {
@@ -399,13 +411,13 @@ export default function KonvaEditor() {
               }
               if (shapeType === 'polygon') {
                 if(shapeSidesControls) shapeSidesControls.classList.remove('hidden');
-                const currentSides = node.sides();
+                const currentSides = selectedNode.sides();
                 if(shapeSidesSlider) shapeSidesSlider.value = String(currentSides);
                 if(shapeSidesValue) shapeSidesValue.textContent = String(currentSides);
               } else {
                 if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
               }
-            } else if (node.hasName('image')) {
+            } else if (selectedNode.hasName('image')) {
                  imageFileInput.onchange = () => {
                     if (imageFileInput.files && imageFileInput.files.length > 0) {
                         const file = imageFileInput.files[0];
@@ -429,8 +441,21 @@ export default function KonvaEditor() {
                     imageFileInput.value = '';
                 };
                 imageFileInput.click();
-            } else if (node.hasName('frame')) {
+            } else if (selectedNode.hasName('frame')) {
                 frameDialog.style.display = 'flex';
+                frameButtonsContainer.classList.add('hidden');
+                addFrameBtn.classList.add('hidden');
+                
+                const frameType = selectedNode.getAttr('data-type');
+
+                if (frameType === 'polygon') {
+                    frameSidesControls.classList.remove('hidden');
+                    const currentSides = selectedNode.sides();
+                    frameSidesSlider.value = String(currentSides);
+                    frameSidesValue.textContent = String(currentSides);
+                } else {
+                    frameSidesControls.classList.add('hidden');
+                }
             }
         });
 
@@ -438,6 +463,24 @@ export default function KonvaEditor() {
         layer.draw();
     };
     
+    resetFrameDialog = () => {
+        frameButtonsContainer.classList.remove('hidden');
+        addFrameBtn.classList.add('hidden');
+        frameSidesControls.classList.add('hidden');
+        
+        frameColorPicker.value = '#3b82f6';
+        colorPreviewFrame.style.backgroundColor = '#3b82f6';
+        selectedColorFrame = '#3b82f6';
+
+        frameThicknessSlider.value = '10';
+        frameThicknessValue.textContent = '10';
+        
+        frameSidesSlider.value = '6';
+        frameSidesValue.textContent = '6';
+        
+        activeFrameForAddition = null;
+    };
+
     const resetShapeDialog = () => {
       if(shapeDialogTitle) shapeDialogTitle.textContent = 'Add a Shape';
       if(shapeButtonsContainer) shapeButtonsContainer.classList.remove('hidden');
@@ -518,6 +561,7 @@ export default function KonvaEditor() {
             resetShapeDialog();
             if (shapeDialog) shapeDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
+            resetFrameDialog();
             if (frameDialog) frameDialog.style.display = 'flex';
         } else if (itemType === 'image') {
             imageFileInput.onchange = () => {
@@ -548,15 +592,28 @@ export default function KonvaEditor() {
 
     cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) shapeDialog.style.display = 'none'; });
     cancelTextBtn?.addEventListener('click', () => { if (textDialog) textDialog.style.display = 'none'; });
-    cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) frameDialog.style.display = 'none'; });
+    cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) { frameDialog.style.display = 'none'; resetFrameDialog(); } });
     
-    document.querySelectorAll('[data-frame-shape]').forEach(button => {
-        button.addEventListener('click', () => {
-            const shapeType = button.getAttribute('data-frame-shape');
-            if (shapeType) {
-                addFrame(shapeType);
+    frameButtonsContainer?.addEventListener('click', e => {
+        const target = e.target as HTMLElement;
+        const frameType = target.closest('[data-frame-shape]')?.getAttribute('data-frame-shape');
+        if (frameType) {
+            if (frameType === 'polygon') {
+                activeFrameForAddition = 'polygon';
+                frameButtonsContainer.classList.add('hidden');
+                frameSidesControls.classList.remove('hidden');
+                addFrameBtn.classList.remove('hidden');
+            } else {
+                addFrame(frameType);
             }
-        });
+        }
+    });
+    
+    addFrameBtn?.addEventListener('click', () => {
+        if(activeFrameForAddition === 'polygon') {
+            const options = { sides: Number(frameSidesSlider.value) };
+            addFrame('polygon', options);
+        }
     });
 
 
@@ -977,6 +1034,15 @@ export default function KonvaEditor() {
               layer.draw();
           }
       });
+      
+      frameSidesSlider?.addEventListener('input', (e) => {
+        const newSides = Number((e.target as HTMLInputElement).value);
+        if(frameSidesValue) frameSidesValue.textContent = String(newSides);
+        if (selectedNode && selectedNode.getAttr('data-type') === 'polygon') {
+            selectedNode.sides(newSides);
+            layer.draw();
+        }
+      });
 
 
       addTextBtn?.addEventListener('click', handleAddOrUpdateText);
@@ -1195,13 +1261,7 @@ export default function KonvaEditor() {
           return;
         }
 
-        let nodeToSelect = e.target;
-        
-        if (e.target.parent?.hasName('circularText')) {
-          nodeToSelect = e.target.parent;
-        }
-
-        selectNode(nodeToSelect);
+        selectNode(e.target);
       });
       
       stage.on('dragend', () => {
@@ -1509,26 +1569,32 @@ export default function KonvaEditor() {
         <div id="frame-dialog" className="dialog-overlay">
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">Add a Frame</h3>
-                 <div className="flex items-center gap-4 mb-4">
-                    <div className="color-picker-container-inline">
+                <div className="flex flex-col gap-4 mb-4">
+                     <div className="color-picker-container-inline justify-center">
                         <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
                         <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
                         <input type="color" id="frame-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                     </div>
-                    <div className="flex-grow">
+                    <div>
                         <label htmlFor="frame-thickness-slider" className="block text-sm font-medium text-gray-700">
                             Thickness (<span id="frame-thickness-value">10</span>px)
                         </label>
                         <input type="range" id="frame-thickness-slider" min="1" max="50" step="1" defaultValue="10" className="w-full" />
                     </div>
+                    <div id="frame-sides-controls" className="hidden">
+                        <label htmlFor="frame-sides-slider" className="block text-sm font-medium text-gray-700">
+                            Sides (<span id="frame-sides-value">6</span>)
+                        </label>
+                        <input type="range" id="frame-sides-slider" min="3" max="12" step="1" defaultValue="6" className="w-full" />
+                    </div>
                 </div>
+
                 <div id="frame-buttons-container" className="shape-button-container mt-4">
                     <button className="shape-btn" data-frame-shape="rect" title="Rectangle Frame">
                         <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
-    
                     </button>
                      <button className="shape-btn" data-frame-shape="triangle" title="Triangle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
@@ -1536,9 +1602,13 @@ export default function KonvaEditor() {
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                     </button>
+                    <button className="shape-btn" data-frame-shape="polygon" title="Polygon Frame">
+                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
+                    </button>
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
+                    <button id="add-frame-btn" className="dialog-button dialog-button-primary hidden">Add Frame</button>
                 </div>
             </div>
         </div>
