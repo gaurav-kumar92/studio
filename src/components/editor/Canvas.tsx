@@ -38,84 +38,42 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
       return;
     }
 
-    try {
+    // If stage doesn't exist, create it.
+    let tempStage = stage;
+    if (!tempStage) {
       const parentContainer = canvasContainer.parentElement as HTMLElement;
-      
-      const newStage = new window.Konva.Stage({
+      tempStage = new window.Konva.Stage({
         container: 'canvas-container',
         width: parentContainer.clientWidth,
         height: parentContainer.clientHeight,
       });
-      
+      setStage(tempStage);
+
       const newLayer = new window.Konva.Layer();
-      newStage.add(newLayer);
+      tempStage.add(newLayer);
+      setLayer(newLayer);
 
       const newBackground = new window.Konva.Rect({
         x: 0,
         y: 0,
-        width: newStage.width(),
-        height: newStage.height(),
+        width: tempStage.width(),
+        height: tempStage.height(),
         fill: '#ffffff',
         name: 'background'
       });
       newLayer.add(newBackground);
-      newLayer.draw();
-
-      setStage(newStage);
-      setLayer(newLayer);
       setBackground(newBackground);
       
+      newLayer.draw();
       onReady();
-      
-      const resizeCanvas = (size: string) => {
-          let [targetWidth, targetHeight] = size.split('x').map(Number);
-          
-          const parentWidth = parentContainer.clientWidth;
-          const parentHeight = parentContainer.clientHeight;
-          
-          const targetRatio = targetWidth / targetHeight;
-          const parentRatio = parentWidth / parentHeight;
-          
-          let newWidth, newHeight;
-          
-          if (parentRatio > targetRatio) {
-              newHeight = parentHeight;
-              newWidth = parentHeight * targetRatio;
-          } else {
-              newWidth = parentWidth;
-              newHeight = parentWidth / targetRatio;
-          }
-
-          newStage.width(newWidth);
-          newStage.height(newHeight);
-          newBackground.width(newWidth);
-          newBackground.height(newHeight);
-          newStage.draw();
-      };
-      
-      resizeCanvas(canvasSize); 
-      
-      const handleResize = () => resizeCanvas(canvasSize);
-
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if(newStage) {
-          newStage.destroy();
-        }
-      };
-
-    } catch (error) {
-      console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
-  }, []);
-
-  useEffect(() => {
-    if(!stage || !background) return;
-    const parentContainer = stage.container().parentElement;
-
+    
     const resizeCanvas = (size: string) => {
+        if (!tempStage) return;
+
+        const parentContainer = tempStage.container().parentElement;
+        if (!parentContainer) return;
+
         let [targetWidth, targetHeight] = size.split('x').map(Number);
         
         const parentWidth = parentContainer.clientWidth;
@@ -134,22 +92,31 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
             newHeight = parentWidth / targetRatio;
         }
 
-        stage.width(newWidth);
-        stage.height(newHeight);
-        background.width(newWidth);
-        background.height(newHeight);
-        stage.draw();
+        tempStage.width(newWidth);
+        tempStage.height(newHeight);
+        
+        const bgRect = tempStage.findOne('.background');
+        if (bgRect) {
+            bgRect.width(newWidth);
+            bgRect.height(newHeight);
+        }
+        
+        tempStage.draw();
     };
-
-    resizeCanvas(canvasSize);
-
+    
+    resizeCanvas(canvasSize); 
+    
     const handleResize = () => resizeCanvas(canvasSize);
     window.addEventListener('resize', handleResize);
 
     return () => {
-       window.removeEventListener('resize', handleResize);
-    }
-  }, [canvasSize, stage, background]);
+      window.removeEventListener('resize', handleResize);
+      if (stage && !canvasContainer.isConnected) {
+        stage.destroy();
+      }
+    };
+  }, [canvasSize]);
+
 
   return (
     <div className="relative-canvas">
