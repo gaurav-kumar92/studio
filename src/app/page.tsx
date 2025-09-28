@@ -107,8 +107,8 @@ export default function KonvaEditor() {
     const frameButtonsContainer = document.getElementById('frame-buttons-container');
     const frameColorPicker = document.getElementById('frame-color-picker') as HTMLInputElement;
     const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
-    const frameWidthSlider = document.getElementById('frame-width-slider') as HTMLInputElement;
-    const frameWidthValue = document.getElementById('frame-width-value');
+    const frameThicknessSlider = document.getElementById('frame-thickness-slider') as HTMLInputElement;
+    const frameThicknessValue = document.getElementById('frame-thickness-value');
 
     // Object Properties panel
     const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
@@ -153,7 +153,7 @@ export default function KonvaEditor() {
         }
         if (!type) return;
 
-        const frameWidth = Number(frameWidthSlider.value);
+        const thickness = Number(frameThicknessSlider.value);
         const color = selectedColorFrame;
         const size = 150;
         const x = stage.width() / 4;
@@ -178,6 +178,14 @@ export default function KonvaEditor() {
                     outerRadius: size / 2,
                 });
                 break;
+            case 'triangle':
+                frameShape = new window.Konva.RegularPolygon({
+                    x,
+                    y,
+                    sides: 3,
+                    radius: size / 2,
+                });
+                break;
             default: // rect
                 frameShape = new window.Konva.Rect({
                     x,
@@ -196,7 +204,7 @@ export default function KonvaEditor() {
             draggable: true,
             fillEnabled: false,
             stroke: color,
-            strokeWidth: frameWidth,
+            strokeWidth: thickness,
         });
 
         layer.add(frameShape);
@@ -421,6 +429,8 @@ export default function KonvaEditor() {
                     imageFileInput.value = '';
                 };
                 imageFileInput.click();
+            } else if (node.hasName('frame')) {
+                frameDialog.style.display = 'flex';
             }
         });
 
@@ -959,11 +969,11 @@ export default function KonvaEditor() {
           }
       });
 
-      frameWidthSlider?.addEventListener('input', e => {
-          const newWidth = Number((e.target as HTMLInputElement).value);
-          if(frameWidthValue) frameWidthValue.textContent = String(newWidth);
+      frameThicknessSlider?.addEventListener('input', e => {
+          const newThickness = Number((e.target as HTMLInputElement).value);
+          if(frameThicknessValue) frameThicknessValue.textContent = String(newThickness);
           if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.strokeWidth(newWidth);
+              selectedNode.strokeWidth(newThickness);
               layer.draw();
           }
       });
@@ -1506,10 +1516,10 @@ export default function KonvaEditor() {
                         <input type="color" id="frame-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
                     </div>
                     <div className="flex-grow">
-                        <label htmlFor="frame-width-slider" className="block text-sm font-medium text-gray-700">
-                            Width (<span id="frame-width-value">10</span>px)
+                        <label htmlFor="frame-thickness-slider" className="block text-sm font-medium text-gray-700">
+                            Thickness (<span id="frame-thickness-value">10</span>px)
                         </label>
-                        <input type="range" id="frame-width-slider" min="0" max="50" step="1" defaultValue="10" className="w-full" />
+                        <input type="range" id="frame-thickness-slider" min="1" max="50" step="1" defaultValue="10" className="w-full" />
                     </div>
                 </div>
                 <div id="frame-buttons-container" className="shape-button-container mt-4">
@@ -1519,6 +1529,9 @@ export default function KonvaEditor() {
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
     
+                    </button>
+                     <button className="shape-btn" data-frame-shape="triangle" title="Triangle Frame">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
                     </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1542,6 +1555,8 @@ export default function KonvaEditor() {
 
 
 
+
+    
 
     
 
