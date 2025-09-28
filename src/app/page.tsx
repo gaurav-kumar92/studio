@@ -24,7 +24,7 @@ export default function KonvaEditor() {
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
 
   useEffect(() => {
-    if (canvasRef.current?.background) {
+    if (canvasRef.current?.background && isCanvasReady) {
       canvasRef.current.background.fill(backgroundColor);
       canvasRef.current.layer.draw();
     }
@@ -1451,7 +1451,11 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
       <Script
         src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
         strategy="lazyOnload"
-        onLoad={() => setCanvasReady(true)}
+        onLoad={() => {
+            if (typeof window !== 'undefined' && (window as any).Konva) {
+              setCanvasReady(true);
+            }
+        }}
       />
       <main>
         <div id="editor-ui">
@@ -1862,3 +1866,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
 
 
 
+
+
+    
