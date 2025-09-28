@@ -21,6 +21,15 @@ export default function KonvaEditor() {
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('500x500');
   const [isCanvasReady, setCanvasReady] = useState(false);
+  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+
+  useEffect(() => {
+    if (canvasRef.current?.background) {
+      canvasRef.current.background.fill(backgroundColor);
+      canvasRef.current.layer.draw();
+    }
+  }, [backgroundColor, isCanvasReady]);
+
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
@@ -1122,13 +1131,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         setCanvasSize(newSize);
       });
       
-      const backgroundColorPicker = document.getElementById('background-color-picker');
-      backgroundColorPicker?.addEventListener('input', (e) => {
-          if(canvasBackground) {
-              canvasBackground.fill((e.target as HTMLInputElement).value);
-              layer.draw();
-          }
-      });
       
       alignTopBtn?.addEventListener('click', () => alignObject('top'));
       alignLeftBtn?.addEventListener('click', () => alignObject('left'));
@@ -1476,8 +1478,8 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
                     <div className="mb-4">
                         <div className="color-picker-container-inline">
                             <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
-                            <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
-                            <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
+                            <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: backgroundColor}}></div>
+                            <input type="color" id="background-color-picker" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="color-picker-input-hidden" />
                         </div>
                     </div>
                      <div id="object-properties" className="hidden">
@@ -1804,7 +1806,7 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
                         <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
                     </button>
                     <button className="shape-btn" data-mask-shape="diamond" title="Diamond Mask">
-                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>
+                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12 12 22 2 12 12 2Z"/></svg>
                     </button>
                 </div>
                  <div id="alphabet-masks-container" className="shape-button-container mt-4">
@@ -1857,5 +1859,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     
 
     
+
 
 
