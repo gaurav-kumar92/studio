@@ -121,6 +121,7 @@ export default function KonvaEditor() {
 
     // Mask Specific
     const maskButtonsContainer = document.getElementById('mask-buttons-container');
+    const alphabetMasksContainer = document.getElementById('alphabet-masks-container');
     const maskColorPicker = document.getElementById('mask-color-picker') as HTMLInputElement;
     const colorPreviewMask = document.getElementById('color-preview-mask') as HTMLElement;
     const maskBorderThicknessControls = document.getElementById('mask-border-thickness-controls') as HTMLElement;
@@ -172,11 +173,11 @@ export default function KonvaEditor() {
 
     const addMask = (type: string, options: any = {}) => {
         if (!stage || !layer) return;
-
-        const size = 150; 
+        
+        const size = 150;
         const thickness = Number(maskBorderThicknessSlider.value);
         const color = selectedColorMask;
-
+        
         const group = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
@@ -185,87 +186,85 @@ export default function KonvaEditor() {
             draggable: true,
             name: 'mask',
             'data-type': type,
-            ...options 
+            ...options
         });
-
-        let clipShape: any;
-
+        
+        let borderShape: any;
+        
         const commonAttrs = {
             x: size / 2,
             y: size / 2,
             stroke: color,
             strokeWidth: thickness,
-            fill: '#f0f0f0', 
+            fill: '#f0f0f0',
         };
-
+        
         switch (type) {
             case 'circle':
-                clipShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
                 break;
             case 'star':
-                clipShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                 break;
             case 'triangle':
-                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
                 break;
             case 'polygon':
-                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size / 2 });
                 break;
             case 'diamond':
-                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.SQRT2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.SQRT2 });
+                break;
+            case 'alphabet':
+                 borderShape = new window.Konva.Text({
+                    ...commonAttrs,
+                    text: options.letter || 'A',
+                    fontSize: size,
+                    fontFamily: 'Arial, Helvetica, sans-serif',
+                    fontStyle: 'bold',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    width: size,
+                    height: size,
+                    offsetX: size/2,
+                    offsetY: size/2,
+                });
                 break;
             default: // rect
-                clipShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, offsetX: size/2, offsetY: size/2 });
+                borderShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, offsetX: size/2, offsetY: size/2 });
                 break;
         }
-
-        group.add(clipShape);
-
-        // Add placeholder icon
+        
+        group.add(borderShape);
+        
         const placeholderSvgPath = 'M21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21H3v-3l12-12a2.828 2.828 0 0 0 0-4L12 2l-3 3-4 4a2 2 0 0 0 0 2.828l3.086 3.086m0 0L21 15';
         const placeholderIcon = new window.Konva.Path({
-            x: size / 2 - 24, // Centering the icon
-            y: size / 2 - 24,
+            x: size / 2,
+            y: size / 2,
             data: 'M10.33,7.57l-1.8,1.8a.75.75,0,0,1-1.06,0l-1.8-1.8a.75.75,0,0,1,0-1.06l1.8-1.8a.75.75,0,0,1,1.06,0l1.8,1.8a.75.75,0,0,1,0,1.06Zm-2.86,4.62,1.8,1.8a.75.75,0,0,0,1.06,0l1.8-1.8a.75.75,0,0,0,0-1.06l-1.8-1.8a.75.75,0,0,0-1.06,0l-1.8,1.8a.75.75,0,0,0,0,1.06Zm7.32,1.79a.75.75,0,0,1-.53-.22l-4-4A.75.75,0,0,1,10,9.17V3.5a.75.75,0,0,1,1.5,0v5.29l3.78,3.78a.75.75,0,0,1-.53,1.28Z',
             fill: '#9ca3af',
             scale: { x: 3, y: 3 },
-            name: 'placeholder-icon'
+            name: 'placeholder-icon',
+            offsetX: 12,
+            offsetY: 12,
         });
         group.add(placeholderIcon);
-
-
+        
         group.clipFunc(function (ctx: any) {
-            ctx.beginPath();
-            switch (type) {
-                case 'circle':
-                    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
-                    break;
-                case 'star': {
-                    const points = clipShape.getPoints();
-                    ctx.moveTo(points[0], points[1]);
-                    for(let i = 2; i < points.length; i+=2) {
-                        ctx.lineTo(points[i], points[i+1]);
-                    }
-                    break;
-                }
-                case 'triangle':
-                case 'polygon':
-                case 'diamond': {
-                    const points = clipShape.getPoints();
-                    ctx.moveTo(points[0], points[1]);
-                    for(let i = 2; i < points.length; i+=2) {
-                        ctx.lineTo(points[i], points[i+1]);
-                    }
-                    break;
-                }
-                default: // rect
-                    ctx.rect(0, 0, size, size);
-                    break;
+            ctx.setTransform(1, 0, 0, 1, borderShape.x(), borderShape.y());
+            if (type === 'alphabet') {
+                 // For text, we can't directly use the shape's path for clipping in this simple way
+                 // Instead, we create a path from the text for clipping
+                ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(borderShape.text(), 0, 0);
+
+            } else {
+                borderShape.drawFunc().call(borderShape, ctx);
             }
-            ctx.closePath();
         });
-
-
+        
         layer.add(group);
         updateLayersPanel();
         layer.draw();
@@ -273,6 +272,7 @@ export default function KonvaEditor() {
         if (maskDialog) maskDialog.style.display = 'none';
         resetMaskDialog();
     };
+
 
     addImageToMask = (maskGroup: any) => {
         if (!maskGroup || maskGroup.name() !== 'mask') return;
@@ -286,18 +286,33 @@ export default function KonvaEditor() {
                         // Remove placeholder icon and any existing image
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
+                        // Scale image to fit the mask
+                        const maskWidth = maskGroup.width();
+                        const maskHeight = maskGroup.height();
+                        const imgWidth = img.width();
+                        const imgHeight = img.height();
+                        const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+
                         img.setAttrs({
                             name: 'mask-image',
-                            width: maskGroup.width(),
-                            height: maskGroup.height(),
+                            x: maskWidth / 2,
+                            y: maskHeight / 2,
+                            width: imgWidth * scale,
+                            height: imgHeight * scale,
+                            offsetX: (imgWidth * scale) / 2,
+                            offsetY: (imgHeight * scale) / 2,
                         });
 
                         maskGroup.add(img);
                         img.moveToBottom();
                         
                         // Make sure border is on top
-                        const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Path');
-                        if (borderShape) borderShape.moveToTop();
+                        const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
+                        if (borderShape) {
+                            borderShape.moveToTop();
+                            borderShape.fill(null); // Make border shape transparent to see the image
+                        }
+
 
                         layer.draw();
                         updateLayersPanel();
@@ -396,7 +411,12 @@ export default function KonvaEditor() {
             } else if (node.hasName('mask')) {
                 const maskType = node.getAttr('data-type');
                 iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>`;
-                name = `Mask: ${maskType.charAt(0).toUpperCase() + maskType.slice(1)}`;
+                let namePrefix = `Mask: ${maskType.charAt(0).toUpperCase() + maskType.slice(1)}`;
+                 if (maskType === 'alphabet') {
+                    name = `${namePrefix} '${node.getAttr('data-letter')}'`;
+                } else {
+                    name = namePrefix;
+                }
             }
             
             const layerInfo = document.createElement('div');
@@ -424,7 +444,7 @@ export default function KonvaEditor() {
 
             const downBtn = document.createElement('button');
             downBtn.className = 'layer-action-btn';
-            downBtn.innerHTML = `<svg xmlns="http://wwwpackage.json/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
+            downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
             downBtn.title = 'Move Down';
             if (index === nodeCount - 1) downBtn.disabled = true; 
             downBtn.addEventListener('click', (e) => {
@@ -580,6 +600,7 @@ export default function KonvaEditor() {
                 imageFileInput.click();
             } else if (selectedNode.hasName('frame')) {
                 frameDialog.style.display = 'flex';
+                // Simplified frame logic, may not need to do anything here on double click
             } else if (selectedNode.hasName('mask')) {
                 addImageToMask(selectedNode);
             }
@@ -612,7 +633,7 @@ export default function KonvaEditor() {
         if(frameButtonsContainer) frameButtonsContainer.classList.remove('hidden');
         if(addFrameBtn) addFrameBtn.classList.add('hidden');
         if(frameSidesControls) frameSidesControls.classList.add('hidden');
-        if(frameThicknessControls) frameThicknessControls.remove('hidden');
+        if(frameThicknessControls) frameThicknessControls.classList.remove('hidden');
         
         if(frameColorPicker) frameColorPicker.value = '#3b82f6';
         if(colorPreviewFrame) colorPreviewFrame.style.backgroundColor = '#3b82f6';
@@ -771,6 +792,14 @@ export default function KonvaEditor() {
             } else {
                 addMask(maskType);
             }
+        }
+    });
+
+    alphabetMasksContainer?.addEventListener('click', e => {
+        const target = e.target as HTMLElement;
+        const letter = target.closest('[data-alphabet-mask]')?.getAttribute('data-alphabet-mask');
+        if (letter) {
+            addMask('alphabet', { letter: letter, 'data-letter': letter });
         }
     });
     
@@ -1226,7 +1255,7 @@ export default function KonvaEditor() {
           selectedColorMask = (e.target as HTMLInputElement).value;
           if (colorPreviewMask) colorPreviewMask.style.backgroundColor = selectedColorMask;
           if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon');
+              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
               if (border) {
                 border.stroke(selectedColorMask);
                 layer.draw();
@@ -1238,7 +1267,7 @@ export default function KonvaEditor() {
           const newThickness = Number((e.target as HTMLInputElement).value);
           if(maskBorderThicknessValue) maskBorderThicknessValue.textContent = String(newThickness);
           if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon');
+              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
               if (border) {
                 border.strokeWidth(newThickness);
                 layer.draw();
@@ -1801,7 +1830,7 @@ export default function KonvaEditor() {
         </div>
 
         <div id="mask-dialog" className="dialog-overlay">
-            <div className="dialog">
+            <div className="dialog" style={{maxWidth: '500px'}}>
                 <h3 className="text-lg font-semibold mb-4">Add a Mask</h3>
                 <div className="flex flex-col gap-4 mb-4">
                      <div className="color-picker-container-inline justify-center">
@@ -1843,6 +1872,13 @@ export default function KonvaEditor() {
                         <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>
                     </button>
                 </div>
+                 <div id="alphabet-masks-container" className="shape-button-container mt-4">
+                    {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                        <button key={letter} className="shape-btn" data-alphabet-mask={letter} title={`Mask: ${letter}`}>
+                            <span style={{fontSize: '1.5rem', fontWeight: 'bold'}}>{letter}</span>
+                        </button>
+                    ))}
+                </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4">
                     <button id="cancel-mask-btn" className="dialog-button dialog-button-secondary">Close</button>
                     <button id="add-mask-btn" className="dialog-button dialog-button-primary hidden">Add Mask</button>
@@ -1870,6 +1906,8 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
 
