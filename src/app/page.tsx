@@ -192,8 +192,8 @@ export default function KonvaEditor() {
         let borderShape: any;
         
         const commonAttrs = {
-            x: size / 2,
-            y: size / 2,
+            x: 0,
+            y: 0,
             stroke: color,
             strokeWidth: thickness,
             fill: '#f0f0f0',
@@ -201,19 +201,19 @@ export default function KonvaEditor() {
         
         switch (type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+                borderShape = new window.Konva.Circle({ ...commonAttrs, x: size / 2, y: size/2, radius: size / 2 });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, x: size / 2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                 break;
             case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size/2, sides: 3, radius: size / 2 });
                 break;
             case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size/2, sides: options.sides || 6, radius: size / 2 });
                 break;
             case 'diamond':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.SQRT2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size/2, sides: 4, radius: size / Math.SQRT2 });
                 break;
             case 'alphabet':
                  borderShape = new window.Konva.Text({
@@ -226,22 +226,20 @@ export default function KonvaEditor() {
                     verticalAlign: 'middle',
                     width: size,
                     height: size,
-                    offsetX: size/2,
-                    offsetY: size/2,
                 });
                 break;
             default: // rect
-                borderShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, offsetX: size/2, offsetY: size/2 });
+                borderShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
                 break;
         }
         
         group.add(borderShape);
         
-        const placeholderSvgPath = 'M21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21H3v-3l12-12a2.828 2.828 0 0 0 0-4L12 2l-3 3-4 4a2 2 0 0 0 0 2.828l3.086 3.086m0 0L21 15';
+        const placeholderSvgPath = 'M10.33,7.57l-1.8,1.8a.75.75,0,0,1-1.06,0l-1.8-1.8a.75.75,0,0,1,0-1.06l1.8-1.8a.75.75,0,0,1,1.06,0l1.8,1.8a.75.75,0,0,1,0,1.06Zm-2.86,4.62,1.8,1.8a.75.75,0,0,0,1.06,0l1.8-1.8a.75.75,0,0,0,0-1.06l-1.8-1.8a.75.75,0,0,0-1.06,0l-1.8,1.8a.75.75,0,0,0,0,1.06Zm7.32,1.79a.75.75,0,0,1-.53-.22l-4-4A.75.75,0,0,1,10,9.17V3.5a.75.75,0,0,1,1.5,0v5.29l3.78,3.78a.75.75,0,0,1-.53,1.28Z';
         const placeholderIcon = new window.Konva.Path({
             x: size / 2,
             y: size / 2,
-            data: 'M10.33,7.57l-1.8,1.8a.75.75,0,0,1-1.06,0l-1.8-1.8a.75.75,0,0,1,0-1.06l1.8-1.8a.75.75,0,0,1,1.06,0l1.8,1.8a.75.75,0,0,1,0,1.06Zm-2.86,4.62,1.8,1.8a.75.75,0,0,0,1.06,0l1.8-1.8a.75.75,0,0,0,0-1.06l-1.8-1.8a.75.75,0,0,0-1.06,0l-1.8,1.8a.75.75,0,0,0,0,1.06Zm7.32,1.79a.75.75,0,0,1-.53-.22l-4-4A.75.75,0,0,1,10,9.17V3.5a.75.75,0,0,1,1.5,0v5.29l3.78,3.78a.75.75,0,0,1-.53,1.28Z',
+            data: placeholderSvgPath,
             fill: '#9ca3af',
             scale: { x: 3, y: 3 },
             name: 'placeholder-icon',
@@ -251,18 +249,18 @@ export default function KonvaEditor() {
         group.add(placeholderIcon);
         
         group.clipFunc(function (ctx: any) {
-            ctx.setTransform(1, 0, 0, 1, borderShape.x(), borderShape.y());
-            if (type === 'alphabet') {
-                 // For text, we can't directly use the shape's path for clipping in this simple way
-                 // Instead, we create a path from the text for clipping
-                ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(borderShape.text(), 0, 0);
-
-            } else {
-                borderShape.drawFunc().call(borderShape, ctx);
-            }
+             const shape = borderShape; // Use the originally created shape
+             ctx.beginPath();
+             if (type === 'alphabet') {
+                 ctx.font = `${shape.fontStyle()} ${shape.fontSize()}px ${shape.fontFamily()}`;
+                 ctx.textAlign = 'center';
+                 ctx.textBaseline = 'middle';
+                 // Position text correctly in the center of the group for clipping
+                 ctx.fillText(shape.text(), size / 2, size / 2);
+             } else {
+                 shape.sceneFunc().call(shape, ctx, shape);
+             }
+             ctx.closePath();
         });
         
         layer.add(group);
@@ -295,12 +293,12 @@ export default function KonvaEditor() {
 
                         img.setAttrs({
                             name: 'mask-image',
-                            x: maskWidth / 2,
-                            y: maskHeight / 2,
+                            x: 0,
+                            y: 0,
                             width: imgWidth * scale,
                             height: imgHeight * scale,
-                            offsetX: (imgWidth * scale) / 2,
-                            offsetY: (imgHeight * scale) / 2,
+                            offsetX: (imgWidth * scale - maskWidth) / 2,
+                            offsetY: (imgHeight * scale - maskHeight) / 2,
                         });
 
                         maskGroup.add(img);
@@ -395,22 +393,22 @@ export default function KonvaEditor() {
             let name = 'Object';
 
             if (node.hasName('text') || node.hasName('circularText')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
                 name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
             } else if (node.hasName('shape')) {
                 const shapeType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
                 name = `Shape: ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
             } else if (node.hasName('image')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
                 name = 'Image';
             } else if (node.hasName('frame')) {
                 const frameType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
                 name = `Frame: ${frameType.charAt(0).toUpperCase() + frameType.slice(1)}`;
             } else if (node.hasName('mask')) {
                 const maskType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>`;
+                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>`;
                 let namePrefix = `Mask: ${maskType.charAt(0).toUpperCase() + maskType.slice(1)}`;
                  if (maskType === 'alphabet') {
                     name = `${namePrefix} '${node.getAttr('data-letter')}'`;
@@ -432,7 +430,7 @@ export default function KonvaEditor() {
             
             const upBtn = document.createElement('button');
             upBtn.className = 'layer-action-btn';
-            upBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>`;
+            upBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>`;
             upBtn.title = 'Move Up';
             if (index === 0) upBtn.disabled = true; 
             upBtn.addEventListener('click', (e) => {
@@ -444,7 +442,7 @@ export default function KonvaEditor() {
 
             const downBtn = document.createElement('button');
             downBtn.className = 'layer-action-btn';
-            downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
+            downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
             downBtn.title = 'Move Down';
             if (index === nodeCount - 1) downBtn.disabled = true; 
             downBtn.addEventListener('click', (e) => {
@@ -760,7 +758,7 @@ export default function KonvaEditor() {
         }
     });
 
-    cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) shapeDialog.style.display = 'none'; });
+    cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) { shapeDialog.style.display = 'none'; resetShapeDialog(); } });
     cancelTextBtn?.addEventListener('click', () => { if (textDialog) textDialog.style.display = 'none'; });
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) { frameDialog.style.display = 'none'; resetFrameDialog(); } });
     cancelMaskBtn?.addEventListener('click', () => { if (maskDialog) { maskDialog.style.display = 'none'; resetMaskDialog(); } });
@@ -1804,16 +1802,16 @@ export default function KonvaEditor() {
 
                 <div id="frame-buttons-container" className="shape-button-container mt-4">
                     <button className="shape-btn" data-frame-shape="rect" title="Rectangle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1" /></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1" /></svg>
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /></svg>
                     </button>
                      <button className="shape-btn" data-frame-shape="triangle" title="Triangle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L1 21h22L12 2z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L1 21h22L12 2z"/></svg>
                     </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
-                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                     </button>
                     <button className="shape-btn" data-frame-shape="polygon" title="Polygon Frame">
                         <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5v9l-7.79 4.5-7.79-4.5v-9L12 2.5z"/></svg>
