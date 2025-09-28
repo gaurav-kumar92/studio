@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
+import LayersPanel from '@/components/editor/LayersPanel';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -17,6 +18,8 @@ declare global {
 
 export default function KonvaEditor() {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
+  const [konvaObjects, setKonvaObjects] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
@@ -142,14 +145,9 @@ export default function KonvaEditor() {
     const alignBottomBtn = document.getElementById('align-bottom-btn');
     const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
-
-    // Layers Panel
-    const layersList = document.getElementById('layers-list') as HTMLElement;
-
-
     // --- 2. Global State Variables ---
-    let tr: any; // Konva objects
-    let selectedNode: any = null;
+    let tr: any; // Konva transformer
+    let localSelectedNode: any = null; // Use a local variable to manage selection state internally
     let activeShapeForAddition: string | null = null;
     let activeFrameForAddition: string | null = null;
     let activeMaskForAddition: string | null = null;
@@ -162,9 +160,15 @@ export default function KonvaEditor() {
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
+    const updateKonvaState = () => {
+        if (!layer) return;
+        const nodes = layer.getChildren((node: any) => {
+            return node.name() !== 'background' && node.className !== 'Transformer';
+        });
+        setKonvaObjects(nodes.toArray());
+    };
 
     // Forward declare functions that are called by others before they are defined
-    let updateLayersPanel: () => void;
     let selectNode: (node: any) => void;
     let deselectNode: (updateLayers?: boolean) => void;
     let resetFrameDialog: () => void;
@@ -174,7 +178,7 @@ export default function KonvaEditor() {
     const addMask = (type: string, options: any = {}) => {
         if (!stage || !layer) return;
     
-        const size = 150; // The size of the group's bounding box
+        const size = 150; 
     
         const group = new window.Konva.Group({
             x: stage.width() / 4,
@@ -189,11 +193,10 @@ export default function KonvaEditor() {
     
         let borderShape: any;
     
-        // Common attributes for the visible shape that defines the mask
         const commonAttrs = {
-            x: size / 2, // Center shape horizontally in the group
-            y: size / 2, // Center shape vertically in the group
-            fill: '#f0f0f0', // Placeholder fill
+            x: size / 2, 
+            y: size / 2, 
+            fill: '#f0f0f0', 
         };
     
         switch (type) {
@@ -213,7 +216,6 @@ export default function KonvaEditor() {
                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
                 break;
             case 'alphabet':
-                // For text, we position it at 0,0 and let the text's own alignment properties handle centering.
                 borderShape = new window.Konva.Text({
                     x: 0,
                     y: 0,
@@ -229,7 +231,6 @@ export default function KonvaEditor() {
                 });
                 break;
             default: // rect
-                 // Rect is positioned at 0,0 within the group
                 borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, fill: '#f0f0f0' });
                 break;
         }
@@ -242,7 +243,6 @@ export default function KonvaEditor() {
             fill: '#9ca3af',
             scale: { x: 2.5, y: 2.5 },
             name: 'placeholder-icon',
-            // Center the icon using its offset based on its original path dimensions
             offsetX: 12,
             offsetY: 12,
             x: size / 2,
@@ -250,17 +250,15 @@ export default function KonvaEditor() {
         });
         group.add(placeholderIcon);
     
-        // The clipping function now uses the *local* coordinates of the shape within the group
         group.clipFunc(function (ctx: any) {
              const shape = borderShape;
              ctx.beginPath();
-             // The sceneFunc draws the shape relative to its parent's origin, which is what we need for clipping.
              shape.sceneFunc().call(shape, ctx, shape);
              ctx.closePath();
         });
     
         layer.add(group);
-        updateLayersPanel();
+        updateKonvaState();
         layer.draw();
         selectNode(group);
         if (maskDialog) maskDialog.style.display = 'none';
@@ -277,7 +275,6 @@ export default function KonvaEditor() {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        // Remove placeholder icon and any existing image
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
                         const maskWidth = maskGroup.width();
@@ -285,38 +282,36 @@ export default function KonvaEditor() {
                         const imgWidth = img.width();
                         const imgHeight = img.height();
                         
-                        // Scale image to cover the mask area
                         const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
                         const scaledWidth = imgWidth * scale;
                         const scaledHeight = imgHeight * scale;
 
                         img.setAttrs({
                             name: 'mask-image',
-                            x: (maskWidth - scaledWidth) / 2,  // Center the image
+                            x: (maskWidth - scaledWidth) / 2,
                             y: (maskHeight - scaledHeight) / 2,
                             width: scaledWidth,
                             height: scaledHeight,
                         });
 
                         maskGroup.add(img);
-                        img.moveToBottom(); // Image goes behind the border shape
+                        img.moveToBottom(); 
                         
-                        // Make the original border shape transparent to see the image through it
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
                              borderShape.fill(null);
                              borderShape.stroke(null);
-                             borderShape.opacity(0); // Make it fully transparent
+                             borderShape.opacity(0);
                         }
 
 
                         layer.draw();
-                        updateLayersPanel();
+                        updateKonvaState();
                     });
                 };
                 reader.readAsDataURL(file);
             }
-            imageFileInput.value = ''; // Reset input
+            imageFileInput.value = '';
         };
         imageFileInput.click();
     };
@@ -362,106 +357,13 @@ export default function KonvaEditor() {
 
         if(newFrame) {
             layer.add(newFrame);
-            updateLayersPanel();
+            updateKonvaState();
             layer.draw();
             selectNode(newFrame);
         }
 
         if (frameDialog) frameDialog.style.display = 'none';
         resetFrameDialog();
-    };
-
-    
-    updateLayersPanel = () => {
-        if (!layersList || !layer) return;
-        layersList.innerHTML = ''; 
-
-        const nodes = layer.getChildren((node: any) => {
-            return node.name() !== 'background' && node.className !== 'Transformer';
-        });
-
-        const nodeCount = nodes.length;
-
-        nodes.reverse().forEach((node: any, index: number) => {
-            const li = document.createElement('li');
-            li.className = 'layer-item';
-            li.setAttribute('data-id', node.id());
-
-            let iconSvg = '';
-            let name = 'Object';
-
-            if (node.hasName('text') || node.hasName('circularText')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
-                name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
-            } else if (node.hasName('shape')) {
-                const shapeType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
-                name = `Shape: ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
-            } else if (node.hasName('image')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
-                name = 'Image';
-            } else if (node.hasName('frame')) {
-                const frameType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
-                name = `Frame: ${frameType.charAt(0).toUpperCase() + frameType.slice(1)}`;
-            } else if (node.hasName('mask')) {
-                const maskType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>`;
-                let namePrefix = `Mask: ${maskType.charAt(0).toUpperCase() + maskType.slice(1)}`;
-                 if (maskType === 'alphabet') {
-                    name = `${namePrefix} '${node.getAttr('data-letter')}'`;
-                } else {
-                    name = namePrefix;
-                }
-            }
-            
-            const layerInfo = document.createElement('div');
-            layerInfo.className = 'layer-info';
-            layerInfo.innerHTML = `${iconSvg}<span class="name">${name}</span>`;
-
-            layerInfo.addEventListener('click', () => {
-                selectNode(node);
-            });
-
-            const actions = document.createElement('div');
-            actions.className = 'layer-actions';
-            
-            const upBtn = document.createElement('button');
-            upBtn.className = 'layer-action-btn';
-            upBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>`;
-            upBtn.title = 'Move Up';
-            if (index === 0) upBtn.disabled = true; 
-            upBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                node.moveUp();
-                updateLayersPanel();
-                layer.draw();
-            });
-
-            const downBtn = document.createElement('button');
-            downBtn.className = 'layer-action-btn';
-            downBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>`;
-            downBtn.title = 'Move Down';
-            if (index === nodeCount - 1) downBtn.disabled = true; 
-            downBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                node.moveDown();
-                updateLayersPanel();
-                layer.draw();
-            });
-            
-            actions.appendChild(upBtn);
-            actions.appendChild(downBtn);
-            
-            li.appendChild(layerInfo);
-            li.appendChild(actions);
-
-            if (node === selectedNode) {
-                li.classList.add('selected');
-            }
-
-            layersList.appendChild(li);
-        });
     };
     
     deselectNode = (updateLayers = true) => {
@@ -471,13 +373,14 @@ export default function KonvaEditor() {
             tr = null;
         }
         
-        selectedNode = null;
+        localSelectedNode = null;
+        setSelectedNode(null);
         
         deleteBtn.classList.add('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
         
         if(updateLayers) {
-            updateLayersPanel();
+            updateKonvaState();
         }
 
         layer?.draw();
@@ -491,43 +394,44 @@ export default function KonvaEditor() {
           nodeToSelect = node.parent;
         }
 
-        if (nodeToSelect === selectedNode) {
+        if (nodeToSelect === localSelectedNode) {
             return;
         }
 
         deselectNode(false); 
 
-        selectedNode = nodeToSelect;
+        localSelectedNode = nodeToSelect;
+        setSelectedNode(nodeToSelect);
         
         deleteBtn.classList.remove('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
-        if (opacitySlider) opacitySlider.value = String(selectedNode.opacity() ?? 1);
+        if (opacitySlider) opacitySlider.value = String(localSelectedNode.opacity() ?? 1);
         
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
-        tr.nodes([selectedNode]);
+        tr.nodes([localSelectedNode]);
         
         // Remove previous listeners to avoid duplicates
-        selectedNode.off('dblclick dbltap');
-        selectedNode.on('dblclick dbltap', () => {
-             if (selectedNode.hasName('text') || selectedNode.hasName('circularText')) {
+        localSelectedNode.off('dblclick dbltap');
+        localSelectedNode.on('dblclick dbltap', () => {
+             if (localSelectedNode.hasName('text') || localSelectedNode.hasName('circularText')) {
               textDialog.style.display = 'flex';
               if (dialogTitle) dialogTitle.textContent = 'Update Text';
               if (addTextBtn) addTextBtn.textContent = 'Update';
 
-              if (selectedNode.hasName('text')) {
-                  if(textInput) textInput.value = selectedNode.text();
-                  if(textFontSizeInput) textFontSizeInput.value = selectedNode.fontSize();
-                  if(textFontFamilySelect) textFontFamilySelect.value = selectedNode.fontFamily();
-                  if(textColorPicker) textColorPicker.value = selectedNode.fill();
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedNode.fill();
+              if (localSelectedNode.hasName('text')) {
+                  if(textInput) textInput.value = localSelectedNode.text();
+                  if(textFontSizeInput) textFontSizeInput.value = localSelectedNode.fontSize();
+                  if(textFontFamilySelect) textFontFamilySelect.value = localSelectedNode.fontFamily();
+                  if(textColorPicker) textColorPicker.value = localSelectedNode.fill();
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = localSelectedNode.fill();
                   
-                  if(letterSpacingSlider) letterSpacingSlider.value = selectedNode.letterSpacing();
-                  if(lineHeightSlider) lineHeightSlider.value = selectedNode.lineHeight();
+                  if(letterSpacingSlider) letterSpacingSlider.value = localSelectedNode.letterSpacing();
+                  if(lineHeightSlider) lineHeightSlider.value = localSelectedNode.lineHeight();
                   document.querySelectorAll('#text-align-container button').forEach(btn => {
                     btn.classList.remove('active');
-                    if (btn.getAttribute('data-align') === selectedNode.align()) {
+                    if (btn.getAttribute('data-align') === localSelectedNode.align()) {
                         btn.classList.add('active');
                     }
                   });
@@ -535,29 +439,29 @@ export default function KonvaEditor() {
                   if(circularTextCurvature) circularTextCurvature.value = '0';
                   if(circularTextRadius) circularTextRadius.value = '150'; 
 
-              } else if (selectedNode.hasName('circularText')) {
-                  if(textInput) textInput.value = selectedNode.getAttr('data-text');
-                  if(circularTextCurvature) circularTextCurvature.value = selectedNode.getAttr('data-curvature');
-                  if(circularTextRadius) circularTextRadius.value = selectedNode.getAttr('data-radius');
-                  if(textColorPicker) textColorPicker.value = selectedNode.getAttr('data-color');
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedNode.getAttr('data-color');
-                  if(textFontFamilySelect) textFontFamilySelect.value = selectedNode.getAttr('data-font-family');
+              } else if (localSelectedNode.hasName('circularText')) {
+                  if(textInput) textInput.value = localSelectedNode.getAttr('data-text');
+                  if(circularTextCurvature) circularTextCurvature.value = localSelectedNode.getAttr('data-curvature');
+                  if(circularTextRadius) circularTextRadius.value = localSelectedNode.getAttr('data-radius');
+                  if(textColorPicker) textColorPicker.value = localSelectedNode.getAttr('data-color');
+                  if(colorPreviewText) colorPreviewText.style.backgroundColor = localSelectedNode.getAttr('data-color');
+                  if(textFontFamilySelect) textFontFamilySelect.value = localSelectedNode.getAttr('data-font-family');
               }
-            } else if (selectedNode.hasName('shape')) {
+            } else if (localSelectedNode.hasName('shape')) {
               shapeDialog.style.display = 'flex';
               if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
               if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); 
               if(addShapeBtn) addShapeBtn.classList.add('hidden');
 
-              const shapeColor = selectedNode.fill() || selectedNode.stroke();
+              const shapeColor = localSelectedNode.fill() || localSelectedNode.stroke();
               if(shapeColorPicker) shapeColorPicker.value = shapeColor;
               if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
               selectedColorShape = shapeColor;
 
-              const shapeType = selectedNode.getAttr('data-type');
+              const shapeType = localSelectedNode.getAttr('data-type');
               if (shapeType === 'line' || shapeType === 'arrow') {
                   if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
-                  const currentThickness = selectedNode.strokeWidth();
+                  const currentThickness = localSelectedNode.strokeWidth();
                   if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
                   if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
               } else {
@@ -565,13 +469,13 @@ export default function KonvaEditor() {
               }
               if (shapeType === 'polygon') {
                 if(shapeSidesControls) shapeSidesControls.classList.remove('hidden');
-                const currentSides = selectedNode.sides();
+                const currentSides = localSelectedNode.sides();
                 if(shapeSidesSlider) shapeSidesSlider.value = String(currentSides);
                 if(shapeSidesValue) shapeSidesValue.textContent = String(currentSides);
               } else {
                 if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
               }
-            } else if (selectedNode.hasName('image')) {
+            } else if (localSelectedNode.hasName('image')) {
                 // This logic is for replacing an existing image.
                 imageFileInput.onchange = () => {
                     if (imageFileInput.files && imageFileInput.files.length > 0) {
@@ -584,7 +488,7 @@ export default function KonvaEditor() {
                                 const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
                                 
                                 // Replace the old image with the new one
-                                selectedNode.destroy();
+                                localSelectedNode.destroy();
                                 
                                 img.setAttrs({
                                     x: (stage.width() - img.width() * scale) / 2,
@@ -596,7 +500,7 @@ export default function KonvaEditor() {
                                 });
                                 layer.add(img);
                                 selectNode(img);
-                                updateLayersPanel();
+                                updateKonvaState();
                                 layer.draw();
                             });
                         };
@@ -605,32 +509,32 @@ export default function KonvaEditor() {
                     imageFileInput.value = ''; // Reset input
                 };
                 imageFileInput.click();
-            } else if (selectedNode.hasName('frame')) {
+            } else if (localSelectedNode.hasName('frame')) {
                 frameDialog.style.display = 'flex';
                 if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
                 if(addFrameBtn) addFrameBtn.classList.add('hidden');
 
-                if(frameColorPicker) frameColorPicker.value = selectedNode.stroke();
-                if(colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedNode.stroke();
+                if(frameColorPicker) frameColorPicker.value = localSelectedNode.stroke();
+                if(colorPreviewFrame) colorPreviewFrame.style.backgroundColor = localSelectedNode.stroke();
                 
-                const frameType = selectedNode.getAttr('data-type');
+                const frameType = localSelectedNode.getAttr('data-type');
                 if (frameType === 'polygon') {
                     if(frameSidesControls) frameSidesControls.classList.remove('hidden');
-                    if(frameSidesSlider) frameSidesSlider.value = selectedNode.sides();
-                    if(frameSidesValue) frameSidesValue.textContent = selectedNode.sides();
+                    if(frameSidesSlider) frameSidesSlider.value = localSelectedNode.sides();
+                    if(frameSidesValue) frameSidesValue.textContent = localSelectedNode.sides();
                 } else {
                     if(frameSidesControls) frameSidesControls.classList.add('hidden');
                 }
                 
-                if(frameThicknessSlider) frameThicknessSlider.value = selectedNode.strokeWidth();
-                if(frameThicknessValue) frameThicknessValue.textContent = selectedNode.strokeWidth();
+                if(frameThicknessSlider) frameThicknessSlider.value = localSelectedNode.strokeWidth();
+                if(frameThicknessValue) frameThicknessValue.textContent = localSelectedNode.strokeWidth();
                 
-            } else if (selectedNode.hasName('mask')) {
-                addImageToMask(selectedNode);
+            } else if (localSelectedNode.hasName('mask')) {
+                addImageToMask(localSelectedNode);
             }
         });
 
-        updateLayersPanel();
+        updateKonvaState();
         layer.draw();
     };
 
@@ -769,7 +673,7 @@ export default function KonvaEditor() {
                             });
                             layer.add(img);
                             selectNode(img);
-                            updateLayersPanel();
+                            updateKonvaState();
                             layer.draw();
                         });
                     };
@@ -841,13 +745,13 @@ export default function KonvaEditor() {
 
 
     try {
-      updateLayersPanel(); 
+      updateKonvaState();
 
       // --- 6. Konva Dependent Functions ---
       const updateSelectedTextStyle = () => {
-        if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
+        if (!localSelectedNode || (localSelectedNode.name() !== 'text' && localSelectedNode.name() !== 'circularText')) return;
 
-        if (selectedNode.name() === 'circularText') {
+        if (localSelectedNode.name() === 'circularText') {
             return;
         }
 
@@ -860,38 +764,38 @@ export default function KonvaEditor() {
         if (isUnderline) decorations.push('underline');
         if (isStrikethrough) decorations.push('line-through');
 
-        selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
-        selectedNode.textDecoration(decorations.join(' '));
+        localSelectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
+        localSelectedNode.textDecoration(decorations.join(' '));
         
-        selectedNode.letterSpacing(Number(letterSpacingSlider.value));
-        selectedNode.lineHeight(Number(lineHeightSlider.value));
+        localSelectedNode.letterSpacing(Number(letterSpacingSlider.value));
+        localSelectedNode.lineHeight(Number(lineHeightSlider.value));
         const activeAlignButton = document.querySelector('#text-align-container button.active');
-        selectedNode.align(activeAlignButton?.getAttribute('data-align') || 'left');
+        localSelectedNode.align(activeAlignButton?.getAttribute('data-align') || 'left');
 
 
         const isShadowActive = dropShadowBtn?.classList.contains('active');
         if (isShadowActive) {
-          selectedNode.shadowEnabled(true);
-          selectedNode.shadowColor('#000000');
-          selectedNode.shadowBlur(Number(shadowBlurSlider.value));
-          selectedNode.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
-          selectedNode.shadowOpacity(Number(shadowOpacitySlider.value));
+          localSelectedNode.shadowEnabled(true);
+          localSelectedNode.shadowColor('#000000');
+          localSelectedNode.shadowBlur(Number(shadowBlurSlider.value));
+          localSelectedNode.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
+          localSelectedNode.shadowOpacity(Number(shadowOpacitySlider.value));
         } else {
             if (!glowBtn?.classList.contains('active')) {
-                selectedNode.shadowEnabled(false);
+                localSelectedNode.shadowEnabled(false);
             }
         }
         
         const isGlowActive = glowBtn?.classList.contains('active');
         if (isGlowActive) {
-            selectedNode.shadowEnabled(true);
-            selectedNode.shadowColor(selectedColorGlow); 
-            selectedNode.shadowBlur(Number(glowBlurSlider.value));
-            selectedNode.shadowOffset({ x: 0, y: 0 }); 
-            selectedNode.shadowOpacity(Number(glowOpacitySlider.value));
+            localSelectedNode.shadowEnabled(true);
+            localSelectedNode.shadowColor(selectedColorGlow); 
+            localSelectedNode.shadowBlur(Number(glowBlurSlider.value));
+            localSelectedNode.shadowOffset({ x: 0, y: 0 }); 
+            localSelectedNode.shadowOpacity(Number(glowOpacitySlider.value));
         } else {
             if (!dropShadowBtn?.classList.contains('active')) {
-                selectedNode.shadowEnabled(false);
+                localSelectedNode.shadowEnabled(false);
             }
         }
 
@@ -957,7 +861,7 @@ export default function KonvaEditor() {
         }
 
         layer.add(newText);
-        updateLayersPanel();
+        updateKonvaState();
         layer.draw();
       };
 
@@ -1064,16 +968,16 @@ export default function KonvaEditor() {
 
 
         layer.add(circularGroup);
-        updateLayersPanel();
+        updateKonvaState();
         layer.draw();
       };
       
       const handleAddOrUpdateText = () => {
         const curvature = Number(circularTextCurvature.value);
         
-        if (selectedNode) {
-            if (selectedNode.hasName('text') || selectedNode.hasName('circularText')) {
-                selectedNode.destroy(); 
+        if (localSelectedNode) {
+            if (localSelectedNode.hasName('text') || localSelectedNode.hasName('circularText')) {
+                localSelectedNode.destroy(); 
                 deselectNode();
             }
         }
@@ -1123,12 +1027,12 @@ export default function KonvaEditor() {
             break;
         }
         if(newShape) layer.add(newShape);
-        updateLayersPanel();
+        updateKonvaState();
         layer.draw();
       };
       
       const applyFilter = (filter: any) => {
-          let nodeToFilter = selectedNode;
+          let nodeToFilter = localSelectedNode;
           if (!nodeToFilter) return;
 
           if (nodeToFilter.hasName('mask')) {
@@ -1149,9 +1053,9 @@ export default function KonvaEditor() {
       textColorPicker?.addEventListener('input', e => {
         selectedColorText = (e.target as HTMLInputElement).value;
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
-        if(selectedNode) {
-          if (selectedNode.hasName('text')) {
-             selectedNode.fill(selectedColorText);
+        if(localSelectedNode) {
+          if (localSelectedNode.hasName('text')) {
+             localSelectedNode.fill(selectedColorText);
              layer.draw();
           }
         }
@@ -1160,8 +1064,8 @@ export default function KonvaEditor() {
       glowColorPicker?.addEventListener('input', e => {
           selectedColorGlow = (e.target as HTMLInputElement).value;
           if (colorPreviewGlow) colorPreviewGlow.style.backgroundColor = selectedColorGlow;
-          if (selectedNode && glowBtn?.classList.contains('active')) {
-              selectedNode.shadowColor(selectedColorGlow);
+          if (localSelectedNode && glowBtn?.classList.contains('active')) {
+              localSelectedNode.shadowColor(selectedColorGlow);
               layer.draw();
           }
       });
@@ -1170,15 +1074,15 @@ export default function KonvaEditor() {
         selectedColorShape = (e.target as HTMLInputElement).value;
         if(colorPreviewShape) colorPreviewShape.style.backgroundColor = selectedColorShape;
         
-        if (selectedNode && selectedNode.hasName('shape')) {
-            const shapeType = selectedNode.getAttr('data-type');
+        if (localSelectedNode && localSelectedNode.hasName('shape')) {
+            const shapeType = localSelectedNode.getAttr('data-type');
             if (shapeType === 'line' || shapeType === 'arrow') {
-                selectedNode.stroke(selectedColorShape);
+                localSelectedNode.stroke(selectedColorShape);
             } else {
-                selectedNode.fill(selectedColorShape);
+                localSelectedNode.fill(selectedColorShape);
             }
             if (shapeType === 'arrow') {
-                selectedNode.fill(selectedColorShape);
+                localSelectedNode.fill(selectedColorShape);
             }
             layer.draw();
         }
@@ -1197,8 +1101,8 @@ export default function KonvaEditor() {
       frameColorPicker?.addEventListener('input', e => {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
-          if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.stroke(selectedColorFrame);
+          if (localSelectedNode && localSelectedNode.hasName('frame')) {
+              localSelectedNode.stroke(selectedColorFrame);
               layer.draw();
           }
       });
@@ -1206,8 +1110,8 @@ export default function KonvaEditor() {
       frameThicknessSlider?.addEventListener('input', e => {
           const newThickness = Number((e.target as HTMLInputElement).value);
           if(frameThicknessValue) frameThicknessValue.textContent = String(newThickness);
-          if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.strokeWidth(newThickness);
+          if (localSelectedNode && localSelectedNode.hasName('frame')) {
+              localSelectedNode.strokeWidth(newThickness);
               layer.draw();
           }
       });
@@ -1215,8 +1119,8 @@ export default function KonvaEditor() {
       frameSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(frameSidesValue) frameSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.hasName('frame') && selectedNode.getAttr('data-type') === 'polygon') {
-            selectedNode.sides(newSides);
+        if (localSelectedNode && localSelectedNode.hasName('frame') && localSelectedNode.getAttr('data-type') === 'polygon') {
+            localSelectedNode.sides(newSides);
             layer.draw();
         }
       });
@@ -1224,8 +1128,8 @@ export default function KonvaEditor() {
       maskColorPicker?.addEventListener('input', e => {
           selectedColorMask = (e.target as HTMLInputElement).value;
           if (colorPreviewMask) colorPreviewMask.style.backgroundColor = selectedColorMask;
-          if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+          if (localSelectedNode && localSelectedNode.hasName('mask')) {
+              const border = localSelectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
               if (border) {
                 border.stroke(selectedColorMask);
                 layer.draw();
@@ -1236,8 +1140,8 @@ export default function KonvaEditor() {
       maskBorderThicknessSlider?.addEventListener('input', e => {
           const newThickness = Number((e.target as HTMLInputElement).value);
           if(maskBorderThicknessValue) maskBorderThicknessValue.textContent = String(newThickness);
-          if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+          if (localSelectedNode && localSelectedNode.hasName('mask')) {
+              const border = localSelectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
               if (border) {
                 border.strokeWidth(newThickness);
                 layer.draw();
@@ -1248,8 +1152,8 @@ export default function KonvaEditor() {
       maskSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(maskSidesValue) maskSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.hasName('mask') && (selectedNode.getAttr('data-type') === 'polygon' || selectedNode.getAttr('data-type') === 'diamond')) {
-            const border = selectedNode.findOne('RegularPolygon');
+        if (localSelectedNode && localSelectedNode.hasName('mask') && (localSelectedNode.getAttr('data-type') === 'polygon' || localSelectedNode.getAttr('data-type') === 'diamond')) {
+            const border = localSelectedNode.findOne('RegularPolygon');
              if (border) {
                 border.sides(newSides);
                 layer.draw();
@@ -1296,10 +1200,10 @@ export default function KonvaEditor() {
       shapeThicknessSlider?.addEventListener('input', (e) => {
         const newThickness = Number((e.target as HTMLInputElement).value);
         if(shapeThicknessValue) shapeThicknessValue.textContent = String(newThickness);
-        if (selectedNode && selectedNode.hasName('shape')) {
-            const shapeType = selectedNode.getAttr('data-type');
+        if (localSelectedNode && localSelectedNode.hasName('shape')) {
+            const shapeType = localSelectedNode.getAttr('data-type');
             if (shapeType === 'line' || shapeType === 'arrow') {
-                selectedNode.strokeWidth(newThickness);
+                localSelectedNode.strokeWidth(newThickness);
                 layer.draw();
             }
         }
@@ -1308,8 +1212,8 @@ export default function KonvaEditor() {
       shapeSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(shapeSidesValue) shapeSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.hasName('shape') && selectedNode.getAttr('data-type') === 'polygon') {
-            selectedNode.sides(newSides);
+        if (localSelectedNode && localSelectedNode.hasName('shape') && localSelectedNode.getAttr('data-type') === 'polygon') {
+            localSelectedNode.sides(newSides);
             layer.draw();
         }
       });
@@ -1384,34 +1288,34 @@ export default function KonvaEditor() {
       });
         
       deleteBtn?.addEventListener('click', () => {
-        if (selectedNode) {
-          selectedNode.destroy();
+        if (localSelectedNode) {
+          localSelectedNode.destroy();
           tr.nodes([]);
           deselectNode();
-          updateLayersPanel();
+          updateKonvaState();
         }
       });
 
       const alignObject = (position: string) => {
-        if (!selectedNode) return;
-        const box = selectedNode.getClientRect({ relativeTo: stage });
+        if (!localSelectedNode) return;
+        const box = localSelectedNode.getClientRect({ relativeTo: stage });
 
         switch (position) {
             case 'top':
-                selectedNode.y(selectedNode.y() - box.y);
+                localSelectedNode.y(localSelectedNode.y() - box.y);
                 break;
             case 'left':
-                selectedNode.x(selectedNode.x() - box.x);
+                localSelectedNode.x(localSelectedNode.x() - box.x);
                 break;
             case 'center':
-                selectedNode.x(stage.width() / 2);
-                selectedNode.y(stage.height() / 2);
+                localSelectedNode.x(stage.width() / 2);
+                localSelectedNode.y(stage.height() / 2);
                 break;
             case 'right':
-                selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
+                localSelectedNode.x(stage.width() - box.width - (localSelectedNode.x() - box.x));
                 break;
             case 'bottom':
-                selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
+                localSelectedNode.y(stage.height() - box.height - (localSelectedNode.y() - box.y));
                 break;
         }
         layer.draw();
@@ -1424,9 +1328,9 @@ export default function KonvaEditor() {
       alignBottomBtn?.addEventListener('click', () => alignObject('bottom'));
 
       opacitySlider?.addEventListener('input', (e) => {
-        if (!selectedNode) return;
+        if (!localSelectedNode) return;
         const newOpacity = parseFloat((e.target as HTMLInputElement).value);
-        selectedNode.opacity(newOpacity);
+        localSelectedNode.opacity(newOpacity);
         layer.draw();
       });
 
@@ -1452,7 +1356,7 @@ export default function KonvaEditor() {
       });
       
       stage.on('dragend', () => {
-        updateLayersPanel();
+        updateKonvaState();
       });
 
     } catch (error) {
@@ -1465,6 +1369,19 @@ export default function KonvaEditor() {
       initializeKonva();
     }
   }, [canvasRef.current]);
+
+  const onNodeAction = (action: 'up' | 'down', nodeId: string) => {
+        if (!canvasRef.current?.layer) return;
+        const { layer } = canvasRef.current;
+        const node = layer.findOne(`#${nodeId}`);
+        if (node) {
+            if (action === 'up') node.moveUp();
+            if (action === 'down') node.moveDown();
+            layer.draw();
+            const nodes = layer.getChildren((node: any) => node.name() !== 'background' && node.className !== 'Transformer');
+            setKonvaObjects(nodes.toArray());
+        }
+    };
 
 
   return (
@@ -1535,11 +1452,12 @@ export default function KonvaEditor() {
                 </div>
             </div>
 
-            <div id="layers-panel">
-                <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
-                <ul id="layers-list">
-                </ul>
-            </div>
+            <LayersPanel
+                layers={konvaObjects}
+                selectedNode={selectedNode}
+                onSelectNode={(node) => selectNode(node)}
+                onMoveNode={onNodeAction}
+            />
         
 
         <div id="text-dialog" className="dialog-overlay">
@@ -1871,6 +1789,8 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
 
