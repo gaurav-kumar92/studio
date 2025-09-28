@@ -40,38 +40,12 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
     const resizeCanvas = (size: string) => {
       if (!stage) return;
 
-      const parentContainer = stage.container().parentElement;
-      if (!parentContainer) return;
-      
-      const parentStyle = window.getComputedStyle(parentContainer.parentElement!);
-      const paddingLeft = parseFloat(parentStyle.paddingLeft);
-      const paddingRight = parseFloat(parentStyle.paddingRight);
-      const paddingTop = parseFloat(parentStyle.paddingTop);
-      const paddingBottom = parseFloat(parentStyle.paddingBottom);
-
-      const availableWidth = parentContainer.parentElement!.clientWidth - paddingLeft - paddingRight;
-      const availableHeight = parentContainer.parentElement!.clientHeight - paddingTop - paddingBottom;
-      
-      // A1 dimensions are the reference for scaling
-      const A1_WIDTH = 2384;
-      const A1_HEIGHT = 3370;
-      const MAX_DIMENSION = 1000; // The largest dimension (A1 height) will be scaled down to this
-      
-      const scaleFactor = MAX_DIMENSION / A1_HEIGHT;
+      const PIXELS_PER_POINT = 0.35; // This constant determines the overall scale.
 
       const [targetWidth, targetHeight] = size.split('x').map(Number);
       
-      let newWidth = targetWidth * scaleFactor;
-      let newHeight = targetHeight * scaleFactor;
-
-      // If the scaled size is still too big for the container, shrink it down further.
-      if (newWidth > availableWidth || newHeight > availableHeight) {
-          const widthScale = availableWidth / newWidth;
-          const heightScale = availableHeight / newHeight;
-          const shrinkScale = Math.min(widthScale, heightScale, 1);
-          newWidth *= shrinkScale;
-          newHeight *= shrinkScale;
-      }
+      const newWidth = targetWidth * PIXELS_PER_POINT;
+      const newHeight = targetHeight * PIXELS_PER_POINT;
 
       stage.width(newWidth);
       stage.height(newHeight);
@@ -115,12 +89,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
     
     resizeCanvas(canvasSize); 
     
-    const handleResize = () => resizeCanvas(canvasSize);
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
   }, [canvasSize, stage, onReady]);
 
 
