@@ -146,93 +146,152 @@ export default function KonvaEditor() {
     // --- 3. UI and Helper Functions (Declared after variables) ---
 
     // Forward declare functions that are called by others before they are defined
-    let addFrame: (type: string, options?: any) => void;
     let updateLayersPanel: () => void;
     let selectNode: (node: any) => void;
     let deselectNode: (updateLayers?: boolean) => void;
     let resetFrameDialog: () => void;
+    let addImageToFrame: (frameGroup: any) => void;
 
-    addFrame = (type: string, options: any = {}) => {
-        if (!stage || !layer) {
-            console.error("Stage or Layer not initialized yet.");
-            return;
-        }
-        if (!type) return;
+    const addFrame = (type: string, options: any = {}) => {
+        if (!stage || !layer) return;
 
+        const size = 150; 
         const thickness = Number(frameThicknessSlider.value);
         const color = selectedColorFrame;
-        const size = 150;
-        const x = stage.width() / 4;
-        const y = stage.height() / 4;
 
-        let frameShape;
+        const group = new window.Konva.Group({
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            width: size,
+            height: size,
+            draggable: true,
+            name: 'frame',
+            'data-type': type,
+            ...options 
+        });
+
+        let clipShape: any;
+
+        const commonAttrs = {
+            x: size / 2,
+            y: size / 2,
+            stroke: color,
+            strokeWidth: thickness,
+            fill: '#f0f0f0', 
+        };
 
         switch (type) {
             case 'circle':
-                frameShape = new window.Konva.Circle({
-                    radius: size / 2,
-                });
+                clipShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
                 break;
             case 'star':
-                frameShape = new window.Konva.Star({
-                    numPoints: 5,
-                    innerRadius: size / 4,
-                    outerRadius: size / 2,
-                });
+                clipShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                 break;
             case 'triangle':
-                frameShape = new window.Konva.RegularPolygon({
-                    sides: 3,
-                    radius: size / 2,
-                });
+                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
                 break;
             case 'polygon':
-                frameShape = new window.Konva.RegularPolygon({
-                    sides: options.sides || 6,
-                    radius: size / 2,
-                });
+                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size / 2 });
                 break;
             case 'diamond':
-                frameShape = new window.Konva.RegularPolygon({
-                    sides: 4,
-                    radius: size / Math.SQRT2,
-                });
+                clipShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.SQRT2 });
                 break;
             default: // rect
-                frameShape = new window.Konva.Rect({
-                    width: size,
-                    height: size,
-                    offsetX: size / 2,
-                    offsetY: size / 2,
-                });
+                clipShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, offsetX: size/2, offsetY: size/2 });
                 break;
         }
 
-        frameShape.setAttrs({
-            x: x,
-            y: y,
-            name: 'frame',
-            'data-type': type,
-            draggable: true,
-            fillEnabled: false,
-            stroke: color,
-            strokeWidth: thickness,
+        group.add(clipShape);
+
+        // Add placeholder icon
+        const placeholderSvgPath = 'M21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21H3v-3l12-12a2.828 2.828 0 0 0 0-4L12 2l-3 3-4 4a2 2 0 0 0 0 2.828l3.086 3.086m0 0L21 15';
+        const placeholderIcon = new window.Konva.Path({
+            x: size / 4,
+            y: size / 4,
+            data: 'M10.33,7.57l-1.8,1.8a.75.75,0,0,1-1.06,0l-1.8-1.8a.75.75,0,0,1,0-1.06l1.8-1.8a.75.75,0,0,1,1.06,0l1.8,1.8a.75.75,0,0,1,0,1.06Zm-2.86,4.62,1.8,1.8a.75.75,0,0,0,1.06,0l1.8-1.8a.75.75,0,0,0,0-1.06l-1.8-1.8a.75.75,0,0,0-1.06,0l-1.8,1.8a.75.75,0,0,0,0,1.06Zm7.32,1.79a.75.75,0,0,1-.53-.22l-4-4A.75.75,0,0,1,10,9.17V3.5a.75.75,0,0,1,1.5,0v5.29l3.78,3.78a.75.75,0,0,1-.53,1.28Z',
+            fill: '#9ca3af',
+            scale: { x: 3, y: 3 },
+            name: 'placeholder-icon'
+        });
+        group.add(placeholderIcon);
+
+
+        group.clipFunc(function (ctx: any) {
+            ctx.beginPath();
+            switch (type) {
+                case 'circle':
+                    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
+                    break;
+                case 'star': {
+                    const points = clipShape.getPoints();
+                    ctx.moveTo(points[0], points[1]);
+                    for(let i = 2; i < points.length; i+=2) {
+                        ctx.lineTo(points[i], points[i+1]);
+                    }
+                    break;
+                }
+                case 'triangle':
+                case 'polygon':
+                case 'diamond': {
+                    const points = clipShape.getPoints();
+                    ctx.moveTo(points[0], points[1]);
+                    for(let i = 2; i < points.length; i+=2) {
+                        ctx.lineTo(points[i], points[i+1]);
+                    }
+                    break;
+                }
+                default: // rect
+                    ctx.rect(0, 0, size, size);
+                    break;
+            }
+            ctx.closePath();
         });
 
-        if (options.sides) {
-            frameShape.setAttr('data-sides', options.sides);
-        }
-        if (type === 'diamond') {
-            frameShape.setAttr('data-type', 'diamond');
-        }
 
-        layer.add(frameShape);
+        layer.add(group);
         updateLayersPanel();
         layer.draw();
-        selectNode(frameShape);
+        selectNode(group);
         if (frameDialog) frameDialog.style.display = 'none';
         resetFrameDialog();
     };
+
+    addImageToFrame = (frameGroup: any) => {
+        if (!frameGroup || frameGroup.name() !== 'frame') return;
+
+        imageFileInput.onchange = () => {
+            if (imageFileInput.files && imageFileInput.files.length > 0) {
+                const file = imageFileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                        // Remove placeholder icon and any existing image
+                        frameGroup.find('.placeholder-icon, .frame-image').forEach((child: any) => child.destroy());
+                        
+                        img.setAttrs({
+                            name: 'frame-image',
+                            width: frameGroup.width(),
+                            height: frameGroup.height(),
+                        });
+
+                        frameGroup.add(img);
+                        img.moveToBottom();
+                        
+                        // Make sure border is on top
+                        const borderShape = frameGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Path');
+                        if (borderShape) borderShape.moveToTop();
+
+                        layer.draw();
+                        updateLayersPanel();
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            imageFileInput.value = ''; // Reset input
+        };
+        imageFileInput.click();
+    };
+
     
     updateLayersPanel = () => {
         if (!layersList) return;
@@ -337,9 +396,9 @@ export default function KonvaEditor() {
     };
 
     selectNode = (node: any) => {
-        // If it's a child of a circular text group, select the group.
+        // If it's a child of a group, select the group.
         let nodeToSelect = node;
-        if (node.parent?.hasName('circularText')) {
+        if (node.parent?.hasName('circularText') || node.parent?.hasName('frame')) {
           nodeToSelect = node.parent;
         }
 
@@ -429,7 +488,7 @@ export default function KonvaEditor() {
                         const file = imageFileInput.files[0];
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            window.Konva.Image.fromURL(e.target.result, (img: any) => {
+                            window.Konva.Image.fromURL(e.target!.result, (img: any) => {
                                 img.setAttrs({
                                     x: stage.width() / 4,
                                     y: stage.height() / 4,
@@ -448,20 +507,7 @@ export default function KonvaEditor() {
                 };
                 imageFileInput.click();
             } else if (selectedNode.hasName('frame')) {
-                frameDialog.style.display = 'flex';
-                if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
-                if(addFrameBtn) addFrameBtn.classList.add('hidden');
-                
-                const frameType = selectedNode.getAttr('data-type');
-
-                if (frameType === 'polygon' || frameType === 'diamond') {
-                    if(frameSidesControls) frameSidesControls.classList.remove('hidden');
-                    const currentSides = selectedNode.sides();
-                    if(frameSidesSlider) frameSidesSlider.value = String(currentSides);
-                    if(frameSidesValue) frameSidesValue.textContent = String(currentSides);
-                } else {
-                    if(frameSidesControls) frameSidesControls.classList.add('hidden');
-                }
+                addImageToFrame(selectedNode);
             }
         });
 
@@ -576,7 +622,7 @@ export default function KonvaEditor() {
                     const file = imageFileInput.files[0];
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        window.Konva.Image.fromURL(e.target.result, (img: any) => {
+                        window.Konva.Image.fromURL(e.target!.result, (img: any) => {
                             img.setAttrs({
                                 x: stage.width() / 4,
                                 y: stage.height() / 4,
@@ -962,6 +1008,12 @@ export default function KonvaEditor() {
       
       const applyFilter = (filter: any) => {
           let nodeToFilter = selectedNode;
+          if (!nodeToFilter) return;
+
+          if (nodeToFilter.hasName('frame')) {
+            nodeToFilter = nodeToFilter.findOne('.frame-image');
+          }
+
           if (!nodeToFilter || !nodeToFilter.hasName('image')) return;
 
           nodeToFilter.cache(); 
@@ -1028,8 +1080,11 @@ export default function KonvaEditor() {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
           if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.stroke(selectedColorFrame);
-              layer.draw();
+              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon');
+              if (border) {
+                border.stroke(selectedColorFrame);
+                layer.draw();
+              }
           }
       });
 
@@ -1037,17 +1092,23 @@ export default function KonvaEditor() {
           const newThickness = Number((e.target as HTMLInputElement).value);
           if(frameThicknessValue) frameThicknessValue.textContent = String(newThickness);
           if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.strokeWidth(newThickness);
-              layer.draw();
+              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon');
+              if (border) {
+                border.strokeWidth(newThickness);
+                layer.draw();
+              }
           }
       });
       
       frameSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(frameSidesValue) frameSidesValue.textContent = String(newSides);
-        if (selectedNode && (selectedNode.getAttr('data-type') === 'polygon' || selectedNode.getAttr('data-type') === 'diamond')) {
-            selectedNode.sides(newSides);
-            layer.draw();
+        if (selectedNode && selectedNode.hasName('frame') && (selectedNode.getAttr('data-type') === 'polygon' || selectedNode.getAttr('data-type') === 'diamond')) {
+            const border = selectedNode.findOne('RegularPolygon');
+             if (border) {
+                border.sides(newSides);
+                layer.draw();
+            }
         }
       });
 
@@ -1102,7 +1163,7 @@ export default function KonvaEditor() {
       shapeSidesSlider?.addEventListener('input', (e) => {
         const newSides = Number((e.target as HTMLInputElement).value);
         if(shapeSidesValue) shapeSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.getAttr('data-type') === 'polygon') {
+        if (selectedNode && selectedNode.hasName('shape') && selectedNode.getAttr('data-type') === 'polygon') {
             selectedNode.sides(newSides);
             layer.draw();
         }
@@ -1607,3 +1668,6 @@ export default function KonvaEditor() {
 
     
 
+
+
+    
