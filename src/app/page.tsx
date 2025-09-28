@@ -158,75 +158,52 @@ export default function KonvaEditor() {
             const color = selectedColorFrame;
             const size = 150;
     
-            const group = new window.Konva.Group({
-                x: stage.width() / 4,
-                y: stage.height() / 4,
-                width: size,
-                height: size,
-                draggable: true,
-                name: 'frame',
-                'data-type': type,
-            });
-    
-            let borderShape;
+            let frameShape;
+            const x = stage.width() / 4;
+            const y = stage.height() / 4;
             
             switch (type) {
                 case 'circle':
-                    borderShape = new window.Konva.Circle({
-                        x: size / 2,
-                        y: size / 2,
+                    frameShape = new window.Konva.Circle({
+                        x,
+                        y,
                         radius: size / 2
                     });
                     break;
                 case 'star':
-                    borderShape = new window.Konva.Star({
-                        x: size / 2,
-                        y: size / 2,
+                    frameShape = new window.Konva.Star({
+                        x,
+                        y,
                         numPoints: 5,
                         innerRadius: size / 4,
                         outerRadius: size / 2
                     });
                     break;
                 default:
-                    borderShape = new window.Konva.Rect({
-                        x: 0,
-                        y: 0,
+                    frameShape = new window.Konva.Rect({
+                        x,
+                        y,
                         width: size,
-                        height: size
+                        height: size,
+                        offsetX: size/2,
+                        offsetY: size/2
                     });
                     break;
             }
 
-            borderShape.setAttrs({
-                name: 'frame-shape',
+            frameShape.setAttrs({
+                name: 'frame',
+                'data-type': type,
+                draggable: true,
                 fillEnabled: false,
                 stroke: color,
                 strokeWidth: frameWidth,
             });
-            group.add(borderShape);
-
-            // Use the same shape for the clipping function
-            group.clipFunc((ctx: any) => {
-                borderShape._sceneFunc(ctx);
-            });
-
-            const placeholder = new window.Konva.Path({
-                data: 'M18 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM6 5h12v10l-3.5-3.5a2 2 0 0 0-2.82 0L6 16.17V5zM9 9a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
-                fill: '#cccccc',
-                scale: {x: 2.5, y:2.5},
-                name: 'frame-placeholder',
-            });
-            placeholder.position({
-                x: (size - placeholder.width() * 2.5) / 2,
-                y: (size - placeholder.height() * 2.5) / 2,
-            });
-            group.add(placeholder);
-            placeholder.moveToBottom();
+            layer.add(frameShape);
             
-            layer.add(group);
             updateLayersPanel();
             layer.draw();
-            selectNode(group);
+            selectNode(frameShape);
             if (frameDialog) frameDialog.style.display = 'none';
             
         } catch (error) {
@@ -409,8 +386,6 @@ export default function KonvaEditor() {
             node.draggable(true);
             tr.nodes([node]);
         } else if (node.hasName('frame')) {
-            const internalImage = node.findOne('.frame-image');
-            if (internalImage) internalImage.draggable(false);
             tr.nodes([node]);
         } else {
             tr.nodes([node]);
@@ -479,22 +454,28 @@ export default function KonvaEditor() {
               } else {
                 if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
               }
-
-
-            } else if (node.hasName('frame')) {
-                imageFileInput.onchange = () => {
-                    if (!imageFileInput.files || imageFileInput.files.length === 0) {
-                        return;
+            } else if (node.hasName('image')) {
+                 imageFileInput.onchange = () => {
+                    if (imageFileInput.files && imageFileInput.files.length > 0) {
+                        const file = imageFileInput.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            window.Konva.Image.fromURL(e.target.result, (img: any) => {
+                                img.setAttrs({
+                                    x: stage.width() / 4,
+                                    y: stage.height() / 4,
+                                    name: 'image',
+                                    draggable: true,
+                                });
+                                layer.add(img);
+                                selectNode(img);
+                                updateLayersPanel();
+                                layer.draw();
+                            });
+                        };
+                        reader.readAsDataURL(file);
                     }
-                    const file = imageFileInput.files[0];
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        addImageToFrame(node, reader.result as string);
-                    };
-                    reader.readAsDataURL(file);
-
                     imageFileInput.value = '';
-                    imageFileInput.onchange = null;
                 };
                 imageFileInput.click();
             }
@@ -585,6 +566,30 @@ export default function KonvaEditor() {
             if (shapeDialog) shapeDialog.style.display = 'flex';
         } else if (itemType === 'frame') {
             if (frameDialog) frameDialog.style.display = 'flex';
+        } else if (itemType === 'image') {
+            imageFileInput.onchange = () => {
+                if (imageFileInput.files && imageFileInput.files.length > 0) {
+                    const file = imageFileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        window.Konva.Image.fromURL(e.target.result, (img: any) => {
+                            img.setAttrs({
+                                x: stage.width() / 4,
+                                y: stage.height() / 4,
+                                name: 'image',
+                                draggable: true,
+                            });
+                            layer.add(img);
+                            selectNode(img);
+                            updateLayersPanel();
+                            layer.draw();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+                imageFileInput.value = '';
+            };
+            imageFileInput.click();
         }
     });
 
@@ -1553,6 +1558,10 @@ export default function KonvaEditor() {
                         <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                         <span>Shape</span>
                     </button>
+                     <button className="add-item-card" data-item-type="image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        <span>Image</span>
+                    </button>
                     <button className="add-item-card" data-item-type="frame">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
                         <span>Frame</span>
@@ -1589,6 +1598,7 @@ export default function KonvaEditor() {
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
+    
                     </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1612,5 +1622,7 @@ export default function KonvaEditor() {
 
 
 
+
+    
 
     
