@@ -1,7 +1,7 @@
 
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
 // This is a global declaration for the Konva object.
 declare global {
