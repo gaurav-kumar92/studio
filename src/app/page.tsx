@@ -167,20 +167,15 @@ export default function KonvaEditor() {
             });
     
             let clipShape;
-            // IMPORTANT: The clip shape's coordinates are relative to the group.
-            // That's why they are different from the border shape's coordinates,
-            // which might be centered within the group's bounding box.
+            // The clip shape's coordinates are relative to the group, so they should generally start at or around 0,0.
             switch(type) {
                 case 'circle':
-                    // A circle centered in the group's bounding box
                     clipShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2 });
                     break;
                 case 'star':
-                    // A star centered in the group's bounding box
                     clipShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                     break;
                 default: // rect
-                    // A rectangle at the top-left of the group
                     clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
                     break;
             }
@@ -193,14 +188,11 @@ export default function KonvaEditor() {
             });
             group.add(borderShape);
     
-            // The clipFunc applies a clipping region to the group.
-            // The coordinates inside this function are relative to the group itself.
             group.clipFunc((ctx: any) => {
-                // We use the internal _sceneFunc to draw the shape's path to the context.
-                // This is the recommended way to do complex clipping in Konva.
-                const shape = clipShape.clone({ visible: false });
+                // Use the internal Konva method to draw the shape's path to the context for clipping
+                const shapeForClipping = clipShape.clone({ visible: false });
                 ctx.beginPath();
-                shape._sceneFunc(ctx);
+                shapeForClipping._sceneFunc(ctx);
                 ctx.closePath();
             });
             
@@ -260,15 +252,17 @@ export default function KonvaEditor() {
 
             imageNode.setAttrs({
                 name: 'frame-image',
-                draggable: true,
+                draggable: true, // Initially draggable to position it
             });
 
             const frameShape = frameGroup.findOne('.frame-shape');
             const frameBounds = frameShape.getClientRect({ relativeTo: frameGroup });
 
+            // Fit the image to cover the frame's bounds
             const ratio = Math.max(frameBounds.width / imageNode.width(), frameBounds.height / imageNode.height());
             imageNode.scale({ x: ratio, y: ratio });
 
+            // Center the image within the frame bounds
             imageNode.position({
                 x: frameBounds.x + (frameBounds.width - imageNode.width() * ratio) / 2,
                 y: frameBounds.y + (frameBounds.height - imageNode.height() * ratio) / 2
@@ -277,11 +271,14 @@ export default function KonvaEditor() {
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
             
+            // Re-apply clip function to ensure it affects the new image
             const clipShapeForCtx = frameShape.clone({ visible: false });
-            frameGroup.clipFunc((ctx: any) => {
-                 clipShapeForCtx.drawScene(ctx);
+            group.clipFunc((ctx: any) => {
+                const shapeForClipping = clipShape.clone({ visible: false });
+                ctx.beginPath();
+                shapeForClipping._sceneFunc(ctx);
+                ctx.closePath();
             });
-
 
             layer.batchDraw();
             selectNode(frameGroup); 
@@ -372,17 +369,19 @@ export default function KonvaEditor() {
     };
     
     deselectNode = (updateLayers = true) => {
-        const transformer = stage?.findOne('Transformer');
-        if (transformer) {
-            transformer.destroy();
+        if (tr) {
+            tr.nodes([]);
+            tr.destroy();
+            tr = null;
         }
 
         if (selectedNode && selectedNode.hasName('frame')) {
             const internalImage = selectedNode.findOne('.frame-image');
             if (internalImage) internalImage.draggable(false);
         }
-
+        
         selectedNode = null;
+        
         deleteBtn.classList.add('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
         if (imageFiltersPanel) imageFiltersPanel.classList.add('hidden');
@@ -402,33 +401,35 @@ export default function KonvaEditor() {
         deselectNode(false); 
 
         selectedNode = node;
+        
         deleteBtn.classList.remove('hidden');
         if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
-        if (opacitySlider) opacitySlider.value = String(selectedNode.opacity());
+        if (opacitySlider) opacitySlider.value = String(selectedNode.opacity() ?? 1);
         
         if (imageFiltersPanel) {
-            if (selectedNode.hasName('image')) {
+            if (selectedNode.hasName('image') || (selectedNode.hasName('frame') && selectedNode.findOne('.frame-image'))) {
                 imageFiltersPanel.classList.remove('hidden');
             } else {
                 imageFiltersPanel.classList.add('hidden');
             }
         }
         
-        let nodeToTransform = node;
+        tr = new window.Konva.Transformer({ rotateEnabled: true });
+        layer.add(tr);
+
         if (node.hasName('frame-image')) {
             node.draggable(true);
-            nodeToTransform = node.getParent(); 
-            selectedNode = nodeToTransform; 
+            tr.nodes([node]);
         } else if (node.hasName('frame')) {
             const internalImage = node.findOne('.frame-image');
             if (internalImage) internalImage.draggable(false);
-            nodeToTransform = node; 
+            tr.nodes([node]);
+        } else {
+            tr.nodes([node]);
         }
         
-        tr = new window.Konva.Transformer({ rotateEnabled: true });
-        layer.add(tr);
-        tr.nodes([nodeToTransform]);
-
+        // Remove previous listeners to avoid duplicates
+        node.off('dblclick dbltap');
         node.on('dblclick dbltap', () => {
              if (node.hasName('text') || node.hasName('circularText')) {
               textDialog.style.display = 'flex';
@@ -910,8 +911,10 @@ export default function KonvaEditor() {
         const curvature = Number(circularTextCurvature.value);
         
         if (selectedNode) {
-            selectedNode.destroy(); 
-            deselectNode();
+            if (selectedNode.hasName('text') || selectedNode.hasName('circularText')) {
+                selectedNode.destroy(); 
+                deselectNode();
+            }
         }
 
         if (curvature > 0) {
@@ -964,9 +967,14 @@ export default function KonvaEditor() {
       };
       
       const applyFilter = (filter: any) => {
-          if (!selectedNode || !selectedNode.hasName('image')) return;
-          selectedNode.cache(); 
-          selectedNode.filters(filter ? [filter] : []);
+          let nodeToFilter = selectedNode;
+          if (selectedNode && selectedNode.hasName('frame')) {
+            nodeToFilter = selectedNode.findOne('.frame-image');
+          }
+          if (!nodeToFilter || (!nodeToFilter.hasName('image') && !nodeToFilter.hasName('frame-image'))) return;
+
+          nodeToFilter.cache(); 
+          nodeToFilter.filters(filter ? [filter] : []);
           layer.draw();
       };
 
@@ -982,8 +990,10 @@ export default function KonvaEditor() {
         selectedColorText = (e.target as HTMLInputElement).value;
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
         if(selectedNode) {
-          selectedNode.fill(selectedColorText);
-          layer.draw();
+          if (selectedNode.hasName('text')) {
+             selectedNode.fill(selectedColorText);
+             layer.draw();
+          }
         }
       });
       
@@ -1188,6 +1198,7 @@ export default function KonvaEditor() {
       deleteBtn?.addEventListener('click', () => {
         if (selectedNode) {
           selectedNode.destroy();
+          tr.nodes([]);
           deselectNode();
           updateLayersPanel();
         }
@@ -1639,6 +1650,8 @@ export default function KonvaEditor() {
     </>
   );
 }
+    
+
     
 
     
