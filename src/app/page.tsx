@@ -155,7 +155,7 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
     let selectedColorFrame = frameColorPicker.value;
-    let selectedColorMask = maskColorPicker.value;
+    let selectedColorMask = maskColorPicker ? maskColorPicker.value : '#3b82f6';
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
@@ -1766,6 +1766,17 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
             <div className="dialog" style={{maxWidth: '500px'}}>
                 <h3 className="text-lg font-semibold mb-4">Add a Mask</h3>
                 <div className="flex flex-col gap-4 mb-4">
+                     <div className="color-picker-container-inline justify-center">
+                        <label htmlFor="mask-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Border Color</label>
+                        <div id="color-preview-mask" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
+                        <input type="color" id="mask-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
+                    </div>
+                    <div id="mask-border-thickness-controls">
+                        <label htmlFor="mask-border-thickness-slider" className="block text-sm font-medium text-gray-700">
+                           Border Thickness (<span id="mask-border-thickness-value">0</span>px)
+                        </label>
+                        <input type="range" id="mask-border-thickness-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
+                    </div>
                     <div id="mask-sides-controls" className="hidden">
                         <label htmlFor="mask-sides-slider" className="block text-sm font-medium text-gray-700">
                             Sides (<span id="mask-sides-value">6</span>)
@@ -1844,3 +1855,4 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     
 
     
+
