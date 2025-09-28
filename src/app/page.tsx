@@ -8,6 +8,7 @@ import LayersPanel from '@/components/editor/LayersPanel';
 import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
 import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
 import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
+import AddItemDialog from '@/components/editor/AddItemDialog';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -24,6 +25,7 @@ export default function KonvaEditor() {
   const [konvaObjects, setKonvaObjects] = useState([]);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('500x500');
+  const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
@@ -37,7 +39,6 @@ export default function KonvaEditor() {
     // --- 1. Element References ---
     
     // Dialogs and Controls
-    const addItemDialog = document.getElementById('add-item-dialog');
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
     const shapeDialog = document.getElementById('shape-dialog') as HTMLElement;
     const frameDialog = document.getElementById('frame-dialog') as HTMLElement;
@@ -46,8 +47,6 @@ export default function KonvaEditor() {
 
     // Buttons
     const addItemBtn = document.getElementById('add-item-btn');
-    const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
-    const addItemOptions = document.getElementById('add-item-options');
     const cancelShapeBtn = document.getElementById('cancel-shape-btn');
     const addShapeBtn = document.getElementById('add-shape-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
@@ -607,11 +606,7 @@ export default function KonvaEditor() {
 
     // --- 4. Core Button Listeners (Dialog Control) ---
     addItemBtn?.addEventListener('click', () => {
-        if (addItemDialog) addItemDialog.style.display = 'flex';
-    });
-
-    cancelAddItemBtn?.addEventListener('click', () => {
-        if (addItemDialog) addItemDialog.style.display = 'none';
+        setAddItemDialogOpen(true);
     });
     
     // --- 5. Konva Initialization ---
@@ -619,59 +614,6 @@ export default function KonvaEditor() {
       console.error('Konva library is not loaded. Canvas features are disabled.');
       return;
     }
-
-    addItemOptions?.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).closest('[data-item-type]');
-        if (!target) return;
-
-        const itemType = target.getAttribute('data-item-type');
-        if (addItemDialog) addItemDialog.style.display = 'none'; 
-
-        deselectNode(); 
-        if (itemType === 'text') {
-            resetTextDialog();
-            if (textDialog) textDialog.style.display = 'flex';
-        } else if (itemType === 'shape') {
-            resetShapeDialog();
-            if (shapeDialog) shapeDialog.style.display = 'flex';
-        } else if (itemType === 'frame') {
-            resetFrameDialog();
-            if (frameDialog) frameDialog.style.display = 'flex';
-        } else if (itemType === 'mask') {
-            resetMaskDialog();
-            if (maskDialog) maskDialog.style.display = 'flex';
-        } else if (itemType === 'image') {
-            imageFileInput.onchange = () => {
-                if (imageFileInput.files && imageFileInput.files.length > 0) {
-                    const file = imageFileInput.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                            const MAX_WIDTH = stage.width() * 0.8;
-                            const MAX_HEIGHT = stage.height() * 0.8;
-                            const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-    
-                            img.setAttrs({
-                                x: (stage.width() - img.width() * scale) / 2,
-                                y: (stage.height() - img.height() * scale) / 2,
-                                scaleX: scale,
-                                scaleY: scale,
-                                name: 'image',
-                                draggable: true,
-                            });
-                            layer.add(img);
-                            selectNode(img);
-                            updateKonvaState();
-                            layer.draw();
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                }
-                imageFileInput.value = '';
-            };
-            imageFileInput.click();
-        }
-    });
 
     cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) { shapeDialog.style.display = 'none'; resetShapeDialog(); } });
     cancelTextBtn?.addEventListener('click', () => { if (textDialog) { textDialog.style.display = 'none'; } });
@@ -1362,6 +1304,60 @@ export default function KonvaEditor() {
     canvasRef.current.layer.draw();
   };
 
+  const handleItemSelect = (itemType: string) => {
+    const { stage, layer } = canvasRef.current;
+    setAddItemDialogOpen(false);
+    deselectNode();
+
+    if (itemType === 'text') {
+        // This will be replaced by TextDialog component logic
+        document.getElementById('text-dialog')!.style.display = 'flex';
+    } else if (itemType === 'shape') {
+        // This will be replaced by ShapeDialog component logic
+        document.getElementById('shape-dialog')!.style.display = 'flex';
+    } else if (itemType === 'frame') {
+        // This will be replaced by FrameDialog component logic
+        document.getElementById('frame-dialog')!.style.display = 'flex';
+    } else if (itemType === 'mask') {
+        // This will be replaced by MaskDialog component logic
+        document.getElementById('mask-dialog')!.style.display = 'flex';
+    } else if (itemType === 'image') {
+        const imageFileInput = document.createElement('input');
+        imageFileInput.type = 'file';
+        imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
+        imageFileInput.onchange = () => {
+            if (imageFileInput.files && imageFileInput.files.length > 0) {
+                const file = imageFileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                        const MAX_WIDTH = stage.width() * 0.8;
+                        const MAX_HEIGHT = stage.height() * 0.8;
+                        const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
+
+                        img.setAttrs({
+                            x: (stage.width() - img.width() * scale) / 2,
+                            y: (stage.height() - img.height() * scale) / 2,
+                            scaleX: scale,
+                            scaleY: scale,
+                            name: 'image',
+                            draggable: true,
+                        });
+                        layer.add(img);
+                        selectNode(img);
+                        const nodes = layer.getChildren((node: any) => node.name() !== 'background' && node.className !== 'Transformer');
+                        setKonvaObjects(nodes.toArray());
+                        layer.draw();
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            imageFileInput.value = '';
+        };
+        imageFileInput.click();
+    }
+  };
+
 
   return (
     <>
@@ -1410,6 +1406,11 @@ export default function KonvaEditor() {
                 onMoveNode={onNodeAction}
             />
         
+        <AddItemDialog 
+            isOpen={isAddItemDialogOpen}
+            onClose={() => setAddItemDialogOpen(false)}
+            onSelectItem={handleItemSelect}
+        />
 
         <div id="text-dialog" className="dialog-overlay">
             <div className="dialog">
@@ -1581,40 +1582,7 @@ export default function KonvaEditor() {
             </div>
         </div>
 
-        <div id="add-item-dialog" className="dialog-overlay">
-            <div className="dialog">
-                <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
-                <div id="add-item-options" className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-                        <span>Text</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="shape">
-                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                        <span>Shape</span>
-                    </button>
-                     <button className="add-item-card" data-item-type="image">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        <span>Image</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="frame">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-                        <span>Frame</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="mask">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>
-                        <span>Mask</span>
-                    </button>
-                     <button className="add-item-card" data-item-type="qr" disabled>
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
-                        <span>QR Code</span>
-                    </button>
-                </div>
-                <div className="dialog-actions mt-6">
-                    <button id="cancel-add-item-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
+        
 
         <div id="frame-dialog" className="dialog-overlay">
             <div className="dialog">
@@ -1748,4 +1716,3 @@ export default function KonvaEditor() {
     
 
     
-
