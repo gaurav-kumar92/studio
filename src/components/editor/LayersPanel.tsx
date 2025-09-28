@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 
 type LayersPanelProps = {
     layers: any[];
     selectedNode: any;
-    onSelectNode: (node: any) => void;
+    onSelectNode: (nodeId: string) => void;
     onMoveNode: (action: 'up' | 'down', nodeId: string) => void;
 };
 
@@ -58,7 +58,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
                             className={`layer-item ${isSelected ? 'selected' : ''}`}
                             data-id={node.id()}
                         >
-                            <div className="layer-info" onClick={() => onSelectNode(node)}>
+                            <div className="layer-info" onClick={() => onSelectNode(node.id())}>
                                 <div dangerouslySetInnerHTML={{ __html: iconSvg }} />
                                 <span className="name">{name}</span>
                             </div>
@@ -96,4 +96,3 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
 
 export default LayersPanel;
 
-    

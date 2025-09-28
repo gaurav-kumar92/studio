@@ -7,6 +7,7 @@ import Canvas from '@/components/editor/Canvas';
 import LayersPanel from '@/components/editor/LayersPanel';
 import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
 import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
+import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -21,7 +22,7 @@ declare global {
 export default function KonvaEditor() {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
   const [konvaObjects, setKonvaObjects] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('500x500');
 
   const initializeKonva = () => {
@@ -135,15 +136,6 @@ export default function KonvaEditor() {
     const maskSidesControls = document.getElementById('mask-sides-controls') as HTMLElement;
     const maskSidesSlider = document.getElementById('mask-sides-slider') as HTMLInputElement;
     const maskSidesValue = document.getElementById('mask-sides-value');
-
-    // Object Properties panel
-    const objectPropertiesPanel = document.getElementById('object-properties') as HTMLElement;
-    const alignTopBtn = document.getElementById('align-top-btn');
-    const alignLeftBtn = document.getElementById('align-left-btn');
-    const alignCenterBtn = document.getElementById('align-center-btn');
-    const alignRightBtn = document.getElementById('align-right-btn');
-    const alignBottomBtn = document.getElementById('align-bottom-btn');
-    const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 
     // --- 2. Global State Variables ---
     let tr: any; // Konva transformer
@@ -377,7 +369,6 @@ export default function KonvaEditor() {
         setSelectedNode(null);
         
         deleteBtn.classList.add('hidden');
-        if (objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
         
         if(updateLayers) {
             updateKonvaState();
@@ -404,9 +395,6 @@ export default function KonvaEditor() {
         setSelectedNode(nodeToSelect);
         
         deleteBtn.classList.remove('hidden');
-        if (objectPropertiesPanel) objectPropertiesPanel.classList.remove('hidden');
-        if (opacitySlider) opacitySlider.value = String(localSelectedNode.opacity() ?? 1);
-        
         
         tr = new window.Konva.Transformer({ rotateEnabled: true });
         layer.add(tr);
@@ -1286,44 +1274,6 @@ export default function KonvaEditor() {
         }
       });
 
-      const alignObject = (position: string) => {
-        if (!localSelectedNode) return;
-        const box = localSelectedNode.getClientRect({ relativeTo: stage });
-
-        switch (position) {
-            case 'top':
-                localSelectedNode.y(localSelectedNode.y() - box.y);
-                break;
-            case 'left':
-                localSelectedNode.x(localSelectedNode.x() - box.x);
-                break;
-            case 'center':
-                localSelectedNode.x(stage.width() / 2);
-                localSelectedNode.y(stage.height() / 2);
-                break;
-            case 'right':
-                localSelectedNode.x(stage.width() - box.width - (localSelectedNode.x() - box.x));
-                break;
-            case 'bottom':
-                localSelectedNode.y(stage.height() - box.height - (localSelectedNode.y() - box.y));
-                break;
-        }
-        layer.draw();
-      };
-      
-      alignTopBtn?.addEventListener('click', () => alignObject('top'));
-      alignLeftBtn?.addEventListener('click', () => alignObject('left'));
-      alignCenterBtn?.addEventListener('click', () => alignObject('center'));
-      alignRightBtn?.addEventListener('click', () => alignObject('right'));
-      alignBottomBtn?.addEventListener('click', () => alignObject('bottom'));
-
-      opacitySlider?.addEventListener('input', (e) => {
-        if (!localSelectedNode) return;
-        const newOpacity = parseFloat((e.target as HTMLInputElement).value);
-        localSelectedNode.opacity(newOpacity);
-        layer.draw();
-      });
-
 
       saveBtn?.addEventListener('click', () => {
         deselectNode();
@@ -1379,6 +1329,38 @@ export default function KonvaEditor() {
       canvasRef.current.layer.draw();
     }
   };
+  
+  const handleAlignObject = (position: string) => {
+    if (!selectedNode || !canvasRef.current?.stage) return;
+    const { stage, layer } = canvasRef.current;
+    const box = selectedNode.getClientRect({ relativeTo: stage });
+
+    switch (position) {
+        case 'top':
+            selectedNode.y(selectedNode.y() - box.y);
+            break;
+        case 'left':
+            selectedNode.x(selectedNode.x() - box.x);
+            break;
+        case 'center':
+            selectedNode.x(stage.width() / 2);
+            selectedNode.y(stage.height() / 2);
+            break;
+        case 'right':
+            selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
+            break;
+        case 'bottom':
+            selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
+            break;
+    }
+    layer.draw();
+  };
+
+  const handleOpacityChange = (opacity: number) => {
+    if (!selectedNode || !canvasRef.current?.layer) return;
+    selectedNode.opacity(opacity);
+    canvasRef.current.layer.draw();
+  };
 
 
   return (
@@ -1401,30 +1383,11 @@ export default function KonvaEditor() {
                         defaultValue="#ffffff"
                         onChange={handleBackgroundColorChange}
                     />
-                    <div id="object-properties" className="hidden">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
-                        <div className="alignment-controls">
-                            <button id="align-top-btn" className="align-btn" title="Align Top">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="3"></line><line x1="5" y1="5" x2="19" y2="5"></line><rect x="5" y="9" width="14" height="10" rx="2"></rect></svg>
-                            </button>
-                            <button id="align-left-btn" className="align-btn" title="Align Left">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="3" y2="12"></line><line x1="5" y1="5" x2="5" y2="19"></line><rect y="5" x="9" width="10" height="14" rx="2"></rect></svg>
-                            </button>
-                            <button id="align-center-btn" className="align-btn" title="Center on Canvas">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12"/><line x1="12" x2="12" y1="3" y2="21"/></svg>
-                            </button>
-                            <button id="align-right-btn" className="align-btn" title="Align Right">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="21" y2="12"></line><line x1="19" y1="5" x2="19" y2="19"></line><rect y="5" x="5" width="10" height="14" rx="2"></rect></svg>
-                            </button>
-                             <button id="align-bottom-btn" className="align-btn" title="Align Bottom">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="21"></line><line x1="5" y1="19" x2="19" y2="19"></line><rect x="5" y="5" width="14" height="10" rx="2"></rect></svg>
-                            </button>
-                        </div>
-                        <div className="opacity-controls">
-                            <label htmlFor="opacity-slider">Opacity</label>
-                            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
-                        </div>
-                    </div>
+                    <ObjectPropertiesPanel
+                        selectedNode={selectedNode}
+                        onAlign={handleAlignObject}
+                        onOpacityChange={handleOpacityChange}
+                    />
                     <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                         <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
                         <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
@@ -1436,7 +1399,14 @@ export default function KonvaEditor() {
             <LayersPanel
                 layers={konvaObjects}
                 selectedNode={selectedNode}
-                onSelectNode={(node) => selectNode(node)}
+                onSelectNode={(nodeId) => {
+                    if (canvasRef.current?.layer) {
+                        const node = canvasRef.current.layer.findOne(`#${nodeId}`);
+                        if (node) {
+                            selectNode(node);
+                        }
+                    }
+                }}
                 onMoveNode={onNodeAction}
             />
         
@@ -1778,3 +1748,4 @@ export default function KonvaEditor() {
     
 
     
+
