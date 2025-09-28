@@ -38,7 +38,51 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
       return;
     }
 
-    // If stage doesn't exist, create it.
+    const resizeCanvas = (size: string) => {
+        if (!stage) return;
+
+        const parentContainer = stage.container().parentElement;
+        if (!parentContainer) return;
+
+        let [targetWidth, targetHeight] = size.split('x').map(Number);
+        
+        // Use clientWidth and clientHeight for available space, minus padding
+        const parentStyle = window.getComputedStyle(parentContainer.parentElement!);
+        const paddingLeft = parseFloat(parentStyle.paddingLeft);
+        const paddingRight = parseFloat(parentStyle.paddingRight);
+        const paddingTop = parseFloat(parentStyle.paddingTop);
+        const paddingBottom = parseFloat(parentStyle.paddingBottom);
+
+        const availableWidth = parentContainer.parentElement!.clientWidth - paddingLeft - paddingRight;
+        const availableHeight = parentContainer.parentElement!.clientHeight - paddingTop - paddingBottom;
+        
+        const targetRatio = targetWidth / targetHeight;
+        const availableRatio = availableWidth / availableHeight;
+        
+        let newWidth, newHeight;
+        
+        if (availableRatio > targetRatio) {
+            // Available space is wider than target, so height is the constraint
+            newHeight = availableHeight;
+            newWidth = newHeight * targetRatio;
+        } else {
+            // Available space is taller than target, so width is the constraint
+            newWidth = availableWidth;
+            newHeight = newWidth / targetRatio;
+        }
+
+        stage.width(newWidth);
+        stage.height(newHeight);
+        
+        const bgRect = stage.findOne('.background');
+        if (bgRect) {
+            bgRect.width(newWidth);
+            bgRect.height(newHeight);
+        }
+        
+        stage.draw();
+    };
+
     let tempStage = stage;
     if (!tempStage) {
       const parentContainer = canvasContainer.parentElement as HTMLElement;
@@ -68,42 +112,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
       onReady();
     }
     
-    const resizeCanvas = (size: string) => {
-        if (!tempStage) return;
-
-        const parentContainer = tempStage.container().parentElement;
-        if (!parentContainer) return;
-
-        let [targetWidth, targetHeight] = size.split('x').map(Number);
-        
-        const parentWidth = parentContainer.clientWidth;
-        const parentHeight = parentContainer.clientHeight;
-        
-        const targetRatio = targetWidth / targetHeight;
-        const parentRatio = parentWidth / parentHeight;
-        
-        let newWidth, newHeight;
-        
-        if (parentRatio > targetRatio) {
-            newHeight = parentHeight;
-            newWidth = parentHeight * targetRatio;
-        } else {
-            newWidth = parentWidth;
-            newHeight = parentWidth / targetRatio;
-        }
-
-        tempStage.width(newWidth);
-        tempStage.height(newHeight);
-        
-        const bgRect = tempStage.findOne('.background');
-        if (bgRect) {
-            bgRect.width(newWidth);
-            bgRect.height(newHeight);
-        }
-        
-        tempStage.draw();
-    };
-    
     resizeCanvas(canvasSize); 
     
     const handleResize = () => resizeCanvas(canvasSize);
@@ -111,11 +119,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (stage && !canvasContainer.isConnected) {
-        stage.destroy();
-      }
     };
-  }, [canvasSize]);
+  }, [canvasSize, stage, onReady]);
 
 
   return (
