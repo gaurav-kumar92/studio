@@ -33,63 +33,56 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
     }
 
     const canvasContainer = document.getElementById('canvas-container');
-    
     if (!canvasContainer) {
       return;
     }
 
     const resizeCanvas = (size: string) => {
-        if (!stage) return;
+      if (!stage) return;
 
-        const parentContainer = stage.container().parentElement;
-        if (!parentContainer) return;
+      const parentContainer = stage.container().parentElement;
+      if (!parentContainer) return;
+      
+      const [targetWidth, targetHeight] = size.split('x').map(Number);
+      
+      const parentStyle = window.getComputedStyle(parentContainer.parentElement!);
+      const paddingLeft = parseFloat(parentStyle.paddingLeft);
+      const paddingRight = parseFloat(parentStyle.paddingRight);
+      const paddingTop = parseFloat(parentStyle.paddingTop);
+      const paddingBottom = parseFloat(parentStyle.paddingBottom);
 
-        let [targetWidth, targetHeight] = size.split('x').map(Number);
-        
-        // Use clientWidth and clientHeight for available space, minus padding
-        const parentStyle = window.getComputedStyle(parentContainer.parentElement!);
-        const paddingLeft = parseFloat(parentStyle.paddingLeft);
-        const paddingRight = parseFloat(parentStyle.paddingRight);
-        const paddingTop = parseFloat(parentStyle.paddingTop);
-        const paddingBottom = parseFloat(parentStyle.paddingBottom);
+      const availableWidth = parentContainer.parentElement!.clientWidth - paddingLeft - paddingRight;
+      const availableHeight = parentContainer.parentElement!.clientHeight - paddingTop - paddingBottom;
+      
+      const targetRatio = targetWidth / targetHeight;
+      let newWidth, newHeight;
 
-        const availableWidth = parentContainer.parentElement!.clientWidth - paddingLeft - paddingRight;
-        const availableHeight = parentContainer.parentElement!.clientHeight - paddingTop - paddingBottom;
-        
-        const targetRatio = targetWidth / targetHeight;
-        const availableRatio = availableWidth / availableHeight;
-        
-        let newWidth, newHeight;
-        
-        if (availableRatio > targetRatio) {
-            // Available space is wider than target, so height is the constraint
-            newHeight = availableHeight;
-            newWidth = newHeight * targetRatio;
-        } else {
-            // Available space is taller than target, so width is the constraint
-            newWidth = availableWidth;
-            newHeight = newWidth / targetRatio;
-        }
+      if (availableWidth / targetRatio < availableHeight) {
+          newWidth = availableWidth;
+          newHeight = availableWidth / targetRatio;
+      } else {
+          newHeight = availableHeight;
+          newWidth = availableHeight * targetRatio;
+      }
 
-        stage.width(newWidth);
-        stage.height(newHeight);
-        
-        const bgRect = stage.findOne('.background');
-        if (bgRect) {
-            bgRect.width(newWidth);
-            bgRect.height(newHeight);
-        }
-        
-        stage.draw();
+      stage.width(newWidth);
+      stage.height(newHeight);
+      
+      const bgRect = stage.findOne('.background');
+      if (bgRect) {
+          bgRect.width(newWidth);
+          bgRect.height(newHeight);
+      }
+      
+      stage.draw();
     };
 
     let tempStage = stage;
     if (!tempStage) {
-      const parentContainer = canvasContainer.parentElement as HTMLElement;
       tempStage = new window.Konva.Stage({
         container: 'canvas-container',
-        width: parentContainer.clientWidth,
-        height: parentContainer.clientHeight,
+        width: canvasContainer.clientWidth,
+        height: canvasContainer.clientHeight,
       });
       setStage(tempStage);
 
