@@ -36,35 +36,13 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
     if (!canvasContainer) {
       return;
     }
-
-    const resizeCanvas = (size: string) => {
-      if (!stage) return;
-
-      const PIXELS_PER_POINT = 0.35; // This constant determines the overall scale.
-
-      const [targetWidth, targetHeight] = size.split('x').map(Number);
-      
-      const newWidth = targetWidth * PIXELS_PER_POINT;
-      const newHeight = targetHeight * PIXELS_PER_POINT;
-
-      stage.width(newWidth);
-      stage.height(newHeight);
-      
-      const bgRect = stage.findOne('.background');
-      if (bgRect) {
-          bgRect.width(newWidth);
-          bgRect.height(newHeight);
-      }
-      
-      stage.draw();
-    };
-
+    
     let tempStage = stage;
     if (!tempStage) {
       tempStage = new window.Konva.Stage({
         container: 'canvas-container',
-        width: canvasContainer.clientWidth,
-        height: canvasContainer.clientHeight,
+        width: 0,
+        height: 0,
       });
       setStage(tempStage);
 
@@ -75,8 +53,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
       const newBackground = new window.Konva.Rect({
         x: 0,
         y: 0,
-        width: tempStage.width(),
-        height: tempStage.height(),
+        width: 0,
+        height: 0,
         fill: '#ffffff',
         name: 'background'
       });
@@ -87,9 +65,41 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
       onReady();
     }
     
-    resizeCanvas(canvasSize); 
+  }, [stage, onReady]);
+
+  useEffect(() => {
+    if (!stage) return;
+
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!canvasContainer) {
+      return;
+    }
+
+    const PIXELS_PER_POINT = 0.35; // This constant intentionally scales down print sizes to fit on screen.
+
+    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
     
-  }, [canvasSize, stage, onReady]);
+    const newWidth = targetWidth * PIXELS_PER_POINT;
+    const newHeight = targetHeight * PIXELS_PER_POINT;
+
+    // Resize Konva Stage
+    stage.width(newWidth);
+    stage.height(newHeight);
+    
+    // Resize Konva Background Rect
+    const bgRect = stage.findOne('.background');
+    if (bgRect) {
+        bgRect.width(newWidth);
+        bgRect.height(newHeight);
+    }
+    
+    // Resize the container div to match the stage
+    canvasContainer.style.width = `${newWidth}px`;
+    canvasContainer.style.height = `${newHeight}px`;
+
+    stage.draw();
+
+  }, [canvasSize, stage]);
 
 
   return (
