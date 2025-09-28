@@ -166,55 +166,67 @@ export default function KonvaEditor() {
                 'data-type': type,
             });
     
-            let clipShape;
-            // The clip shape's coordinates are relative to the group, so they should generally start at or around 0,0.
-            switch(type) {
+            let borderShape;
+            
+            switch (type) {
                 case 'circle':
-                    clipShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2 });
+                    borderShape = new window.Konva.Circle({
+                        x: size / 2,
+                        y: size / 2,
+                        radius: size / 2
+                    });
                     break;
                 case 'star':
-                    clipShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                    borderShape = new window.Konva.Star({
+                        x: size / 2,
+                        y: size / 2,
+                        numPoints: 5,
+                        innerRadius: size / 4,
+                        outerRadius: size / 2
+                    });
                     break;
-                default: // rect
-                    clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
+                default:
+                    borderShape = new window.Konva.Rect({
+                        x: 0,
+                        y: 0,
+                        width: size,
+                        height: size
+                    });
                     break;
             }
-    
-            const borderShape = clipShape.clone({
+
+            borderShape.setAttrs({
                 name: 'frame-shape',
                 fillEnabled: false,
                 stroke: color,
                 strokeWidth: frameWidth,
             });
             group.add(borderShape);
-           
-    
+
+            // Use the same shape for the clipping function
             group.clipFunc((ctx: any) => {
-                const shape = group.findOne('.frame-shape');
-                ctx.beginPath();
-                shape.drawPath(ctx);
-                ctx.closePath();
+                borderShape._sceneFunc(ctx);
             });
-            
-            window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
-                placeholder.setAttrs({
-                    name: 'frame-placeholder',
-                    x: (size - 64) / 2,
-                    y: (size - 64) / 2,
-                    width: 64,
-                    height: 64,
-                });
-                group.add(placeholder);
-                placeholder.moveToBottom();
-                layer.draw();
+
+            const placeholder = new window.Konva.Path({
+                data: 'M18 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM6 5h12v10l-3.5-3.5a2 2 0 0 0-2.82 0L6 16.17V5zM9 9a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
+                fill: '#cccccc',
+                scale: {x: 2.5, y:2.5},
+                name: 'frame-placeholder',
             });
+            placeholder.position({
+                x: (size - placeholder.width() * 2.5) / 2,
+                y: (size - placeholder.height() * 2.5) / 2,
+            });
+            group.add(placeholder);
+            placeholder.moveToBottom();
             
             layer.add(group);
             updateLayersPanel();
             layer.draw();
             selectNode(group);
             if (frameDialog) frameDialog.style.display = 'none';
-
+            
         } catch (error) {
             console.error("Failed to create frame:", error);
         }
@@ -270,13 +282,11 @@ export default function KonvaEditor() {
             
             frameGroup.add(imageNode);
             imageNode.moveToBottom();
-            
+
             // Re-apply clip function to ensure it affects the new image
             frameGroup.clipFunc((ctx: any) => {
-                const shape = frameGroup.findOne('.frame-shape');
-                ctx.beginPath();
-                shape.drawPath(ctx);
-                ctx.closePath();
+               const shape = frameGroup.findOne('.frame-shape');
+               shape._sceneFunc(ctx);
             });
 
             layer.batchDraw();
@@ -1661,4 +1671,5 @@ export default function KonvaEditor() {
     
 
     
+
 
