@@ -109,7 +109,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize }, ref) => {
   }, []);
 
   useEffect(() => {
-    if(!stage) return;
+    if(!stage || !background) return;
     const parentContainer = stage.container().parentElement;
 
     const resizeCanvas = (size: string) => {
