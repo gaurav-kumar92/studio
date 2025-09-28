@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Script from 'next/script';
+import Canvas from '@/components/editor/Canvas';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -15,15 +16,18 @@ declare global {
 
 
 export default function KonvaEditor() {
-  
+  const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
+
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined') {
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current) {
         return;
     }
 
+    const { stage, layer, background: canvasBackground } = canvasRef.current;
+
+
     // --- 1. Element References ---
-    const canvasContainer = document.getElementById('canvas-container') as HTMLElement;
     
     // Dialogs and Controls
     const addItemDialog = document.getElementById('add-item-dialog');
@@ -49,8 +53,6 @@ export default function KonvaEditor() {
     const saveBtn = document.getElementById('save-btn');
 
     // Canvas & Background
-    const canvasSizeSelect = document.getElementById('canvas-size') as HTMLSelectElement;
-    const colorPreviewBackground = document.getElementById('color-preview-background') as HTMLElement;
     const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
     
     // Text Specific
@@ -146,9 +148,8 @@ export default function KonvaEditor() {
 
 
     // --- 2. Global State Variables ---
-    let stage: any, layer: any, canvasBackground: any, tr: any; // Konva objects
+    let tr: any; // Konva objects
     let selectedNode: any = null;
-    let currentCanvasSize = '500x500';
     let activeShapeForAddition: string | null = null;
     let activeFrameForAddition: string | null = null;
     let activeMaskForAddition: string | null = null;
@@ -156,7 +157,6 @@ export default function KonvaEditor() {
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
-    let selectedColorBackground = backgroundColorPicker.value;
     let selectedColorFrame = frameColorPicker.value;
     let selectedColorMask = maskColorPicker.value;
     let selectedColorGlow = glowColorPicker.value;
@@ -194,7 +194,6 @@ export default function KonvaEditor() {
             x: size / 2, // Center shape horizontally in the group
             y: size / 2, // Center shape vertically in the group
             fill: '#f0f0f0', // Placeholder fill
-            strokeWidth: 0, // No border for masks
         };
     
         switch (type) {
@@ -237,10 +236,9 @@ export default function KonvaEditor() {
     
         group.add(borderShape);
     
-        // A simpler, more reliable placeholder icon (e.g., a camera icon)
-        const placeholderSvgPath = 'M22 11.08V12a10 10 0 1 1-5.93-9.14';
+        const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
         const placeholderIcon = new window.Konva.Path({
-            data: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+            data: placeholderSvgPath,
             fill: '#9ca3af',
             scale: { x: 2.5, y: 2.5 },
             name: 'placeholder-icon',
@@ -375,7 +373,7 @@ export default function KonvaEditor() {
 
     
     updateLayersPanel = () => {
-        if (!layersList) return;
+        if (!layersList || !layer) return;
         layersList.innerHTML = ''; 
 
         const nodes = layer.getChildren((node: any) => {
@@ -486,6 +484,7 @@ export default function KonvaEditor() {
     };
 
     selectNode = (node: any) => {
+        if (!layer) return;
         // If it's a child of a group, select the group.
         let nodeToSelect = node;
         if (node.parent?.hasName('circularText') || node.parent?.hasName('mask')) {
@@ -842,58 +841,9 @@ export default function KonvaEditor() {
 
 
     try {
-      const parentContainer = canvasContainer.parentElement as HTMLElement;
-      
-      stage = new window.Konva.Stage({
-        container: 'canvas-container',
-        width: parentContainer.clientWidth,
-        height: parentContainer.clientHeight,
-      });
-      layer = new window.Konva.Layer();
-      stage.add(layer);
-
-      canvasBackground = new window.Konva.Rect({
-        x: 0,
-        y: 0,
-        width: stage.width(),
-        height: stage.height(),
-        fill: selectedColorBackground,
-        name: 'background'
-      });
-      layer.add(canvasBackground);
       updateLayersPanel(); 
-      layer.draw();
 
       // --- 6. Konva Dependent Functions ---
-
-      const resizeCanvas = (size: string) => {
-          currentCanvasSize = size;
-          let [targetWidth, targetHeight] = size.split('x').map(Number);
-          const parentContainer = canvasContainer.parentElement as HTMLElement;
-
-          const parentWidth = parentContainer.clientWidth;
-          const parentHeight = parentContainer.clientHeight;
-          
-          const targetRatio = targetWidth / targetHeight;
-          const parentRatio = parentWidth / parentHeight;
-          
-          let newWidth, newHeight;
-          
-          if (parentRatio > targetRatio) {
-              newHeight = parentHeight;
-              newWidth = parentHeight * targetRatio;
-          } else {
-              newWidth = parentWidth;
-              newHeight = parentWidth / targetRatio;
-          }
-
-          stage.width(newWidth);
-          stage.height(newHeight);
-          canvasBackground.width(newWidth);
-          canvasBackground.height(newHeight);
-          stage.draw();
-      };
-
       const updateSelectedTextStyle = () => {
         if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
 
@@ -1194,10 +1144,6 @@ export default function KonvaEditor() {
 
 
       // --- 7. Konva Dependent Event Handlers ---
-
-      resizeCanvas(canvasSizeSelect.value); 
-      window.addEventListener('resize', () => { resizeCanvas(currentCanvasSize); });
-      canvasSizeSelect.addEventListener('change', e => resizeCanvas((e.target as HTMLSelectElement).value));
       
 
       textColorPicker?.addEventListener('input', e => {
@@ -1239,7 +1185,8 @@ export default function KonvaEditor() {
       });
       
       backgroundColorPicker?.addEventListener('input', e => {
-        selectedColorBackground = (e.target as HTMLInputElement).value;
+        const selectedColorBackground = (e.target as HTMLInputElement).value;
+        const colorPreviewBackground = document.getElementById('color-preview-background');
         if(colorPreviewBackground) colorPreviewBackground.style.backgroundColor = selectedColorBackground;
         if(canvasBackground) {
             canvasBackground.fill(selectedColorBackground);
@@ -1517,7 +1464,7 @@ export default function KonvaEditor() {
     if ((window as any).Konva) {
       initializeKonva();
     }
-  }, []);
+  }, [canvasRef.current]);
 
 
   return (
@@ -1532,9 +1479,7 @@ export default function KonvaEditor() {
             <div className="editor-main-column">
                 <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
                 
-                <div className="relative-canvas">
-                    <div id="canvas-container"></div>
-                </div>
+                <Canvas ref={canvasRef} />
                 
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
                     <div className="mb-4">
