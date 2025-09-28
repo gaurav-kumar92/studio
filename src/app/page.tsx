@@ -6,6 +6,7 @@ import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
 import LayersPanel from '@/components/editor/LayersPanel';
 import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
+import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -56,9 +57,6 @@ export default function KonvaEditor() {
     const addTextBtn = document.getElementById('add-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
-
-    // Canvas & Background
-    const backgroundColorPicker = document.getElementById('background-color-picker') as HTMLInputElement;
     
     // Text Specific
     const dialogTitle = document.getElementById('dialog-title');
@@ -1090,16 +1088,6 @@ export default function KonvaEditor() {
         }
       });
       
-      backgroundColorPicker?.addEventListener('input', e => {
-        const selectedColorBackground = (e.target as HTMLInputElement).value;
-        const colorPreviewBackground = document.getElementById('color-preview-background');
-        if(colorPreviewBackground) colorPreviewBackground.style.backgroundColor = selectedColorBackground;
-        if(canvasBackground) {
-            canvasBackground.fill(selectedColorBackground);
-            layer.draw();
-        }
-      });
-      
       frameColorPicker?.addEventListener('input', e => {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
@@ -1384,6 +1372,13 @@ export default function KonvaEditor() {
             setKonvaObjects(nodes.toArray());
         }
     };
+    
+  const handleBackgroundColorChange = (color: string) => {
+    if (canvasRef.current?.background) {
+      canvasRef.current.background.fill(color);
+      canvasRef.current.layer.draw();
+    }
+  };
 
 
   return (
@@ -1402,13 +1397,10 @@ export default function KonvaEditor() {
                 
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
                     <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-                    <div className="mb-4">
-                        <div className="color-picker-container-inline">
-                            <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
-                            <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: '#ffffff'}}></div>
-                            <input type="color" id="background-color-picker" defaultValue="#ffffff" className="color-picker-input-hidden" />
-                        </div>
-                    </div>
+                    <BackgroundColorPicker
+                        defaultValue="#ffffff"
+                        onChange={handleBackgroundColorChange}
+                    />
                     <div id="object-properties" className="hidden">
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
                         <div className="alignment-controls">
