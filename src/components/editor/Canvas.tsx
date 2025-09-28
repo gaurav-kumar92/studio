@@ -10,11 +10,14 @@ declare global {
   }
 }
 
-const Canvas = forwardRef((props, ref) => {
+type CanvasProps = {
+  canvasSize: string;
+};
+
+const Canvas = forwardRef<any, CanvasProps>(({ canvasSize }, ref) => {
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const [currentCanvasSize, setCurrentCanvasSize] = useState('500x500');
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -29,8 +32,7 @@ const Canvas = forwardRef((props, ref) => {
     }
 
     const canvasContainer = document.getElementById('canvas-container');
-    const canvasSizeSelect = document.getElementById('canvas-size') as HTMLSelectElement;
-
+    
     if (!canvasContainer) {
       return;
     }
@@ -63,7 +65,6 @@ const Canvas = forwardRef((props, ref) => {
       setBackground(newBackground);
       
       const resizeCanvas = (size: string) => {
-          setCurrentCanvasSize(size);
           let [targetWidth, targetHeight] = size.split('x').map(Number);
           
           const parentWidth = parentContainer.clientWidth;
@@ -89,24 +90,63 @@ const Canvas = forwardRef((props, ref) => {
           newStage.draw();
       };
       
-      resizeCanvas(canvasSizeSelect.value); 
+      resizeCanvas(canvasSize); 
       
-      const handleResize = () => resizeCanvas(currentCanvasSize);
-      const handleSizeChange = (e: Event) => resizeCanvas((e.target as HTMLSelectElement).value);
+      const handleResize = () => resizeCanvas(canvasSize);
 
       window.addEventListener('resize', handleResize);
-      canvasSizeSelect?.addEventListener('change', handleSizeChange);
 
       return () => {
         window.removeEventListener('resize', handleResize);
-        canvasSizeSelect?.removeEventListener('change', handleSizeChange);
-        newStage.destroy();
+        if(newStage) {
+          newStage.destroy();
+        }
       };
 
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
   }, []);
+
+  useEffect(() => {
+    if(!stage) return;
+    const parentContainer = stage.container().parentElement;
+
+    const resizeCanvas = (size: string) => {
+        let [targetWidth, targetHeight] = size.split('x').map(Number);
+        
+        const parentWidth = parentContainer.clientWidth;
+        const parentHeight = parentContainer.clientHeight;
+        
+        const targetRatio = targetWidth / targetHeight;
+        const parentRatio = parentWidth / parentHeight;
+        
+        let newWidth, newHeight;
+        
+        if (parentRatio > targetRatio) {
+            newHeight = parentHeight;
+            newWidth = parentHeight * targetRatio;
+        } else {
+            newWidth = parentWidth;
+            newHeight = parentWidth / targetRatio;
+        }
+
+        stage.width(newWidth);
+        stage.height(newHeight);
+        background.width(newWidth);
+        background.height(newHeight);
+        stage.draw();
+    };
+
+    resizeCanvas(canvasSize);
+
+    const handleResize = () => resizeCanvas(canvasSize);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+       window.removeEventListener('resize', handleResize);
+    }
+  }, [canvasSize, stage, background]);
 
   return (
     <div className="relative-canvas">

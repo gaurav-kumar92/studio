@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
 import LayersPanel from '@/components/editor/LayersPanel';
+import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -20,6 +21,7 @@ export default function KonvaEditor() {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
   const [konvaObjects, setKonvaObjects] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [canvasSize, setCanvasSize] = useState('500x500');
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
@@ -1396,23 +1398,10 @@ export default function KonvaEditor() {
             <div className="editor-main-column">
                 <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
                 
-                <Canvas ref={canvasRef} />
+                <Canvas ref={canvasRef} canvasSize={canvasSize}/>
                 
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
-                    <div className="mb-4">
-                        <label htmlFor="canvas-size" className="block text-sm font-medium text-gray-700 mb-2">Select Canvas Size</label>
-                        <select id="canvas-size" className="w-full p-2 border border-gray-300 rounded-md">
-                            <option value="500x500">Square (500x500)</option>
-                            <option value="375x667">Phone (375x667)</option>
-                            <option value="1920x1080">HD Screen (1920x1080)</option>
-                            <option value="1366x768">Laptop (1366x768)</option>
-                            <option value="842x1191">A4 (842x1191)</option>
-                            <option value="1191x1684">A3 (1191x1684)</option>
-                            <option value="595x842">A5 (595x842)</option>
-                            <option value="1684x2384">A2 (1684x2384)</option>
-                            <option value="2384x3370">A1 (2384x3370)</option>
-                        </select>
-                    </div>
+                    <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
                     <div className="mb-4">
                         <div className="color-picker-container-inline">
                             <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
