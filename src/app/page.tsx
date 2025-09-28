@@ -20,10 +20,11 @@ export default function KonvaEditor() {
   const [konvaObjects, setKonvaObjects] = useState([]);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('500x500');
+  const [isCanvasReady, setCanvasReady] = useState(false);
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current) {
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
         return;
     }
 
@@ -155,7 +156,7 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     let selectedColorText = textColorPicker.value;
     let selectedColorShape = shapeColorPicker.value;
     let selectedColorFrame = frameColorPicker.value;
-    let selectedColorMask = maskColorPicker ? maskColorPicker.value : '#3b82f6';
+    let selectedColorMask = maskColorPicker.value;
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
@@ -1436,10 +1437,11 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
   };
   
   useEffect(() => {
-    if ((window as any).Konva) {
+    // We need to wait for both Konva to be loaded and the canvas component to be ready.
+    if ((window as any).Konva && isCanvasReady) {
       initializeKonva();
     }
-  }, [canvasRef.current]);
+  }, [isCanvasReady]);
 
 
   return (
@@ -1447,14 +1449,14 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
       <Script
         src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
         strategy="lazyOnload"
-        onLoad={initializeKonva}
+        onLoad={() => setCanvasReady(true)}
       />
       <main>
         <div id="editor-ui">
             <div className="editor-main-column">
                 <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
                 
-                <Canvas ref={canvasRef} canvasSize={canvasSize}/>
+                <Canvas ref={canvasRef} canvasSize={canvasSize} onReady={() => setCanvasReady(true)} />
                 
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
                     <div className="mb-4">
@@ -1855,4 +1857,5 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     
 
     
+
 

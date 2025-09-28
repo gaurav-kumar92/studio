@@ -12,9 +12,10 @@ declare global {
 
 type CanvasProps = {
   canvasSize: string;
+  onReady: () => void;
 };
 
-const Canvas = forwardRef<any, CanvasProps>(({ canvasSize }, ref) => {
+const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
@@ -63,6 +64,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize }, ref) => {
       setStage(newStage);
       setLayer(newLayer);
       setBackground(newBackground);
+      
+      onReady();
       
       const resizeCanvas = (size: string) => {
           let [targetWidth, targetHeight] = size.split('x').map(Number);
