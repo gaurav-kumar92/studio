@@ -182,7 +182,6 @@ export default function KonvaEditor() {
     
             const borderShape = clipShape.clone({
                 name: 'frame-shape',
-                visible: true,
                 fillEnabled: false,
                 stroke: color,
                 strokeWidth: frameWidth,
@@ -191,8 +190,9 @@ export default function KonvaEditor() {
            
     
             group.clipFunc((ctx: any) => {
+                const shape = group.findOne('.frame-shape');
                 ctx.beginPath();
-                clipShape.drawPath(ctx);
+                shape.drawPath(ctx);
                 ctx.closePath();
             });
             
@@ -273,8 +273,9 @@ export default function KonvaEditor() {
             
             // Re-apply clip function to ensure it affects the new image
             frameGroup.clipFunc((ctx: any) => {
+                const shape = frameGroup.findOne('.frame-shape');
                 ctx.beginPath();
-                frameShape.drawPath(ctx);
+                shape.drawPath(ctx);
                 ctx.closePath();
             });
 
@@ -1660,3 +1661,4 @@ export default function KonvaEditor() {
     
 
     
+
