@@ -146,37 +146,45 @@ export default function KonvaEditor() {
     let deselectNode: (updateLayers?: boolean) => void;
 
     addFrame = (type: string) => {
-        if (!stage || !layer) {
-            console.error("Stage or Layer not initialized yet.");
-            return;
-        }
         try {
+            if (!stage || !layer) {
+                console.error("Stage or Layer not initialized yet.");
+                return;
+            }
             if (!type) return;
             const frameWidth = Number(frameWidthSlider.value);
             const color = selectedColorFrame;
             const size = 150;
-
+    
             const group = new window.Konva.Group({
                 x: stage.width() / 4,
                 y: stage.height() / 4,
+                width: size,
+                height: size,
                 draggable: true,
                 name: 'frame',
                 'data-type': type,
             });
-
+    
             let clipShape;
+            // IMPORTANT: The clip shape's coordinates are relative to the group.
+            // That's why they are different from the border shape's coordinates,
+            // which might be centered within the group's bounding box.
             switch(type) {
                 case 'circle':
-                    clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
+                    // A circle centered in the group's bounding box
+                    clipShape = new window.Konva.Circle({ x: size / 2, y: size / 2, radius: size / 2 });
                     break;
                 case 'star':
-                    clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
+                    // A star centered in the group's bounding box
+                    clipShape = new window.Konva.Star({ x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                     break;
                 default: // rect
+                    // A rectangle at the top-left of the group
                     clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
                     break;
             }
-
+    
             const borderShape = clipShape.clone({
                 name: 'frame-shape',
                 fillEnabled: false,
@@ -184,8 +192,12 @@ export default function KonvaEditor() {
                 strokeWidth: frameWidth,
             });
             group.add(borderShape);
-
+    
+            // The clipFunc applies a clipping region to the group.
+            // The coordinates inside this function are relative to the group itself.
             group.clipFunc((ctx: any) => {
+                // We use the internal _sceneFunc to draw the shape's path to the context.
+                // This is the recommended way to do complex clipping in Konva.
                 const shape = clipShape.clone({ visible: false });
                 ctx.beginPath();
                 shape._sceneFunc(ctx);
