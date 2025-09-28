@@ -573,7 +573,8 @@ export default function KonvaEditor() {
                 if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
               }
             } else if (selectedNode.hasName('image')) {
-                 imageFileInput.onchange = () => {
+                // This logic is for replacing an existing image.
+                imageFileInput.onchange = () => {
                     if (imageFileInput.files && imageFileInput.files.length > 0) {
                         const file = imageFileInput.files[0];
                         const reader = new FileReader();
@@ -582,7 +583,10 @@ export default function KonvaEditor() {
                                 const MAX_WIDTH = stage.width() * 0.8;
                                 const MAX_HEIGHT = stage.height() * 0.8;
                                 const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-        
+                                
+                                // Replace the old image with the new one
+                                selectedNode.destroy();
+                                
                                 img.setAttrs({
                                     x: (stage.width() - img.width() * scale) / 2,
                                     y: (stage.height() - img.height() * scale) / 2,
@@ -599,7 +603,7 @@ export default function KonvaEditor() {
                         };
                         reader.readAsDataURL(file);
                     }
-                    imageFileInput.value = '';
+                    imageFileInput.value = ''; // Reset input
                 };
                 imageFileInput.click();
             } else if (selectedNode.hasName('frame')) {
@@ -1922,5 +1926,7 @@ export default function KonvaEditor() {
     
 
 
+
+    
 
     
