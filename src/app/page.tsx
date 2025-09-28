@@ -150,65 +150,70 @@ export default function KonvaEditor() {
             console.error("Stage or Layer not initialized yet.");
             return;
         }
-        if (!type) return;
-        const frameWidth = Number(frameWidthSlider.value);
-        const color = selectedColorFrame;
-        const size = 150;
+        try {
+            if (!type) return;
+            const frameWidth = Number(frameWidthSlider.value);
+            const color = selectedColorFrame;
+            const size = 150;
 
-        const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            draggable: true,
-            name: 'frame',
-            'data-type': type,
-        });
-
-        let clipShape;
-        switch(type) {
-            case 'circle':
-                clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
-                break;
-            case 'star':
-                clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
-                break;
-            default: // rect
-                clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
-                break;
-        }
-
-        const borderShape = clipShape.clone({
-            name: 'frame-shape',
-            fillEnabled: false,
-            stroke: color,
-            strokeWidth: frameWidth,
-        });
-        group.add(borderShape);
-
-        group.clipFunc((ctx: any) => {
-            const shape = clipShape.clone({ visible: false });
-            ctx.beginPath();
-            shape._sceneFunc(ctx);
-            ctx.closePath();
-        });
-
-        window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
-            placeholder.setAttrs({
-                name: 'frame-placeholder',
-                x: (size - 64) / 2,
-                y: (size - 64) / 2,
-                width: 64,
-                height: 64,
+            const group = new window.Konva.Group({
+                x: stage.width() / 4,
+                y: stage.height() / 4,
+                draggable: true,
+                name: 'frame',
+                'data-type': type,
             });
-            group.add(placeholder);
-            placeholder.moveToBottom();
+
+            let clipShape;
+            switch(type) {
+                case 'circle':
+                    clipShape = new window.Konva.Circle({ x: size/2, y: size/2, radius: size/2 });
+                    break;
+                case 'star':
+                    clipShape = new window.Konva.Star({ x: size/2, y: size/2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2});
+                    break;
+                default: // rect
+                    clipShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size });
+                    break;
+            }
+
+            const borderShape = clipShape.clone({
+                name: 'frame-shape',
+                fillEnabled: false,
+                stroke: color,
+                strokeWidth: frameWidth,
+            });
+            group.add(borderShape);
+
+            group.clipFunc((ctx: any) => {
+                const shape = clipShape.clone({ visible: false });
+                ctx.beginPath();
+                shape._sceneFunc(ctx);
+                ctx.closePath();
+            });
+            
+            window.Konva.Image.fromURL('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cccccc%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%223%22%20rx%3D%222%22%20ry%3D%222%22%2F%3E%3Ccircle%20cx%3D%229%22%20cy%3D%229%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22m21%2015-3.086-3.086a2%202%200%200%200-2.828%200L6%2021%22%2F%3E%3C%2Fsvg%3E', (placeholder: any) => {
+                placeholder.setAttrs({
+                    name: 'frame-placeholder',
+                    x: (size - 64) / 2,
+                    y: (size - 64) / 2,
+                    width: 64,
+                    height: 64,
+                });
+                group.add(placeholder);
+                placeholder.moveToBottom();
+                layer.draw();
+            });
+            
+            layer.add(group);
+            updateLayersPanel();
             layer.draw();
-        });
-        
-        layer.add(group);
-        updateLayersPanel();
-        layer.draw();
-        selectNode(group);
-        if (frameDialog) frameDialog.style.display = 'none';
+            selectNode(group);
+            if (frameDialog) frameDialog.style.display = 'none';
+
+        } catch (error) {
+            console.error("Failed to create frame:", error);
+        }
     };
 
     addImageFromSource = (src: string) => {
@@ -1370,7 +1375,7 @@ export default function KonvaEditor() {
                 <ul id="layers-list">
                 </ul>
             </div>
-        </div>
+        
 
         <div id="text-dialog" className="dialog-overlay">
             <div className="dialog">
@@ -1441,13 +1446,13 @@ export default function KonvaEditor() {
                                     <label className="block text-sm font-medium text-gray-700">Alignment</label>
                                     <div id="text-align-container" className="flex gap-2 justify-center mt-1">
                                         <button data-align="left" className="p-2 border rounded-md active" title="Align Left">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
                                         </button>
                                         <button data-align="center" className="p-2 border rounded-md" title="Align Center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
                                         </button>
                                         <button data-align="right" className="p-2 border rounded-md" title="Align Right">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -1607,7 +1612,7 @@ export default function KonvaEditor() {
                     </button>
                     <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
-c                    </button>
+                    </button>
                     <button className="shape-btn" data-frame-shape="star" title="Star Frame">
                         <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                     </button>
@@ -1616,6 +1621,7 @@ c                    </button>
                     <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
                 </div>
             </div>
+        </div>
         </div>
       </main>
     </>
