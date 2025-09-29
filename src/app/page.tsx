@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
 import ShapeDialog from '@/components/editor/ShapeDialog';
+import FrameDialog from '@/components/editor/FrameDialog';
+import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
 import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
@@ -39,6 +41,8 @@ export default function KonvaEditor() {
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
+  const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
+  const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
 
 
   const updateLayers = () => {
@@ -60,7 +64,7 @@ export default function KonvaEditor() {
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.layer) return;
 
-    const { stage, layer } = canvasRef.current;
+    const { layer } = canvasRef.current;
 
     // Destroy previous transformer if it exists
     if (transformerRef.current) {
@@ -96,24 +100,18 @@ export default function KonvaEditor() {
         return;
     }
 
-    const { stage, layer, background: canvasBackground } = canvasRef.current;
+    const { stage, layer } = canvasRef.current;
 
 
     // --- 1. Element References ---
     
     // Dialogs and Controls
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
-    const frameDialog = document.getElementById('frame-dialog') as HTMLElement;
-    const maskDialog = document.getElementById('mask-dialog') as HTMLElement;
     const controls = document.getElementById('controls');
 
 
     // Buttons
     const cancelTextBtn = document.getElementById('cancel-btn');
-    const cancelFrameBtn = document.getElementById('cancel-frame-btn');
-    const addFrameBtn = document.getElementById('add-frame-btn');
-    const cancelMaskBtn = document.getElementById('cancel-mask-btn');
-    const addMaskBtn = document.getElementById('add-mask-btn');
     const addTextBtn = document.getElementById('add-btn');
     const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
@@ -161,37 +159,10 @@ export default function KonvaEditor() {
     document.body.appendChild(imageFileInput);
 
 
-    // Frame Specific
-    const frameButtonsContainer = document.getElementById('frame-buttons-container');
-    const frameColorPicker = document.getElementById('frame-color-picker') as HTMLInputElement;
-    const colorPreviewFrame = document.getElementById('color-preview-frame') as HTMLElement;
-    const frameThicknessControls = document.getElementById('frame-thickness-controls') as HTMLElement;
-    const frameThicknessSlider = document.getElementById('frame-thickness-slider') as HTMLInputElement;
-    const frameThicknessValue = document.getElementById('frame-thickness-value');
-    const frameSidesControls = document.getElementById('frame-sides-controls') as HTMLElement;
-    const frameSidesSlider = document.getElementById('frame-sides-slider') as HTMLInputElement;
-    const frameSidesValue = document.getElementById('frame-sides-value');
-
-    // Mask Specific
-    const maskButtonsContainer = document.getElementById('mask-buttons-container');
-    const alphabetMasksContainer = document.getElementById('alphabet-masks-container');
-    const maskColorPicker = document.getElementById('mask-color-picker') as HTMLInputElement;
-    const colorPreviewMask = document.getElementById('color-preview-mask') as HTMLElement;
-    const maskBorderThicknessControls = document.getElementById('mask-border-thickness-controls') as HTMLElement;
-    const maskBorderThicknessSlider = document.getElementById('mask-border-thickness-slider') as HTMLInputElement;
-    const maskBorderThicknessValue = document.getElementById('mask-border-thickness-value');
-    const maskSidesControls = document.getElementById('mask-sides-controls') as HTMLElement;
-    const maskSidesSlider = document.getElementById('mask-sides-slider') as HTMLInputElement;
-    const maskSidesValue = document.getElementById('mask-sides-value');
-
     // --- 2. Global State Variables ---
-    let activeFrameForAddition: string | null = null;
-    let activeMaskForAddition: string | null = null;
     
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
-    let selectedColorFrame = frameColorPicker.value;
-    let selectedColorMask = maskColorPicker.value;
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
@@ -199,97 +170,6 @@ export default function KonvaEditor() {
     // Forward declare functions that are called by others before they are defined
     let selectNode: (node: any) => void;
     let addImageToMask: (maskGroup: any) => void;
-
-    const addMask = (type: string, options: any = {}) => {
-        if (!stage || !layer) return;
-    
-        const size = 150; 
-    
-        const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
-            width: size,
-            height: size,
-            draggable: true,
-            name: 'mask',
-            'data-type': type,
-            ...options
-        });
-    
-        let borderShape: any;
-    
-        const commonAttrs = {
-            x: size / 2, 
-            y: size / 2, 
-            fill: '#f0f0f0', 
-        };
-    
-        switch (type) {
-            case 'circle':
-                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
-                break;
-            case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
-                break;
-            case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
-                break;
-            case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size / 2 });
-                break;
-            case 'diamond':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
-                break;
-            case 'alphabet':
-                borderShape = new window.Konva.Text({
-                    x: 0,
-                    y: 0,
-                    text: options.letter || 'A',
-                    fontSize: size,
-                    fontFamily: 'Arial, Helvetica, sans-serif',
-                    fontStyle: 'bold',
-                    align: 'center',
-                    verticalAlign: 'middle',
-                    width: size,
-                    height: size,
-                    fill: '#f0f0f0',
-                });
-                break;
-            default: // rect
-                borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, fill: '#f0f0f0' });
-                break;
-        }
-    
-        group.add(borderShape);
-    
-        const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
-        const placeholderIcon = new window.Konva.Path({
-            data: placeholderSvgPath,
-            fill: '#9ca3af',
-            scale: { x: 2.5, y: 2.5 },
-            name: 'placeholder-icon',
-            offsetX: 12,
-            offsetY: 12,
-            x: size / 2,
-            y: size / 2,
-        });
-        group.add(placeholderIcon);
-    
-        group.clipFunc(function (ctx: any) {
-             const shape = borderShape;
-             ctx.beginPath();
-             shape.sceneFunc().call(shape, ctx, shape);
-             ctx.closePath();
-        });
-    
-        layer.add(group);
-        updateLayers();
-        layer.draw();
-        selectNode(group);
-        setMaskDialogOpen(false);
-        resetMaskDialog();
-    };
-
 
     addImageToMask = (maskGroup: any) => {
         if (!maskGroup || maskGroup.name() !== 'mask') return;
@@ -340,57 +220,6 @@ export default function KonvaEditor() {
         };
         imageFileInput.click();
     };
-
-    const addFrame = (type: string, options: any = {}) => {
-        let newFrame;
-        const x = stage.width() / 4;
-        const y = stage.height() / 4;
-        const size = 100;
-        const color = selectedColorFrame;
-        const thickness = Number(frameThicknessSlider.value);
-
-
-        const commonAttrs = {
-            x, y,
-            stroke: color,
-            strokeWidth: thickness,
-            draggable: true,
-            name: 'frame',
-            'data-type': type
-        };
-
-        switch (type) {
-          case 'rect':
-            newFrame = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
-            break;
-          case 'circle':
-            newFrame = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
-            break;
-          case 'triangle':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
-            break;
-          case 'star':
-            newFrame = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40 });
-            break;
-          case 'polygon':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size/2 });
-            break;
-          case 'diamond':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: Math.SQRT2 });
-            break;
-        }
-
-        if(newFrame) {
-            layer.add(newFrame);
-            updateLayers();
-            layer.draw();
-            selectNode(newFrame);
-        }
-        
-        setFrameDialogOpen(false);
-        resetFrameDialog();
-    };
-    
 
     selectNode = (node: any) => {
         if (!layer) return;
@@ -479,27 +308,16 @@ export default function KonvaEditor() {
                 };
                 imageFileInput.click();
             } else if (nodeToSelect.hasName('frame')) {
+                setEditingFrameNode(nodeToSelect);
                 setFrameDialogOpen(true);
-                if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
-                if(addFrameBtn) addFrameBtn.classList.add('hidden');
-
-                if(frameColorPicker) frameColorPicker.value = nodeToSelect.stroke();
-                if(colorPreviewFrame) colorPreviewFrame.style.backgroundColor = nodeToSelect.stroke();
-                
-                const frameType = nodeToSelect.getAttr('data-type');
-                if (frameType === 'polygon') {
-                    if(frameSidesControls) frameSidesControls.classList.remove('hidden');
-                    if(frameSidesSlider) frameSidesSlider.value = nodeToSelect.sides();
-                    if(frameSidesValue) frameSidesValue.textContent = nodeToSelect.sides();
-                } else {
-                    if(frameSidesControls) frameSidesControls.classList.add('hidden');
-                }
-                
-                if(frameThicknessSlider) frameThicknessSlider.value = nodeToSelect.strokeWidth();
-                if(frameThicknessValue) frameThicknessValue.textContent = nodeToSelect.strokeWidth();
-                
             } else if (nodeToSelect.hasName('mask')) {
-                addImageToMask(nodeToSelect);
+                const hasImage = nodeToSelect.findOne('.mask-image');
+                if (hasImage) {
+                    setEditingMaskNode(nodeToSelect);
+                    setMaskDialogOpen(true);
+                } else {
+                    addImageToMask(nodeToSelect);
+                }
             }
         });
     };
@@ -513,63 +331,7 @@ export default function KonvaEditor() {
     }
 
     cancelTextBtn?.addEventListener('click', () => setTextDialogOpen(false));
-    cancelFrameBtn?.addEventListener('click', () => { setFrameDialogOpen(false); resetFrameDialog(); });
-    cancelMaskBtn?.addEventListener('click', () => { setMaskDialogOpen(false); resetMaskDialog(); });
     
-    frameButtonsContainer?.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
-        const frameType = target.closest('[data-frame-shape]')?.getAttribute('data-frame-shape');
-        if (frameType) {
-            if (frameType === 'polygon') {
-                activeFrameForAddition = frameType;
-                if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
-                if(frameSidesControls) frameSidesControls.classList.remove('hidden');
-                if(addFrameBtn) addFrameBtn.classList.remove('hidden');
-            } else {
-                addFrame(frameType);
-            }
-        }
-    });
-
-    maskButtonsContainer?.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
-        const maskType = target.closest('[data-mask-shape]')?.getAttribute('data-mask-shape');
-        if (maskType) {
-            if (maskType === 'polygon' || maskType === 'diamond') {
-                activeMaskForAddition = maskType;
-                if(maskButtonsContainer) maskButtonsContainer.classList.add('hidden');
-                if(alphabetMasksContainer) alphabetMasksContainer.classList.add('hidden');
-                if(maskSidesControls) maskSidesControls.classList.remove('hidden');
-                if(addMaskBtn) addMaskBtn.classList.remove('hidden');
-            } else {
-                addMask(maskType);
-            }
-        }
-    });
-
-    alphabetMasksContainer?.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
-        const letter = target.closest('[data-alphabet-mask]')?.getAttribute('data-alphabet-mask');
-        if (letter) {
-            addMask('alphabet', { letter: letter, 'data-letter': letter });
-        }
-    });
-    
-    addFrameBtn?.addEventListener('click', () => {
-        if(activeFrameForAddition) {
-            const options = { sides: Number(frameSidesSlider.value) };
-            addFrame(activeFrameForAddition, options);
-        }
-    });
-
-    addMaskBtn?.addEventListener('click', () => {
-        if(activeMaskForAddition) {
-            const options = { sides: Number(maskSidesSlider.value) };
-            addMask(activeMaskForAddition, options);
-        }
-    });
-
-
     try {
       updateLayers();
 
@@ -853,70 +615,6 @@ export default function KonvaEditor() {
               layer.draw();
           }
       });
-      
-      frameColorPicker?.addEventListener('input', e => {
-          selectedColorFrame = (e.target as HTMLInputElement).value;
-          if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
-          if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.stroke(selectedColorFrame);
-              layer.draw();
-          }
-      });
-
-      frameThicknessSlider?.addEventListener('input', e => {
-          const newThickness = Number((e.target as HTMLInputElement).value);
-          if(frameThicknessValue) frameThicknessValue.textContent = String(newThickness);
-          if (selectedNode && selectedNode.hasName('frame')) {
-              selectedNode.strokeWidth(newThickness);
-              layer.draw();
-          }
-      });
-      
-      frameSidesSlider?.addEventListener('input', (e) => {
-        const newSides = Number((e.target as HTMLInputElement).value);
-        if(frameSidesValue) frameSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.hasName('frame') && selectedNode.getAttr('data-type') === 'polygon') {
-            selectedNode.sides(newSides);
-            layer.draw();
-        }
-      });
-
-      maskColorPicker?.addEventListener('input', e => {
-          selectedColorMask = (e.target as HTMLInputElement).value;
-          if (colorPreviewMask) colorPreviewMask.style.backgroundColor = selectedColorMask;
-          if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
-              if (border) {
-                border.stroke(selectedColorMask);
-                layer.draw();
-              }
-          }
-      });
-
-      maskBorderThicknessSlider?.addEventListener('input', e => {
-          const newThickness = Number((e.target as HTMLInputElement).value);
-          if(maskBorderThicknessValue) maskBorderThicknessValue.textContent = String(newThickness);
-          if (selectedNode && selectedNode.hasName('mask')) {
-              const border = selectedNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
-              if (border) {
-                border.strokeWidth(newThickness);
-                layer.draw();
-              }
-          }
-      });
-      
-      maskSidesSlider?.addEventListener('input', (e) => {
-        const newSides = Number((e.target as HTMLInputElement).value);
-        if(maskSidesValue) maskSidesValue.textContent = String(newSides);
-        if (selectedNode && selectedNode.hasName('mask') && (selectedNode.getAttr('data-type') === 'polygon' || selectedNode.getAttr('data-type') === 'diamond')) {
-            const border = selectedNode.findOne('RegularPolygon');
-             if (border) {
-                border.sides(newSides);
-                layer.draw();
-            }
-        }
-      });
-
 
       addTextBtn?.addEventListener('click', handleAddOrUpdateText);
 
@@ -1010,13 +708,13 @@ export default function KonvaEditor() {
       });
 
       stage.on('click tap', (e: any) => {
-        if (e.target === stage || e.target === canvasBackground) {
+        if (e.target === stage || e.target.hasName('background')) {
           deselectNode();
           return;
         }
 
         const targetNode = e.target.hasName('circularText') ? e.target.getParent() : e.target;
-        setSelectedNode(targetNode);
+        selectNode(targetNode);
       });
       
       stage.on('dragend', () => {
@@ -1117,6 +815,181 @@ export default function KonvaEditor() {
     }
   }
 
+  const handleAddFrame = (config: any) => {
+    if (!canvasRef.current) return;
+    const { stage, layer } = canvasRef.current;
+    
+    let newFrame;
+    const x = stage.width() / 4;
+    const y = stage.height() / 4;
+    const size = 100;
+
+    const commonAttrs = {
+        x, y,
+        stroke: config.color,
+        strokeWidth: config.thickness,
+        draggable: true,
+        name: 'frame',
+        'data-type': config.type
+    };
+
+    switch (config.type) {
+      case 'rect':
+        newFrame = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
+        break;
+      case 'circle':
+        newFrame = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+        break;
+      case 'triangle':
+        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+        break;
+      case 'star':
+        newFrame = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40 });
+        break;
+      case 'polygon':
+        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2 });
+        break;
+      case 'diamond':
+        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+        break;
+    }
+
+    if(newFrame) {
+        layer.add(newFrame);
+        updateLayers();
+        layer.draw();
+        setSelectedNode(newFrame);
+    }
+    setFrameDialogOpen(false);
+  };
+
+  const handleUpdateFrame = (attrs: any) => {
+    if (editingFrameNode) {
+      if (attrs.color) {
+        editingFrameNode.stroke(attrs.color);
+      }
+      if (attrs.thickness) {
+        editingFrameNode.strokeWidth(attrs.thickness);
+      }
+      if (attrs.sides) {
+        editingFrameNode.sides(attrs.sides);
+      }
+      canvasRef.current?.layer.draw();
+    }
+  };
+
+  const handleAddMask = (config: any) => {
+    if (!canvasRef.current) return;
+    const { stage, layer } = canvasRef.current;
+
+    const size = 150;
+    const group = new window.Konva.Group({
+        x: stage.width() / 4,
+        y: stage.height() / 4,
+        width: size,
+        height: size,
+        draggable: true,
+        name: 'mask',
+        'data-type': config.type,
+        'data-letter': config.letter,
+    });
+
+    let borderShape: any;
+
+    const commonAttrs = {
+        x: size / 2, 
+        y: size / 2, 
+        fill: '#f0f0f0', 
+        stroke: config.borderColor,
+        strokeWidth: config.borderThickness,
+    };
+
+    switch (config.type) {
+        case 'circle':
+            borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+            break;
+        case 'star':
+            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+            break;
+        case 'triangle':
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+            break;
+        case 'polygon':
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+            break;
+        case 'diamond':
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+            break;
+        case 'alphabet':
+            borderShape = new window.Konva.Text({
+                x: 0,
+                y: 0,
+                text: config.letter || 'A',
+                fontSize: size,
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'bold',
+                align: 'center',
+                verticalAlign: 'middle',
+                width: size,
+                height: size,
+                fill: '#f0f0f0',
+                stroke: config.borderColor,
+                strokeWidth: config.borderThickness,
+            });
+            break;
+        default: // rect
+            borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, fill: '#f0f0f0', stroke: config.borderColor, strokeWidth: config.borderThickness });
+            break;
+    }
+
+    group.add(borderShape);
+
+    const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
+    const placeholderIcon = new window.Konva.Path({
+        data: placeholderSvgPath,
+        fill: '#9ca3af',
+        scale: { x: 2.5, y: 2.5 },
+        name: 'placeholder-icon',
+        offsetX: 12,
+        offsetY: 12,
+        x: size / 2,
+        y: size / 2,
+    });
+    group.add(placeholderIcon);
+
+    group.clipFunc(function (ctx: any) {
+         const shape = borderShape;
+         ctx.beginPath();
+         shape.sceneFunc().call(shape, ctx, shape);
+         ctx.closePath();
+    });
+
+    layer.add(group);
+    updateLayers();
+    layer.draw();
+    setSelectedNode(group);
+    setMaskDialogOpen(false);
+  };
+
+  const handleUpdateMask = (attrs: any) => {
+    if (editingMaskNode) {
+      const border = editingMaskNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+      if (border) {
+        if (attrs.borderColor) {
+          border.stroke(attrs.borderColor);
+        }
+        if (attrs.borderThickness) {
+          border.strokeWidth(attrs.borderThickness);
+        }
+        if (attrs.sides) {
+          border.sides(attrs.sides);
+        }
+      }
+      canvasRef.current?.layer.draw();
+    }
+  };
+
+
   const handleSelectItem = (itemType: string) => {
     setAddItemDialogOpen(false);
     deselectNode();
@@ -1134,11 +1007,11 @@ export default function KonvaEditor() {
         addImageFromComputer();
         break;
       case 'frame':
-        resetFrameDialog();
+        setEditingFrameNode(null);
         setFrameDialogOpen(true);
         break;
       case 'mask':
-        resetMaskDialog();
+        setEditingMaskNode(null);
         setMaskDialogOpen(true);
         break;
       default:
@@ -1229,16 +1102,6 @@ export default function KonvaEditor() {
       document.querySelector('#text-align-container button[data-align="left"]')?.classList.add('active');
       if(circularTextRadius) circularTextRadius.value = '150';
       if(circularTextCurvature) circularTextCurvature.value = '0';
-  };
-
-  const resetMaskDialog = () => {
-    // This function will likely need to manage state in the future,
-    // but for now, it's a placeholder.
-  };
-    
-  const resetFrameDialog = () => {
-    // This function will likely need to manage state in the future,
-    // but for now, it's a placeholder.
   };
 
   const handleSelectNode = (nodeId: string) => {
@@ -1485,116 +1348,28 @@ export default function KonvaEditor() {
             onUpdateShape={handleUpdateShape}
             editingNode={editingShapeNode}
         />
+        
+        <FrameDialog
+            isOpen={isFrameDialogOpen}
+            onClose={() => setFrameDialogOpen(false)}
+            onAddFrame={handleAddFrame}
+            onUpdateFrame={handleUpdateFrame}
+            editingNode={editingFrameNode}
+        />
 
-        <div id="frame-dialog" className="dialog-overlay" style={{ display: isFrameDialogOpen ? 'flex' : 'none' }}>
-            <div className="dialog">
-                <h3 className="text-lg font-semibold mb-4">Add a Frame</h3>
-                <div className="flex flex-col gap-4 mb-4">
-                     <div className="color-picker-container-inline justify-center">
-                        <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
-                        <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
-                        <input type="color" id="frame-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
-                    </div>
-                    <div id="frame-thickness-controls">
-                        <label htmlFor="frame-thickness-slider" className="block text-sm font-medium text-gray-700">
-                            Thickness (<span id="frame-thickness-value">10</span>px)
-                        </label>
-                        <input type="range" id="frame-thickness-slider" min="1" max="50" step="1" defaultValue="10" className="w-full" />
-                    </div>
-                    <div id="frame-sides-controls" className="hidden">
-                        <label htmlFor="frame-sides-slider" className="block text-sm font-medium text-gray-700">
-                            Sides (<span id="frame-sides-value">6</span>)
-                        </label>
-                        <input type="range" id="frame-sides-slider" min="3" max="12" step="1" defaultValue="6" className="w-full" />
-                    </div>
-                </div>
+        <MaskDialog
+            isOpen={isMaskDialogOpen}
+            onClose={() => setMaskDialogOpen(false)}
+            onAddMask={handleAddMask}
+            onUpdateMask={handleUpdateMask}
+            editingNode={editingMaskNode}
+        />
 
-                <div id="frame-buttons-container" className="shape-button-container mt-4">
-                    <button className="shape-btn" data-frame-shape="rect" title="Rectangle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1" /></svg>
-                    </button>
-                    <button className="shape-btn" data-frame-shape="circle" title="Circle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /></svg>
-                    </button>
-                     <button className="shape-btn" data-frame-shape="triangle" title="Triangle Frame">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L1 21h22L12 2z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-frame-shape="star" title="Star Frame">
-                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-frame-shape="polygon" title="Polygon Frame">
-                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5v9l-7.79 4.5-7.79-4.5v-9L12 2.5z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-frame-shape="diamond" title="Diamond Frame">
-                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M12 2L22 12 12 22 2 12 12 2z"/></svg>
-                    </button>
-                </div>
-                <div className="dialog-actions flex justify-end gap-2 mt-4">
-                    <button id="cancel-frame-btn" className="dialog-button dialog-button-secondary">Close</button>
-                    <button id="add-frame-btn" className="dialog-button dialog-button-primary hidden">Add Frame</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="mask-dialog" className="dialog-overlay" style={{ display: isMaskDialogOpen ? 'flex' : 'none' }}>
-            <div className="dialog" style={{maxWidth: '500px'}}>
-                <h3 className="text-lg font-semibold mb-4">Add a Mask</h3>
-                <div className="flex flex-col gap-4 mb-4">
-                     <div className="color-picker-container-inline justify-center">
-                        <label htmlFor="mask-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Border Color</label>
-                        <div id="color-preview-mask" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
-                        <input type="color" id="mask-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
-                    </div>
-                    <div id="mask-border-thickness-controls">
-                        <label htmlFor="mask-border-thickness-slider" className="block text-sm font-medium text-gray-700">
-                           Border Thickness (<span id="mask-border-thickness-value">0</span>px)
-                        </label>
-                        <input type="range" id="mask-border-thickness-slider" min="0" max="50" step="1" defaultValue="0" className="w-full" />
-                    </div>
-                    <div id="mask-sides-controls" className="hidden">
-                        <label htmlFor="mask-sides-slider" className="block text-sm font-medium text-gray-700">
-                            Sides (<span id="mask-sides-value">6</span>)
-                        </label>
-                        <input type="range" id="mask-sides-slider" min="3" max="12" step="1" defaultValue="6" className="w-full" />
-                    </div>
-                </div>
-
-                <div id="mask-buttons-container" className="shape-button-container mt-4">
-                    <button className="shape-btn" data-mask-shape="rect" title="Rectangle Mask">
-                        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-mask-shape="circle" title="Circle Mask">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
-                    </button>
-                     <button className="shape-btn" data-mask-shape="triangle" title="Triangle Mask">
-                        <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-mask-shape="star" title="Star Mask">
-                        <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-mask-shape="polygon" title="Polygon Mask">
-                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-mask-shape="diamond" title="Diamond Mask">
-                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12 12 22 2 12 12 2Z"/></svg>
-                    </button>
-                </div>
-                 <div id="alphabet-masks-container" className="shape-button-container mt-4">
-                    {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
-                        <button key={letter} className="shape-btn" data-alphabet-mask={letter} title={`Mask: ${letter}`}>
-                            <span style={{fontSize: '1.5rem', fontWeight: 'bold'}}>{letter}</span>
-                        </button>
-                    ))}
-                </div>
-                <div className="dialog-actions flex justify-end gap-2 mt-4">
-                    <button id="cancel-mask-btn" className="dialog-button dialog-button-secondary">Close</button>
-                    <button id="add-mask-btn" className="dialog-button dialog-button-primary hidden">Add Mask</button>
-                </div>
-            </div>
-        </div>
         </div>
       </main>
     </>
   );
 }
+    
+
     
