@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
+import ShapeDialog from '@/components/editor/ShapeDialog';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -22,6 +23,9 @@ export default function KonvaEditor() {
   const [canvasSize, setCanvasSize] = useState('500x500');
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
+  const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
+
 
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
@@ -47,7 +51,6 @@ export default function KonvaEditor() {
     // Dialogs and Controls
     const addItemDialog = document.getElementById('add-item-dialog') as HTMLElement;
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
-    const shapeDialog = document.getElementById('shape-dialog') as HTMLElement;
     const frameDialog = document.getElementById('frame-dialog') as HTMLElement;
     const maskDialog = document.getElementById('mask-dialog') as HTMLElement;
     const controls = document.getElementById('controls');
@@ -57,8 +60,6 @@ export default function KonvaEditor() {
     // Buttons
     const addItemBtn = document.getElementById('add-item-btn');
     const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
-    const cancelShapeBtn = document.getElementById('cancel-shape-btn');
-    const addShapeBtn = document.getElementById('add-shape-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addFrameBtn = document.getElementById('add-frame-btn');
@@ -103,18 +104,6 @@ export default function KonvaEditor() {
     const lineHeightSlider = document.getElementById('line-height-slider') as HTMLInputElement;
     const textAlignContainer = document.getElementById('text-align-container');
     
-    // Shape Specific
-    const shapeDialogTitle = document.getElementById('shape-dialog-title');
-    const shapeButtonsContainer = document.getElementById('shape-buttons-container');
-    const colorPreviewShape = document.getElementById('color-preview-shape') as HTMLElement;
-    const shapeColorPicker = document.getElementById('shape-color-picker') as HTMLInputElement;
-    const shapeThicknessControls = document.getElementById('shape-thickness-controls') as HTMLElement;
-    const shapeThicknessSlider = document.getElementById('shape-thickness-slider') as HTMLInputElement;
-    const shapeThicknessValue = document.getElementById('shape-thickness-value');
-    const shapeSidesControls = document.getElementById('shape-sides-controls') as HTMLElement;
-    const shapeSidesSlider = document.getElementById('shape-sides-slider') as HTMLInputElement;
-    const shapeSidesValue = document.getElementById('shape-sides-value');
-
     // Image Specific
     const imageFileInput = document.createElement('input');
     imageFileInput.type = 'file';
@@ -130,7 +119,7 @@ export default function KonvaEditor() {
     const frameThicknessControls = document.getElementById('frame-thickness-controls') as HTMLElement;
     const frameThicknessSlider = document.getElementById('frame-thickness-slider') as HTMLInputElement;
     const frameThicknessValue = document.getElementById('frame-thickness-value');
-const frameSidesControls = document.getElementById('frame-sides-controls') as HTMLElement;
+    const frameSidesControls = document.getElementById('frame-sides-controls') as HTMLElement;
     const frameSidesSlider = document.getElementById('frame-sides-slider') as HTMLInputElement;
     const frameSidesValue = document.getElementById('frame-sides-value');
 
@@ -157,13 +146,11 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     // --- 2. Global State Variables ---
     let tr: any; // Konva transformer
     let localSelectedNode: any = null; // Use a local variable to manage selection state internally
-    let activeShapeForAddition: string | null = null;
     let activeFrameForAddition: string | null = null;
     let activeMaskForAddition: string | null = null;
     
     // Initialize colors from pickers
     let selectedColorText = textColorPicker.value;
-    let selectedColorShape = shapeColorPicker.value;
     let selectedColorFrame = frameColorPicker.value;
     let selectedColorMask = maskColorPicker.value;
     let selectedColorGlow = glowColorPicker.value;
@@ -453,6 +440,7 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         }
         
         localSelectedNode = null;
+        setEditingShapeNode(null);
         if(objectPropertiesPanel) objectPropertiesPanel.classList.add('hidden');
         deleteBtn.classList.add('hidden');
         
@@ -523,33 +511,8 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
                   if(textFontFamilySelect) textFontFamilySelect.value = localSelectedNode.getAttr('data-font-family');
               }
             } else if (localSelectedNode.hasName('shape')) {
-              shapeDialog.style.display = 'flex';
-              if(shapeDialogTitle) shapeDialogTitle.textContent = 'Edit Shape';
-              if(shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden'); 
-              if(addShapeBtn) addShapeBtn.classList.add('hidden');
-
-              const shapeColor = localSelectedNode.fill() || localSelectedNode.stroke();
-              if(shapeColorPicker) shapeColorPicker.value = shapeColor;
-              if(colorPreviewShape) colorPreviewShape.style.backgroundColor = shapeColor;
-              selectedColorShape = shapeColor;
-
-              const shapeType = localSelectedNode.getAttr('data-type');
-              if (shapeType === 'line' || shapeType === 'arrow') {
-                  if(shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
-                  const currentThickness = localSelectedNode.strokeWidth();
-                  if(shapeThicknessSlider) shapeThicknessSlider.value = String(currentThickness);
-                  if(shapeThicknessValue) shapeThicknessValue.textContent = String(currentThickness);
-              } else {
-                  if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
-              }
-              if (shapeType === 'polygon') {
-                if(shapeSidesControls) shapeSidesControls.classList.remove('hidden');
-                const currentSides = localSelectedNode.sides();
-                if(shapeSidesSlider) shapeSidesSlider.value = String(currentSides);
-                if(shapeSidesValue) shapeSidesValue.textContent = String(currentSides);
-              } else {
-                if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
-              }
+              setEditingShapeNode(localSelectedNode);
+              setShapeDialogOpen(true);
             } else if (localSelectedNode.hasName('image')) {
                 // This logic is for replacing an existing image.
                 imageFileInput.onchange = () => {
@@ -642,22 +605,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         activeFrameForAddition = null;
     };
 
-    const resetShapeDialog = () => {
-      if(shapeDialogTitle) shapeDialogTitle.textContent = 'Add a Shape';
-      if(shapeButtonsContainer) shapeButtonsContainer.classList.remove('hidden');
-      if(addShapeBtn) addShapeBtn.classList.add('hidden');
-      if(shapeColorPicker) shapeColorPicker.value = '#3b82f6';
-      if(colorPreviewShape) colorPreviewShape.style.backgroundColor = '#3b82f6';
-      selectedColorShape = '#3b82f6';
-      if(shapeThicknessControls) shapeThicknessControls.classList.add('hidden');
-      if(shapeThicknessSlider) shapeThicknessSlider.value = '5';
-      if(shapeThicknessValue) shapeThicknessValue.textContent = '5';
-      if(shapeSidesControls) shapeSidesControls.classList.add('hidden');
-      if(shapeSidesSlider) shapeSidesSlider.value = '6';
-      if(shapeSidesValue) shapeSidesValue.textContent = '6';
-      activeShapeForAddition = null;
-    };
-
     const resetTextDialog = () => {
       if(dialogTitle) dialogTitle.textContent = 'Add Text';
       if(addTextBtn) addTextBtn.textContent = 'Add';
@@ -714,8 +661,8 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         textDialog.style.display = 'flex';
         resetTextDialog();
       } else if (itemType === 'shape') {
-        shapeDialog.style.display = 'flex';
-        resetShapeDialog();
+        setEditingShapeNode(null);
+        setShapeDialogOpen(true);
       } else if (itemType === 'image') {
          imageFileInput.onchange = () => {
             if (imageFileInput.files && imageFileInput.files.length > 0) {
@@ -762,7 +709,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
       return;
     }
 
-    cancelShapeBtn?.addEventListener('click', () => { if (shapeDialog) { shapeDialog.style.display = 'none'; resetShapeDialog(); } });
     cancelTextBtn?.addEventListener('click', () => { if (textDialog) { textDialog.style.display = 'none'; } });
     cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) { frameDialog.style.display = 'none'; resetFrameDialog(); } });
     cancelMaskBtn?.addEventListener('click', () => { if (maskDialog) { maskDialog.style.display = 'none'; resetMaskDialog(); } });
@@ -1066,47 +1012,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         }
         textDialog.style.display = 'none';
       };
-
-
-      const addShape = (type: string, options: any = {}) => {
-        let newShape;
-        const x = stage.width() / 4;
-        const y = stage.height() / 4;
-        const size = 100;
-        const color = selectedColorShape;
-        const thickness = Number(shapeThicknessSlider.value);
-
-
-        switch (type) {
-          case 'rect':
-            newShape = new window.Konva.Rect({ x, y, width: size, height: size, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'circle':
-            newShape = new window.Konva.Circle({ x, y, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'triangle':
-            newShape = new window.Konva.RegularPolygon({ x, y, sides: 3, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'line':
-            newShape = new window.Konva.Line({ points: [x, y, x + size, y], stroke: color, strokeWidth: thickness, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'star':
-            newShape = new window.Konva.Star({ x, y, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'pentagon':
-            newShape = new window.Konva.RegularPolygon({ x, y, sides: 5, radius: size / 2, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'polygon':
-            newShape = new window.Konva.RegularPolygon({ x, y, sides: options.sides || 6, radius: size/2, fill: color, draggable: true, name: 'shape', 'data-type': type });
-            break;
-          case 'arrow':
-            newShape = new window.Konva.Arrow({ x, y, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: color, stroke: color, strokeWidth: thickness, draggable: true, name: 'shape', 'data-type': type });
-            break;
-        }
-        if(newShape) layer.add(newShape);
-        updateLayersPanel();
-        layer.draw();
-      };
       
       const applyFilter = (filter: any) => {
           let nodeToFilter = localSelectedNode;
@@ -1192,24 +1097,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
           }
       });
       
-      shapeColorPicker?.addEventListener('input', e => {
-        selectedColorShape = (e.target as HTMLInputElement).value;
-        if(colorPreviewShape) colorPreviewShape.style.backgroundColor = selectedColorShape;
-        
-        if (localSelectedNode && localSelectedNode.hasName('shape')) {
-            const shapeType = localSelectedNode.getAttr('data-type');
-            if (shapeType === 'line' || shapeType === 'arrow') {
-                localSelectedNode.stroke(selectedColorShape);
-            } else {
-                localSelectedNode.fill(selectedColorShape);
-            }
-            if (shapeType === 'arrow') {
-                localSelectedNode.fill(selectedColorShape);
-            }
-            layer.draw();
-        }
-      });
-      
       frameColorPicker?.addEventListener('input', e => {
           selectedColorFrame = (e.target as HTMLInputElement).value;
           if (colorPreviewFrame) colorPreviewFrame.style.backgroundColor = selectedColorFrame;
@@ -1275,60 +1162,6 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
 
 
       addTextBtn?.addEventListener('click', handleAddOrUpdateText);
-
-
-      shapeDialog?.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
-        const shapeType = target.closest('[data-shape]')?.getAttribute('data-shape');
-        if (shapeType) {
-          if (shapeType === 'polygon') {
-            activeShapeForAddition = 'polygon';
-            if (shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden');
-            if (shapeSidesControls) shapeSidesControls.classList.remove('hidden');
-            if (addShapeBtn) addShapeBtn.classList.remove('hidden');
-          } else if (shapeType === 'line' || shapeType === 'arrow') {
-            activeShapeForAddition = shapeType;
-            if (shapeButtonsContainer) shapeButtonsContainer.classList.add('hidden');
-            if (shapeThicknessControls) shapeThicknessControls.classList.remove('hidden');
-            if (addShapeBtn) addShapeBtn.classList.remove('hidden');
-          } else {
-            addShape(shapeType);
-            shapeDialog.style.display = 'none';
-          }
-        }
-      });
-      
-      addShapeBtn?.addEventListener('click', () => {
-        if(activeShapeForAddition) {
-          let options = {};
-          if(activeShapeForAddition === 'polygon') {
-            options = { sides: Number(shapeSidesSlider.value) };
-          }
-          addShape(activeShapeForAddition, options);
-          shapeDialog.style.display = 'none';
-        }
-      });
-
-      shapeThicknessSlider?.addEventListener('input', (e) => {
-        const newThickness = Number((e.target as HTMLInputElement).value);
-        if(shapeThicknessValue) shapeThicknessValue.textContent = String(newThickness);
-        if (localSelectedNode && localSelectedNode.hasName('shape')) {
-            const shapeType = localSelectedNode.getAttr('data-type');
-            if (shapeType === 'line' || shapeType === 'arrow') {
-                localSelectedNode.strokeWidth(newThickness);
-                layer.draw();
-            }
-        }
-      });
-      
-      shapeSidesSlider?.addEventListener('input', (e) => {
-        const newSides = Number((e.target as HTMLInputElement).value);
-        if(shapeSidesValue) shapeSidesValue.textContent = String(newSides);
-        if (localSelectedNode && localSelectedNode.hasName('shape') && localSelectedNode.getAttr('data-type') === 'polygon') {
-            localSelectedNode.sides(newSides);
-            layer.draw();
-        }
-      });
 
 
       boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
@@ -1445,6 +1278,84 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
     }
   }, [isCanvasReady]);
 
+  const handleAddShape = (config: any) => {
+    if (!canvasRef.current) return;
+    const { stage, layer } = canvasRef.current;
+
+    let newShape;
+    const x = stage.width() / 4;
+    const y = stage.height() / 4;
+    const size = 100;
+    
+    const commonAttrs = {
+        x,
+        y,
+        draggable: true,
+        name: 'shape',
+        'data-type': config.type,
+    };
+
+    switch (config.type) {
+      case 'rect':
+        newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, fill: config.color });
+        break;
+      case 'circle':
+        newShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, fill: config.color });
+        break;
+      case 'triangle':
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, fill: config.color });
+        break;
+      case 'line':
+        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size, 0], stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
+        newShape.x(x); // Manually set x and y for line
+        newShape.y(y);
+        break;
+      case 'star':
+        newShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: config.color });
+        break;
+      case 'pentagon':
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 5, radius: size / 2, fill: config.color });
+        break;
+      case 'polygon':
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2, fill: config.color });
+        break;
+      case 'arrow':
+        newShape = new window.Konva.Arrow({ ...commonAttrs, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: config.color, stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
+        newShape.x(x);
+        newShape.y(y);
+        break;
+    }
+    if(newShape) {
+      layer.add(newShape);
+      updateLayersPanel();
+      layer.draw();
+      selectNode(newShape);
+    }
+    setShapeDialogOpen(false);
+  }
+
+  const handleUpdateShape = (attrs: any) => {
+    if (editingShapeNode) {
+        if (attrs.color) {
+            if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow') {
+                editingShapeNode.stroke(attrs.color);
+            } else {
+                editingShapeNode.fill(attrs.color);
+            }
+             if (editingShapeNode.getAttr('data-type') === 'arrow') {
+                editingShapeNode.fill(attrs.color);
+            }
+        }
+        if (attrs.thickness) {
+            editingShapeNode.strokeWidth(attrs.thickness);
+        }
+        if (attrs.sides) {
+            editingShapeNode.sides(attrs.sides);
+        }
+        canvasRef.current?.layer.draw();
+    }
+  }
+
 
   return (
     <>
@@ -1453,7 +1364,7 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
         strategy="lazyOnload"
         onLoad={() => {
             if (typeof window !== 'undefined' && (window as any).Konva) {
-              // The initializeKonva call is now triggered by the effect watching isCanvasReady
+              setCanvasReady(true)
             }
         }}
       />
@@ -1662,63 +1573,13 @@ const frameSidesControls = document.getElementById('frame-sides-controls') as HT
             </div>
         </div>
 
-        <div id="shape-dialog" className="dialog-overlay">
-            <div className="dialog">
-                <h3 id="shape-dialog-title" className="text-lg font-semibold mb-4">Add a Shape</h3>
-                 <div className="color-picker-container">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shape Color</label>
-                    <div id="color-preview-shape" className="color-preview-circle" style={{backgroundColor: '#3b82f6'}}></div>
-                    <input type="color" id="shape-color-picker" defaultValue="#3b82f6" className="color-picker-input-hidden" />
-                </div>
-
-                <div id="shape-thickness-controls" className="shape-slider-container hidden">
-                    <label htmlFor="shape-thickness-slider" className="block text-sm font-medium text-gray-700">
-                        Thickness (<span id="shape-thickness-value">5</span>px)
-                    </label>
-                    <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" defaultValue="5" className="w-full" />
-                </div>
-
-                 <div id="shape-sides-controls" className="shape-slider-container hidden">
-                    <label htmlFor="shape-sides-slider" className="block text-sm font-medium text-gray-700">
-                        Sides (<span id="shape-sides-value">6</span>)
-                    </label>
-                    <input type="range" id="shape-sides-slider" min="3" max="12" step="1" defaultValue="6" className="w-full" />
-                </div>
-
-                <div id="shape-buttons-container" className="shape-button-container mt-4">
-                    <button className="shape-btn" data-shape="rect" title="Rectangle">
-                        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="circle" title="Circle">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
-    
-                    </button>
-                    <button className="shape-btn" data-shape="triangle" title="Triangle">
-                        <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="line" title="Line">
-                       <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M3 12h18"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="star" title="Star">
-                        <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="pentagon" title="Pentagon">
-                        <svg viewBox="0 0 24 24"><path d="M12 2.5l9.51 6.91-3.63 11.09H6.12l-3.63-11.09L12 2.5z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="polygon" title="Polygon">
-                        <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
-                    </button>
-                    <button className="shape-btn" data-shape="arrow" title="Arrow">
-                        <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>                    </button>
-                </div>
-                <div className="dialog-actions flex justify-end gap-2 mt-4">
-                    <button id="cancel-shape-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                    <button id="add-shape-btn" className="dialog-button dialog-button-primary hidden">Add Shape</button>
-                </div>
-            </div>
-        </div>
-
-        
+        <ShapeDialog 
+            isOpen={isShapeDialogOpen} 
+            onClose={() => setShapeDialogOpen(false)} 
+            onAddShape={handleAddShape}
+            onUpdateShape={handleUpdateShape}
+            editingNode={editingShapeNode}
+        />
 
         <div id="frame-dialog" className="dialog-overlay">
             <div className="dialog">
