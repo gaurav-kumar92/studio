@@ -45,10 +45,9 @@ export default function KonvaEditor() {
 
   // Handle transformer attachment
   useEffect(() => {
-    if (!isCanvasReady) return;
+    if (!isCanvasReady || !canvasRef.current?.layer) return;
 
-    const stage = canvasRef.current.stage;
-    const layer = canvasRef.current.layer;
+    const { stage, layer } = canvasRef.current;
 
     // Destroy previous transformer if it exists
     if (transformerRef.current) {
