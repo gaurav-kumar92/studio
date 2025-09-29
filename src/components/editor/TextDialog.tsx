@@ -145,10 +145,10 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 
     return (
         <div className="dialog-overlay" style={{ display: 'flex' }}>
-            <div className="dialog">
-                <h3 className="text-lg font-semibold mb-4">{dialogTitle}</h3>
+            <div className="dialog flex flex-col">
+                <h3 className="text-lg font-semibold mb-4 flex-shrink-0">{dialogTitle}</h3>
                 
-                <div className="dialog-content" style={{maxHeight: '70vh', overflowY: 'auto', paddingRight: '1rem'}}>
+                <div className="flex-grow overflow-y-auto pr-4">
                     <input 
                         type="text" 
                         value={text}
@@ -284,7 +284,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                     </div>
                 </div>
                 
-                <div className="dialog-actions flex justify-end gap-2 mt-4">
+                <div className="dialog-actions flex justify-end gap-2 mt-4 flex-shrink-0">
                     <button onClick={onClose} className="dialog-button dialog-button-secondary">Cancel</button>
                     <button onClick={handleAddOrUpdate} className="dialog-button dialog-button-primary">{dialogTitle}</button>
                 </div>
