@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
 import ShapeDialog from '@/components/editor/ShapeDialog';
+import AddItemDialog from '@/components/editor/AddItemDialog';
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -20,10 +21,17 @@ export default function KonvaEditor() {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
   const [konvaObjects, setKonvaObjects] = useState([]);
   const [selectedNode, setSelectedNode] = useState<any>(null);
-  const [canvasSize, setCanvasSize] = useState('500x500');
+  const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+
+  // Dialog states
+  const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
+  const [isTextDialogOpen, setTextDialogOpen] = useState(false);
+  const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
+  const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
+  
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
 
 
@@ -49,7 +57,6 @@ export default function KonvaEditor() {
     const layersList = document.getElementById('layers-list') as HTMLElement;
     
     // Dialogs and Controls
-    const addItemDialog = document.getElementById('add-item-dialog') as HTMLElement;
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
     const frameDialog = document.getElementById('frame-dialog') as HTMLElement;
     const maskDialog = document.getElementById('mask-dialog') as HTMLElement;
@@ -58,8 +65,6 @@ export default function KonvaEditor() {
 
 
     // Buttons
-    const addItemBtn = document.getElementById('add-item-btn');
-    const cancelAddItemBtn = document.getElementById('cancel-add-item-btn');
     const cancelTextBtn = document.getElementById('cancel-btn');
     const cancelFrameBtn = document.getElementById('cancel-frame-btn');
     const addFrameBtn = document.getElementById('add-frame-btn');
@@ -327,7 +332,7 @@ export default function KonvaEditor() {
         updateLayersPanel();
         layer.draw();
         selectNode(group);
-        if (maskDialog) maskDialog.style.display = 'none';
+        setMaskDialogOpen(false);
         resetMaskDialog();
     };
 
@@ -427,8 +432,8 @@ export default function KonvaEditor() {
             layer.draw();
             selectNode(newFrame);
         }
-
-        if (frameDialog) frameDialog.style.display = 'none';
+        
+        setFrameDialogOpen(false);
         resetFrameDialog();
     };
     
@@ -479,7 +484,7 @@ export default function KonvaEditor() {
         localSelectedNode.off('dblclick dbltap');
         localSelectedNode.on('dblclick dbltap', () => {
              if (localSelectedNode.hasName('text') || localSelectedNode.hasName('circularText')) {
-              textDialog.style.display = 'flex';
+              setTextDialogOpen(true);
               if (dialogTitle) dialogTitle.textContent = 'Update Text';
               if (addTextBtn) addTextBtn.textContent = 'Update';
 
@@ -548,7 +553,7 @@ export default function KonvaEditor() {
                 };
                 imageFileInput.click();
             } else if (localSelectedNode.hasName('frame')) {
-                frameDialog.style.display = 'flex';
+                setFrameDialogOpen(true);
                 if(frameButtonsContainer) frameButtonsContainer.classList.add('hidden');
                 if(addFrameBtn) addFrameBtn.classList.add('hidden');
 
@@ -577,7 +582,6 @@ export default function KonvaEditor() {
     };
 
     resetMaskDialog = () => {
-        if(maskDialog) maskDialog.style.display = 'none';
         if(maskButtonsContainer) maskButtonsContainer.classList.remove('hidden');
         if(alphabetMasksContainer) alphabetMasksContainer.classList.remove('hidden');
         if(addMaskBtn) addMaskBtn.classList.add('hidden');
@@ -640,68 +644,6 @@ export default function KonvaEditor() {
 
 
     // --- 4. Core Button Listeners (Dialog Control) ---
-    addItemBtn?.addEventListener('click', () => {
-      if (addItemDialog) addItemDialog.style.display = 'flex';
-      deselectNode();
-    });
-
-    cancelAddItemBtn?.addEventListener('click', () => {
-      if (addItemDialog) addItemDialog.style.display = 'none';
-    });
-
-    document.getElementById('add-item-options')?.addEventListener('click', e => {
-      const target = e.target as HTMLElement;
-      const itemCard = target.closest('.add-item-card');
-      if (!itemCard) return;
-
-      const itemType = itemCard.getAttribute('data-item-type');
-      if (addItemDialog) addItemDialog.style.display = 'none';
-
-      if (itemType === 'text') {
-        textDialog.style.display = 'flex';
-        resetTextDialog();
-      } else if (itemType === 'shape') {
-        setEditingShapeNode(null);
-        setShapeDialogOpen(true);
-      } else if (itemType === 'image') {
-         imageFileInput.onchange = () => {
-            if (imageFileInput.files && imageFileInput.files.length > 0) {
-                const file = imageFileInput.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        const MAX_WIDTH = stage.width() * 0.8;
-                        const MAX_HEIGHT = stage.height() * 0.8;
-                        const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-
-                        img.setAttrs({
-                            x: (stage.width() - img.width() * scale) / 2,
-                            y: (stage.height() - img.height() * scale) / 2,
-                            scaleX: scale,
-                            scaleY: scale,
-                            name: 'image',
-                            draggable: true,
-                        });
-                        layer.add(img);
-                        selectNode(img);
-                        updateLayersPanel();
-                        layer.draw();
-                    });
-                };
-                reader.readAsDataURL(file);
-            }
-            imageFileInput.value = ''; // Reset for next time
-        };
-        imageFileInput.click();
-      } else if (itemType === 'frame') {
-          frameDialog.style.display = 'flex';
-          resetFrameDialog();
-      } else if (itemType === 'mask') {
-          maskDialog.style.display = 'flex';
-          resetMaskDialog();
-      }
-    });
-
     
     // --- 5. Konva Initialization ---
     if (typeof window.Konva === 'undefined') {
@@ -709,9 +651,9 @@ export default function KonvaEditor() {
       return;
     }
 
-    cancelTextBtn?.addEventListener('click', () => { if (textDialog) { textDialog.style.display = 'none'; } });
-    cancelFrameBtn?.addEventListener('click', () => { if (frameDialog) { frameDialog.style.display = 'none'; resetFrameDialog(); } });
-    cancelMaskBtn?.addEventListener('click', () => { if (maskDialog) { maskDialog.style.display = 'none'; resetMaskDialog(); } });
+    cancelTextBtn?.addEventListener('click', () => setTextDialogOpen(false));
+    cancelFrameBtn?.addEventListener('click', () => { setFrameDialogOpen(false); resetFrameDialog(); });
+    cancelMaskBtn?.addEventListener('click', () => { setMaskDialogOpen(false); resetMaskDialog(); });
     
     frameButtonsContainer?.addEventListener('click', e => {
         const target = e.target as HTMLElement;
@@ -1010,7 +952,7 @@ export default function KonvaEditor() {
         } else {
             addText();
         }
-        textDialog.style.display = 'none';
+        setTextDialogOpen(false);
       };
       
       const applyFilter = (filter: any) => {
@@ -1356,6 +1298,120 @@ export default function KonvaEditor() {
     }
   }
 
+  const handleSelectItem = (itemType: string) => {
+    setAddItemDialogOpen(false);
+    deselectNode();
+
+    switch (itemType) {
+      case 'text':
+        resetTextDialog();
+        setTextDialogOpen(true);
+        break;
+      case 'shape':
+        setEditingShapeNode(null);
+        setShapeDialogOpen(true);
+        break;
+      case 'image':
+        addImageFromComputer();
+        break;
+      case 'frame':
+        resetFrameDialog();
+        setFrameDialogOpen(true);
+        break;
+      case 'mask':
+        resetMaskDialog();
+        setMaskDialogOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const addImageFromComputer = () => {
+    const imageFileInput = document.createElement('input');
+    imageFileInput.type = 'file';
+    imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
+
+    imageFileInput.onchange = () => {
+        if (imageFileInput.files && imageFileInput.files.length > 0) {
+            const file = imageFileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                    const { stage, layer } = canvasRef.current;
+                    const MAX_WIDTH = stage.width() * 0.8;
+                    const MAX_HEIGHT = stage.height() * 0.8;
+                    const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
+
+                    img.setAttrs({
+                        x: (stage.width() - img.width() * scale) / 2,
+                        y: (stage.height() - img.height() * scale) / 2,
+                        scaleX: scale,
+                        scaleY: scale,
+                        name: 'image',
+                        draggable: true,
+                    });
+                    layer.add(img);
+                    selectNode(img);
+                    updateLayersPanel();
+                    layer.draw();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        imageFileInput.value = ''; // Reset for next time
+    };
+    imageFileInput.click();
+  }
+
+  const resetTextDialog = () => {
+      const dialogTitle = document.getElementById('dialog-title');
+      const addTextBtn = document.getElementById('add-btn');
+      const textInput = document.getElementById('text-input') as HTMLInputElement;
+      const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
+      const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
+      const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
+      const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
+      const boldBtn = document.getElementById('bold-btn') as HTMLElement;
+      const italicBtn = document.getElementById('italic-btn') as HTMLElement;
+      const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
+      const strikethroughBtn = document.getElementById('strikethrough-btn') as HTMLElement;
+      const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
+      const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
+      const glowBtn = document.getElementById('glow-btn') as HTMLElement;
+      const glowControls = document.getElementById('glow-controls') as HTMLElement;
+      const glowColorPicker = document.getElementById('glow-color-picker') as HTMLInputElement;
+      const colorPreviewGlow = document.getElementById('color-preview-glow') as HTMLElement;
+      const letterSpacingSlider = document.getElementById('letter-spacing-slider') as HTMLInputElement;
+      const lineHeightSlider = document.getElementById('line-height-slider') as HTMLInputElement;
+      const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
+      const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
+
+      if(dialogTitle) dialogTitle.textContent = 'Add Text';
+      if(addTextBtn) addTextBtn.textContent = 'Add';
+      if(textInput) textInput.value = '';
+      if(textFontSizeInput) textFontSizeInput.value = '24';
+      if(textFontFamilySelect) textFontFamilySelect.value = 'Inter';
+      if(textColorPicker) textColorPicker.value = '#000000';
+      if(colorPreviewText) colorPreviewText.style.backgroundColor = '#000000';
+      boldBtn?.classList.remove('active');
+      italicBtn?.classList.remove('active');
+      underlineBtn?.classList.remove('active');
+      strikethroughBtn?.classList.remove('active');
+      dropShadowBtn?.classList.remove('active');
+      if(shadowControls) shadowControls.classList.add('hidden');
+      glowBtn?.classList.remove('active');
+      if(glowControls) glowControls.classList.add('hidden');
+      if(glowColorPicker) glowColorPicker.value = '#0000ff';
+      if(colorPreviewGlow) colorPreviewGlow.style.backgroundColor = '#0000ff';
+      if(letterSpacingSlider) letterSpacingSlider.value = '0';
+      if(lineHeightSlider) lineHeightSlider.value = '1';
+      document.querySelectorAll('#text-align-container button').forEach(btn => btn.classList.remove('active'));
+      document.querySelector('#text-align-container button[data-align="left"]')?.classList.add('active');
+      if(circularTextRadius) circularTextRadius.value = '150';
+      if(circularTextCurvature) circularTextCurvature.value = '0';
+  };
+
 
   return (
     <>
@@ -1412,7 +1468,7 @@ export default function KonvaEditor() {
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
-                        <button id="add-item-btn" className="button button-primary flex-grow">Add Item</button>
+                        <button id="add-item-btn" className="button button-primary flex-grow" onClick={() => { setAddItemDialogOpen(true); deselectNode(); }}>Add Item</button>
                         <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
                         <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                     </div>
@@ -1424,42 +1480,13 @@ export default function KonvaEditor() {
                 <ul id="layers-list"></ul>
             </div>
         
-        <div id="add-item-dialog" className="dialog-overlay">
-            <div className="dialog">
-                <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
-                <div id="add-item-options" className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    <button className="add-item-card" data-item-type="text">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-                        <span>Text</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="shape">
-                        <svg className="w-10 h-10 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                        <span>Shape</span>
-                    </button>
-                     <button className="add-item-card" data-item-type="image">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        <span>Image</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="frame">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-                        <span>Frame</span>
-                    </button>
-                    <button className="add-item-card" data-item-type="mask">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>
-                        <span>Mask</span>
-                    </button>
-                     <button className="add-item-card" data-item-type="qr" disabled>
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
-                        <span>QR Code</span>
-                    </button>
-                </div>
-                <div className="dialog-actions mt-6">
-                    <button id="cancel-add-item-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
+        <AddItemDialog 
+            isOpen={isAddItemDialogOpen} 
+            onClose={() => setAddItemDialogOpen(false)} 
+            onSelectItem={handleSelectItem} 
+        />
 
-        <div id="text-dialog" className="dialog-overlay">
+        <div id="text-dialog" className="dialog-overlay" style={{ display: isTextDialogOpen ? 'flex' : 'none' }}>
             <div className="dialog">
                 <div className="dialog-content">
                     <h3 id="dialog-title" className="text-lg font-semibold mb-4">Add Text</h3>
@@ -1581,7 +1608,7 @@ export default function KonvaEditor() {
             editingNode={editingShapeNode}
         />
 
-        <div id="frame-dialog" className="dialog-overlay">
+        <div id="frame-dialog" className="dialog-overlay" style={{ display: isFrameDialogOpen ? 'flex' : 'none' }}>
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">Add a Frame</h3>
                 <div className="flex flex-col gap-4 mb-4">
@@ -1631,7 +1658,7 @@ export default function KonvaEditor() {
             </div>
         </div>
 
-        <div id="mask-dialog" className="dialog-overlay">
+        <div id="mask-dialog" className="dialog-overlay" style={{ display: isMaskDialogOpen ? 'flex' : 'none' }}>
             <div className="dialog" style={{maxWidth: '500px'}}>
                 <h3 className="text-lg font-semibold mb-4">Add a Mask</h3>
                 <div className="flex flex-col gap-4 mb-4">
@@ -1728,7 +1755,5 @@ export default function KonvaEditor() {
 
 
 
-
-    
 
     
