@@ -129,7 +129,6 @@ body {
     position: relative;
     width: 100%;
     background-color: #fcfcfc;
-    border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     flex-grow: 1;
@@ -142,7 +141,6 @@ body {
 
 /* This ensures the canvas itself gets the rounded corners */
 #canvas-container canvas {
-    border-radius: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
