@@ -6,6 +6,11 @@ import Script from 'next/script';
 import Canvas from '@/components/editor/Canvas';
 import ShapeDialog from '@/components/editor/ShapeDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
+import LayersPanel from '@/components/editor/LayersPanel';
+import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
+import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
+import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
+
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -20,7 +25,7 @@ declare global {
 export default function KonvaEditor() {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
   const transformerRef = useRef<any>(null);
-  const [konvaObjects, setKonvaObjects] = useState([]);
+  const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
@@ -35,6 +40,14 @@ export default function KonvaEditor() {
   
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
 
+
+  const updateLayers = () => {
+    if (!canvasRef.current?.layer) return;
+    const nodes = canvasRef.current.layer.getChildren((node: any) => {
+      return node.name() !== 'background' && node.className !== 'Transformer';
+    });
+    setKonvaObjects(nodes.toArray());
+  };
 
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
@@ -63,11 +76,6 @@ export default function KonvaEditor() {
       transformerRef.current = tr;
     } 
     layer.batchDraw();
-
-    const objectPropertiesPanel = document.getElementById('object-properties');
-    const deleteBtn = document.getElementById('delete-btn');
-    if (objectPropertiesPanel) objectPropertiesPanel.classList.toggle('hidden', !selectedNode);
-    if (deleteBtn) deleteBtn.classList.toggle('hidden', !selectedNode);
     
     // Cleanup on unmount
     return () => {
@@ -92,8 +100,6 @@ export default function KonvaEditor() {
 
 
     // --- 1. Element References ---
-    const layersPanel = document.getElementById('layers-panel') as HTMLElement;
-    const layersList = document.getElementById('layers-list') as HTMLElement;
     
     // Dialogs and Controls
     const textDialog = document.getElementById('text-dialog') as HTMLElement;
@@ -178,14 +184,6 @@ export default function KonvaEditor() {
     const maskSidesSlider = document.getElementById('mask-sides-slider') as HTMLInputElement;
     const maskSidesValue = document.getElementById('mask-sides-value');
 
-    // Object Properties
-    const alignTopBtn = document.getElementById('align-top-btn');
-    const alignLeftBtn = document.getElementById('align-left-btn');
-    const alignCenterBtn = document.getElementById('align-center-btn');
-    const alignRightBtn = document.getElementById('align-right-btn');
-    const alignBottomBtn = document.getElementById('align-bottom-btn');
-    const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
-
     // --- 2. Global State Variables ---
     let activeFrameForAddition: string | null = null;
     let activeMaskForAddition: string | null = null;
@@ -197,86 +195,7 @@ export default function KonvaEditor() {
     let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
-    // Function to update the layers panel based on the canvas state
-    const updateLayersPanel = () => {
-        if (!layersList || !layer) return;
-
-        layersList.innerHTML = ''; // Clear current list
-        const nodes = layer.getChildren((node: any) => {
-            return node.name() !== 'background' && node.className !== 'Transformer';
-        });
-
-        setKonvaObjects(nodes);
-
-        // Add layers in reverse order (top layer first)
-        nodes.slice().reverse().forEach((node: any, index: number) => {
-            let iconSvg = '';
-            let name = 'Object';
-
-            if (node.hasName('text') || node.hasName('circularText')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
-                name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
-            } else if (node.hasName('shape')) {
-                const shapeType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
-                name = `Shape: ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
-            } else if (node.hasName('image')) {
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
-                name = 'Image';
-            } else if (node.hasName('frame')) {
-                const frameType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
-                name = `Frame: ${frameType.charAt(0).toUpperCase() + frameType.slice(1)}`;
-            } else if (node.hasName('mask')) {
-                const maskType = node.getAttr('data-type');
-                iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM4.5 12a7.5 7.5 0 0 0 7.5 7.5v-15A7.5 7.5 0 0 0 4.5 12z"/></svg>`;
-                let namePrefix = `Mask: ${maskType.charAt(0).toUpperCase() + maskType.slice(1)}`;
-                 if (maskType === 'alphabet') {
-                    name = `${namePrefix} '${node.getAttr('data-letter')}'`;
-                } else {
-                    name = namePrefix;
-                }
-            }
-
-
-            const li = document.createElement('li');
-            li.className = 'layer-item';
-            if (selectedNode && selectedNode.id() === node.id()) {
-                li.classList.add('selected');
-            }
-            li.setAttribute('data-id', node.id());
-
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'layer-info';
-            infoDiv.innerHTML = iconSvg + `<span class="name">${name}</span>`;
-            infoDiv.onclick = () => selectNode(node);
-
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'layer-actions';
-
-            const upBtn = document.createElement('button');
-            upBtn.className = 'layer-action-btn';
-            upBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5l6 6h-3v6h-6v-6H6z"/></svg>';
-            upBtn.title = "Move Up";
-            upBtn.disabled = index === 0;
-            upBtn.onclick = (e) => { e.stopPropagation(); node.moveUp(); layer.draw(); updateLayersPanel(); };
-
-            const downBtn = document.createElement('button');
-            downBtn.className = 'layer-action-btn';
-            downBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l-6-6h3V7h6v6h3z"/></svg>';
-            downBtn.title = "Move Down";
-            downBtn.disabled = index === nodes.length - 1;
-            downBtn.onclick = (e) => { e.stopPropagation(); node.moveDown(); layer.draw(); updateLayersPanel(); };
-
-            actionsDiv.appendChild(upBtn);
-            actionsDiv.appendChild(downBtn);
-
-            li.appendChild(infoDiv);
-            li.appendChild(actionsDiv);
-            layersList.appendChild(li);
-        });
-    };
-
+    
     // Forward declare functions that are called by others before they are defined
     let selectNode: (node: any) => void;
     let addImageToMask: (maskGroup: any) => void;
@@ -364,7 +283,7 @@ export default function KonvaEditor() {
         });
     
         layer.add(group);
-        updateLayersPanel();
+        updateLayers();
         layer.draw();
         selectNode(group);
         setMaskDialogOpen(false);
@@ -412,7 +331,7 @@ export default function KonvaEditor() {
 
 
                         layer.draw();
-                        updateLayersPanel();
+                        updateLayers();
                     });
                 };
                 reader.readAsDataURL(file);
@@ -457,13 +376,13 @@ export default function KonvaEditor() {
             newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: options.sides || 6, radius: size/2 });
             break;
           case 'diamond':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.SQRT2 });
+            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: Math.SQRT2 });
             break;
         }
 
         if(newFrame) {
             layer.add(newFrame);
-            updateLayersPanel();
+            updateLayers();
             layer.draw();
             selectNode(newFrame);
         }
@@ -486,8 +405,6 @@ export default function KonvaEditor() {
         }
         
         setSelectedNode(nodeToSelect);
-        
-        if(opacitySlider) opacitySlider.value = String(nodeToSelect.opacity());
         
         // Remove previous listeners to avoid duplicates
         nodeToSelect.off('dblclick dbltap');
@@ -552,7 +469,7 @@ export default function KonvaEditor() {
                                 });
                                 layer.add(img);
                                 selectNode(img); // Reselect the new image
-                                updateLayersPanel();
+                                updateLayers();
                                 layer.draw();
                             });
                         };
@@ -585,8 +502,6 @@ export default function KonvaEditor() {
                 addImageToMask(nodeToSelect);
             }
         });
-
-        updateLayersPanel();
     };
 
     // --- 4. Core Button Listeners (Dialog Control) ---
@@ -656,7 +571,7 @@ export default function KonvaEditor() {
 
 
     try {
-      updateLayersPanel();
+      updateLayers();
 
       // --- 6. Konva Dependent Functions ---
       const updateSelectedTextStyle = () => {
@@ -772,7 +687,7 @@ export default function KonvaEditor() {
         }
 
         layer.add(newText);
-        updateLayersPanel();
+        updateLayers();
         layer.draw();
       };
 
@@ -879,7 +794,7 @@ export default function KonvaEditor() {
 
 
         layer.add(circularGroup);
-        updateLayersPanel();
+        updateLayers();
         layer.draw();
       };
       
@@ -918,53 +833,7 @@ export default function KonvaEditor() {
 
 
       // --- 7. Konva Dependent Event Handlers ---
-      const canvasSizeSelector = document.getElementById('canvas-size');
-      canvasSizeSelector?.addEventListener('change', (e) => {
-        const newSize = (e.target as HTMLSelectElement).value;
-        setCanvasSize(newSize);
-      });
       
-      
-      alignTopBtn?.addEventListener('click', () => alignObject('top'));
-      alignLeftBtn?.addEventListener('click', () => alignObject('left'));
-      alignCenterBtn?.addEventListener('click', () => alignObject('center'));
-      alignRightBtn?.addEventListener('click', () => alignObject('right'));
-      alignBottomBtn?.addEventListener('click', () => alignObject('bottom'));
-
-      opacitySlider?.addEventListener('input', (e) => {
-          if (selectedNode) {
-              const opacity = parseFloat((e.target as HTMLInputElement).value);
-              selectedNode.opacity(opacity);
-              layer.draw();
-          }
-      });
-      
-      const alignObject = (position: string) => {
-          if (!selectedNode) return;
-          const box = selectedNode.getClientRect({ relativeTo: stage });
-
-          switch(position) {
-              case 'top':
-                  selectedNode.y(selectedNode.y() - box.y);
-                  break;
-              case 'left':
-                  selectedNode.x(selectedNode.x() - box.x);
-                  break;
-              case 'center':
-                  selectedNode.x(stage.width() / 2);
-                  selectedNode.y(stage.height() / 2);
-                  break;
-              case 'right':
-                  selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
-                  break;
-              case 'bottom':
-                  selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
-                  break;
-          }
-          layer.draw();
-      };
-
-
       textColorPicker?.addEventListener('input', e => {
         selectedColorText = (e.target as HTMLInputElement).value;
         if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
@@ -1124,7 +993,7 @@ export default function KonvaEditor() {
         if (selectedNode) {
           selectedNode.destroy();
           deselectNode();
-          updateLayersPanel();
+          updateLayers();
         }
       });
 
@@ -1146,11 +1015,12 @@ export default function KonvaEditor() {
           return;
         }
 
-        selectNode(e.target);
+        const targetNode = e.target.hasName('circularText') ? e.target.getParent() : e.target;
+        setSelectedNode(targetNode);
       });
       
       stage.on('dragend', () => {
-        updateLayersPanel();
+        updateLayers();
       });
 
     } catch (error) {
@@ -1163,7 +1033,11 @@ export default function KonvaEditor() {
     if ((window as any).Konva && isCanvasReady) {
       initializeKonva();
     }
-  }, [isCanvasReady, selectedNode]);
+  }, [isCanvasReady]);
+
+  useEffect(() => {
+    updateLayers();
+  }, [konvaObjects, selectedNode]);
 
   const handleAddShape = (config: any) => {
     if (!canvasRef.current) return;
@@ -1214,6 +1088,7 @@ export default function KonvaEditor() {
     }
     if(newShape) {
       layer.add(newShape);
+      updateLayers();
       layer.draw();
       setSelectedNode(newShape);
     }
@@ -1296,6 +1171,7 @@ export default function KonvaEditor() {
                         draggable: true,
                     });
                     layer.add(img);
+                    updateLayers();
                     setSelectedNode(img);
                     layer.draw();
                 });
@@ -1365,6 +1241,58 @@ export default function KonvaEditor() {
     // but for now, it's a placeholder.
   };
 
+  const handleSelectNode = (nodeId: string) => {
+    const node = canvasRef.current?.layer.findOne(`#${nodeId}`);
+    if (node) {
+      setSelectedNode(node);
+    }
+  };
+
+  const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
+    const node = canvasRef.current?.layer.findOne(`#${nodeId}`);
+    if (node) {
+      if (action === 'up') {
+        node.moveUp();
+      } else {
+        node.moveDown();
+      }
+      updateLayers();
+      canvasRef.current.layer.draw();
+    }
+  };
+  
+  const handleAlign = (position: string) => {
+    if (!selectedNode || !canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+    const box = selectedNode.getClientRect({ relativeTo: stage });
+
+    switch(position) {
+        case 'top':
+            selectedNode.y(selectedNode.y() - box.y);
+            break;
+        case 'left':
+            selectedNode.x(selectedNode.x() - box.x);
+            break;
+        case 'center':
+            selectedNode.x(stage.width() / 2);
+            selectedNode.y(stage.height() / 2);
+            break;
+        case 'right':
+            selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
+            break;
+        case 'bottom':
+            selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
+            break;
+    }
+    canvasRef.current.layer.draw();
+  };
+  
+  const handleOpacityChange = (opacity: number) => {
+    if (selectedNode) {
+      selectedNode.opacity(opacity);
+      canvasRef.current?.layer.draw();
+    }
+  };
 
   return (
     <>
@@ -1382,56 +1310,53 @@ export default function KonvaEditor() {
             <div className="editor-main-column">
                 <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
                 
-                <Canvas ref={canvasRef} canvasSize={canvasSize} onReady={() => setCanvasReady(true)} />
+                <Canvas 
+                    ref={canvasRef} 
+                    canvasSize={canvasSize} 
+                    onReady={() => setCanvasReady(true)}
+                />
                 
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
-                    <div className="mb-4">
-                        <label htmlFor="canvas-size" className="block text-sm font-medium text-gray-700 mb-2">Select Canvas Size</label>
-                        <select id="canvas-size" value={canvasSize} onChange={(e) => setCanvasSize(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                            <option value="500x500">Square (500x500)</option>
-                            <option value="375x667">Phone (375x667)</option>
-                            <option value="1920x1080">HD Screen (1920x1080)</option>
-                            <option value="1366x768">Laptop (1366x768)</option>
-                            <option value="2384x3370">A1 (2384x3370)</option>
-                            <option value="1684x2384">A2 (1684x2384)</option>
-                            <option value="1191x1684">A3 (1191x1684)</option>
-                            <option value="842x1191">A4 (842x1191)</option>
-                            <option value="595x842">A5 (595x842)</option>
-                        </select>
-                    </div>
-                    <div className="mb-4">
-                        <div className="color-picker-container-inline">
-                            <label htmlFor="background-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Background Color</label>
-                            <div id="color-preview-background" className="color-preview-circle" style={{backgroundColor: backgroundColor}}></div>
-                            <input type="color" id="background-color-picker" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="color-picker-input-hidden" />
-                        </div>
-                    </div>
-                     <div id="object-properties" className="hidden">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Object Properties</h4>
-                        <div className="alignment-controls">
-                            <button id="align-top-btn" className="align-btn" title="Align Top"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="3"></line><line x1="5" y1="5" x2="19" y2="5"></line><rect x="5" y="9" width="14" height="10" rx="2"></rect></svg></button>
-                            <button id="align-left-btn" className="align-btn" title="Align Left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="3" y2="12"></line><line x1="5" y1="5" x2="5" y2="19"></line><rect y="5" x="9" width="10" height="14" rx="2"></rect></svg></button>
-                            <button id="align-center-btn" className="align-btn" title="Center on Canvas"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="12" y2="12" /><line x1="12" x2="12" y1="3" y2="21" /></svg></button>
-                            <button id="align-right-btn" className="align-btn" title="Align Right"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="21" y2="12"></line><line x1="19" y1="5" x2="19" y2="19"></line><rect y="5" x="5" width="10" height="14" rx="2"></rect></svg></button>
-                            <button id="align-bottom-btn" className="align-btn" title="Align Bottom"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="21"></line><line x1="5" y1="19" x2="19" y2="19"></line><rect x="5" y="5" width="14" height="10" rx="2"></rect></svg></button>
-                        </div>
-                        <div className="opacity-controls">
-                            <label htmlFor="opacity-slider">Opacity</label>
-                            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" defaultValue="1" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+                    
+                    <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
+                    <BackgroundColorPicker defaultValue={backgroundColor} onChange={setBackgroundColor} />
+
+                    {selectedNode && (
+                        <ObjectPropertiesPanel
+                            selectedNode={selectedNode}
+                            onAlign={handleAlign}
+                            onOpacityChange={handleOpacityChange}
+                        />
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-2 flex-wrap mt-4">
                         <button id="add-item-btn" className="button button-primary flex-grow" onClick={() => { setAddItemDialogOpen(true); deselectNode(); }}>Add Item</button>
-                        <button id="delete-btn" className="button button-danger flex-grow hidden">Delete</button>
+                        {selectedNode && (
+                             <button 
+                                id="delete-btn" 
+                                className="button button-danger flex-grow"
+                                onClick={() => {
+                                    if(selectedNode) {
+                                        selectedNode.destroy();
+                                        deselectNode();
+                                        updateLayers();
+                                    }
+                                }}
+                             >
+                                Delete
+                            </button>
+                        )}
                         <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                     </div>
                 </div>
             </div>
 
-            <div id="layers-panel">
-                <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
-                <ul id="layers-list"></ul>
-            </div>
+            <LayersPanel 
+                layers={konvaObjects}
+                selectedNode={selectedNode}
+                onSelectNode={handleSelectNode}
+                onMoveNode={handleMoveNode}
+            />
         
         <AddItemDialog 
             isOpen={isAddItemDialogOpen} 
@@ -1673,43 +1598,3 @@ export default function KonvaEditor() {
   );
 }
     
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    
-
-
-
-    
-
-    
-
-    
-
-
-
-    
-
-    
-
-    
-
-    
-
-
-
-
-
-    
-
-    
-
