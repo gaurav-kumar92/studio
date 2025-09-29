@@ -104,7 +104,7 @@ export default function KonvaEditor() {
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current) {
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
         return;
     }
 
@@ -278,6 +278,7 @@ export default function KonvaEditor() {
 
       saveBtn?.addEventListener('click', () => {
         deselectNode();
+        if (!stage) return;
         const dataURL = stage.toDataURL({ mimeType: "image/png", quality: 1 });
         const link = document.createElement('a');
         link.download = 'konva-design.png';
@@ -323,7 +324,7 @@ export default function KonvaEditor() {
   }, [selectedNode]);
 
   const handleAddShape = (config: any) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
 
     let newShape;
@@ -401,7 +402,7 @@ export default function KonvaEditor() {
   }
 
   const handleAddFrame = (config: any) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
     
     let newFrame;
@@ -464,7 +465,7 @@ export default function KonvaEditor() {
   };
 
   const handleAddMask = (config: any) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
 
     const size = 150;
@@ -575,7 +576,7 @@ export default function KonvaEditor() {
   };
 
   const handleAddOrUpdateText = (config: any) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
     
     if (editingTextNode) {
@@ -764,7 +765,7 @@ export default function KonvaEditor() {
             const reader = new FileReader();
             reader.onload = (e) => {
                 window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                    if (!canvasRef.current) return;
+                    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
                     const { stage, layer } = canvasRef.current;
                     const MAX_WIDTH = stage.width() * 0.8;
                     const MAX_HEIGHT = stage.height() * 0.8;
@@ -841,7 +842,7 @@ export default function KonvaEditor() {
             selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
             break;
     }
-    if (canvasRef.current) canvasRef.current.layer.draw();
+    if (canvasRef.current?.layer) canvasRef.current.layer.draw();
   };
   
   const handleOpacityChange = (opacity: number) => {
@@ -969,3 +970,4 @@ export default function KonvaEditor() {
 
 
     
+
