@@ -8,6 +8,7 @@ import ShapeDialog from '@/components/editor/ShapeDialog';
 import FrameDialog from '@/components/editor/FrameDialog';
 import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
+import TextDialog from '@/components/editor/TextDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
 import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
 import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
@@ -43,6 +44,7 @@ export default function KonvaEditor() {
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
+  const [editingTextNode, setEditingTextNode] = useState<any>(null);
 
 
   const updateLayers = () => {
@@ -104,52 +106,7 @@ export default function KonvaEditor() {
 
 
     // --- 1. Element References ---
-    
-    // Dialogs and Controls
-    const textDialog = document.getElementById('text-dialog') as HTMLElement;
-    const controls = document.getElementById('controls');
-
-
-    // Buttons
-    const cancelTextBtn = document.getElementById('cancel-btn');
-    const addTextBtn = document.getElementById('add-btn');
-    const deleteBtn = document.getElementById('delete-btn') as HTMLElement;
     const saveBtn = document.getElementById('save-btn');
-    
-    // Text Specific
-    const dialogTitle = document.getElementById('dialog-title');
-    const textInput = document.getElementById('text-input') as HTMLInputElement;
-    const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
-    const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
-    const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
-    const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
-    const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
-    const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
-    const boldBtn = document.getElementById('bold-btn') as HTMLElement;
-    const italicBtn = document.getElementById('italic-btn') as HTMLElement;
-    const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
-    const strikethroughBtn = document.getElementById('strikethrough-btn') as HTMLElement;
-    const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
-    const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
-    const shadowBlurSlider = document.getElementById('shadow-blur-slider') as HTMLInputElement;
-    const shadowDistanceSlider = document.getElementById('shadow-distance-slider') as HTMLInputElement;
-    const shadowOpacitySlider = document.getElementById('shadow-opacity-slider') as HTMLInputElement;
-    const shadowBlurValue = document.getElementById('shadow-blur-value');
-    const shadowDistanceValue = document.getElementById('shadow-distance-value');
-    const shadowOpacityValue = document.getElementById('shadow-opacity-value');
-    const glowBtn = document.getElementById('glow-btn') as HTMLElement;
-    const glowControls = document.getElementById('glow-controls') as HTMLElement;
-    const glowBlurSlider = document.getElementById('glow-blur-slider') as HTMLInputElement;
-    const glowOpacitySlider = document.getElementById('glow-opacity-slider') as HTMLInputElement;
-    const glowBlurValue = document.getElementById('glow-blur-value');
-    const glowOpacityValue = document.getElementById('glow-opacity-value');
-    const colorPreviewGlow = document.getElementById('color-preview-glow') as HTMLElement;
-    const glowColorPicker = document.getElementById('glow-color-picker') as HTMLInputElement;
-    
-    // Advanced Text
-    const letterSpacingSlider = document.getElementById('letter-spacing-slider') as HTMLInputElement;
-    const lineHeightSlider = document.getElementById('line-height-slider') as HTMLInputElement;
-    const textAlignContainer = document.getElementById('text-align-container');
     
     // Image Specific
     const imageFileInput = document.createElement('input');
@@ -158,12 +115,6 @@ export default function KonvaEditor() {
     imageFileInput.style.display = 'none';
     document.body.appendChild(imageFileInput);
 
-
-    // --- 2. Global State Variables ---
-    
-    // Initialize colors from pickers
-    let selectedColorText = textColorPicker.value;
-    let selectedColorGlow = glowColorPicker.value;
 
     // --- 3. UI and Helper Functions (Declared after variables) ---
     
@@ -239,37 +190,8 @@ export default function KonvaEditor() {
         nodeToSelect.off('dblclick dbltap');
         nodeToSelect.on('dblclick dbltap', () => {
              if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText')) {
-              setTextDialogOpen(true);
-              if (dialogTitle) dialogTitle.textContent = 'Update Text';
-              if (addTextBtn) addTextBtn.textContent = 'Update';
-
-              if (nodeToSelect.hasName('text')) {
-                  if(textInput) textInput.value = nodeToSelect.text();
-                  if(textFontSizeInput) textFontSizeInput.value = nodeToSelect.fontSize();
-                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToSelect.fontFamily();
-                  if(textColorPicker) textColorPicker.value = nodeToSelect.fill();
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToSelect.fill();
-                  
-                  if(letterSpacingSlider) letterSpacingSlider.value = nodeToSelect.letterSpacing();
-                  if(lineHeightSlider) lineHeightSlider.value = nodeToSelect.lineHeight();
-                  document.querySelectorAll('#text-align-container button').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.getAttribute('data-align') === nodeToSelect.align()) {
-                        btn.classList.add('active');
-                    }
-                  });
-                  
-                  if(circularTextCurvature) circularTextCurvature.value = '0';
-                  if(circularTextRadius) circularTextRadius.value = '150'; 
-
-              } else if (nodeToSelect.hasName('circularText')) {
-                  if(textInput) textInput.value = nodeToSelect.getAttr('data-text');
-                  if(circularTextCurvature) circularTextCurvature.value = nodeToSelect.getAttr('data-curvature');
-                  if(circularTextRadius) circularTextRadius.value = nodeToSelect.getAttr('data-radius');
-                  if(textColorPicker) textColorPicker.value = nodeToSelect.getAttr('data-color');
-                  if(colorPreviewText) colorPreviewText.style.backgroundColor = nodeToSelect.getAttr('data-color');
-                  if(textFontFamilySelect) textFontFamilySelect.value = nodeToSelect.getAttr('data-font-family');
-              }
+                setEditingTextNode(nodeToSelect);
+                setTextDialogOpen(true);
             } else if (nodeToSelect.hasName('shape')) {
               setEditingShapeNode(nodeToSelect);
               setShapeDialogOpen(true);
@@ -330,253 +252,8 @@ export default function KonvaEditor() {
       return;
     }
 
-    cancelTextBtn?.addEventListener('click', () => setTextDialogOpen(false));
-    
     try {
       updateLayers();
-
-      // --- 6. Konva Dependent Functions ---
-      const updateSelectedTextStyle = () => {
-        if (!selectedNode || (selectedNode.name() !== 'text' && selectedNode.name() !== 'circularText')) return;
-
-        if (selectedNode.name() === 'circularText') {
-            return;
-        }
-
-        const isBold = boldBtn.classList.contains('active');
-        const isItalic = italicBtn.classList.contains('active');
-        const isUnderline = underlineBtn.classList.contains('active');
-        const isStrikethrough = strikethroughBtn.classList.contains('active');
-        
-        let decorations = [];
-        if (isUnderline) decorations.push('underline');
-        if (isStrikethrough) decorations.push('line-through');
-
-        selectedNode.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
-        selectedNode.textDecoration(decorations.join(' '));
-        
-        selectedNode.letterSpacing(Number(letterSpacingSlider.value));
-        selectedNode.lineHeight(Number(lineHeightSlider.value));
-        const activeAlignButton = document.querySelector('#text-align-container button.active');
-        selectedNode.align(activeAlignButton?.getAttribute('data-align') || 'left');
-
-
-        const isShadowActive = dropShadowBtn?.classList.contains('active');
-        if (isShadowActive) {
-          selectedNode.shadowEnabled(true);
-          selectedNode.shadowColor('#000000');
-          selectedNode.shadowBlur(Number(shadowBlurSlider.value));
-          selectedNode.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
-          selectedNode.shadowOpacity(Number(shadowOpacitySlider.value));
-        } else {
-            if (!glowBtn?.classList.contains('active')) {
-                selectedNode.shadowEnabled(false);
-            }
-        }
-        
-        const isGlowActive = glowBtn?.classList.contains('active');
-        if (isGlowActive) {
-            selectedNode.shadowEnabled(true);
-            selectedNode.shadowColor(selectedColorGlow); 
-            selectedNode.shadowBlur(Number(glowBlurSlider.value));
-            selectedNode.shadowOffset({ x: 0, y: 0 }); 
-            selectedNode.shadowOpacity(Number(glowOpacitySlider.value));
-        } else {
-            if (!dropShadowBtn?.classList.contains('active')) {
-                selectedNode.shadowEnabled(false);
-            }
-        }
-
-        layer.draw();
-      };
-
-
-      const addText = () => {
-        const textValue = textInput.value || 'New Text';
-        const fontSize = Number(textFontSizeInput.value);
-        const fontFamily = textFontFamilySelect.value;
-        const color = textColorPicker.value;
-        
-        const letterSpacing = Number(letterSpacingSlider.value);
-        const lineHeight = Number(lineHeightSlider.value);
-        const activeAlignButton = document.querySelector('#text-align-container button.active');
-        const align = activeAlignButton?.getAttribute('data-align') || 'left';
-
-
-        const newText = new window.Konva.Text({
-          text: textValue,
-          x: stage.width() / 4,
-          y: stage.height() / 4,
-          fontSize: fontSize,
-          fontFamily: fontFamily,
-          fill: color,
-          draggable: true,
-          name: 'text',
-          letterSpacing: letterSpacing,
-          lineHeight: lineHeight,
-          align: align,
-        });
-        
-        const isBold = boldBtn.classList.contains('active');
-        const isItalic = italicBtn.classList.contains('active');
-        const isUnderline = underlineBtn.classList.contains('active');
-        const isStrikethrough = strikethroughBtn.classList.contains('active');
-        
-        let decorations = [];
-        if (isUnderline) decorations.push('underline');
-        if (isStrikethrough) decorations.push('line-through');
-
-        newText.fontStyle(`${isBold ? 'bold ' : ''}${isItalic ? 'italic' : ''}`.trim());
-        newText.textDecoration(decorations.join(' '));
-        
-        newText.shadowEnabled(false);
-        const isShadowActive = dropShadowBtn?.classList.contains('active');
-        if (isShadowActive) {
-          newText.shadowEnabled(true);
-          newText.shadowColor('#000000');
-          newText.shadowBlur(Number(shadowBlurSlider.value));
-          newText.shadowOffset({ x: Number(shadowDistanceSlider.value), y: Number(shadowDistanceSlider.value) });
-          newText.shadowOpacity(Number(shadowOpacitySlider.value));
-        }
-
-        const isGlowActive = glowBtn?.classList.contains('active');
-        if (isGlowActive) {
-            newText.shadowEnabled(true);
-            newText.shadowColor(selectedColorGlow);
-            newText.shadowBlur(Number(glowBlurSlider.value));
-            newText.shadowOffset({ x: 0, y: 0 });
-            newText.shadowOpacity(Number(glowOpacitySlider.value));
-        }
-
-        layer.add(newText);
-        updateLayers();
-        layer.draw();
-      };
-
-      const addCircularText = () => {
-        const textValue = textInput.value.trim() || 'Curved Text';
-        const radius = Number(circularTextRadius.value);
-        const curvatureValue = Number(circularTextCurvature.value);
-        const color = textColorPicker.value;
-        const fontFamily = textFontFamilySelect.value;
-
-        const fontSize = Math.max(10, Math.floor(radius / 5));
-
-        const STRAIGHT_KERNING_FACTOR = 0.85;
-
-        if (!textValue) return;
-
-        const circularGroup = new window.Konva.Group({
-          x: stage.width() / 2,
-          y: stage.height() / 2,
-          draggable: true,
-          name: 'circularText',
-          'data-curvature': curvatureValue,
-          'data-text': textValue,
-          'data-radius': radius,
-          'data-color': color,
-          'data-font-family': fontFamily,
-        });
-
-        const tempText = new window.Konva.Text({ text: textValue, fontSize: fontSize, fontFamily: fontFamily });
-        const charHeight = tempText.height();
-
-
-        const maxAngleRadians = 2 * Math.PI * (curvatureValue / 100);
-
-        let totalFlatWidth = 0;
-        for (const char of textValue) {
-          tempText.text(char);
-          totalFlatWidth += tempText.width();
-        }
-
-        const totalFlatAngle = totalFlatWidth / radius;
-
-        const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
-
-        let cumulativeAngle = 0;
-        let linearOffset = 0; 
-
-        for (let i = 0; i < textValue.length; i++) {
-          const char = textValue[i];
-          tempText.text(char);
-          let charWidth = tempText.width();
-
-          const adjustedCharWidth = (curvatureValue < 1) ? charWidth * STRAIGHT_KERNING_FACTOR : charWidth;
-
-          const charAngularWidth = charWidth / radius;
-
-          const scaledAngularWidth = charAngularWidth * scaleFactor;
-          const centerAngle = cumulativeAngle + (scaledAngularWidth / 2);
-
-          let x, y, rotationDegrees, offsetX;
-
-          if (curvatureValue < 1) { 
-            x = linearOffset;
-            y = 0;
-            rotationDegrees = 0;
-            offsetX = 0; 
-            linearOffset += adjustedCharWidth; 
-
-          } else {
-            const placementAngle = centerAngle - (Math.PI / 2); 
-            x = radius * Math.cos(placementAngle);
-            y = radius * Math.sin(placementAngle);
-            rotationDegrees = centerAngle * 180 / Math.PI;
-            offsetX = charWidth / 2; 
-
-            cumulativeAngle += scaledAngularWidth;
-          }
-
-
-          const charNode = new window.Konva.Text({
-            text: char,
-            x: x,
-            y: y,
-            fill: color,
-            fontSize: fontSize,
-            fontFamily: fontFamily,
-            rotation: rotationDegrees,
-            offsetX: offsetX,
-            offsetY: charHeight / 2,
-          });
-
-          circularGroup.add(charNode);
-        }
-
-        let finalFlatWidth = totalFlatWidth; 
-        if (curvatureValue < 1) {
-          finalFlatWidth = linearOffset;
-          circularGroup.offsetX(finalFlatWidth / 2);
-          circularGroup.rotation(0);
-        } else {
-          const totalArcWidth = cumulativeAngle;
-          circularGroup.rotation(-totalArcWidth * 180 / (2 * Math.PI));
-        }
-
-
-        layer.add(circularGroup);
-        updateLayers();
-        layer.draw();
-      };
-      
-      const handleAddOrUpdateText = () => {
-        const curvature = Number(circularTextCurvature.value);
-        
-        if (selectedNode) {
-            if (selectedNode.hasName('text') || selectedNode.hasName('circularText')) {
-                selectedNode.destroy(); 
-                deselectNode();
-            }
-        }
-
-        if (curvature > 0) {
-            addCircularText();
-        } else {
-            addText();
-        }
-        setTextDialogOpen(false);
-      };
       
       const applyFilter = (filter: any) => {
           let nodeToFilter = selectedNode;
@@ -592,109 +269,6 @@ export default function KonvaEditor() {
           nodeToFilter.filters(filter ? [filter] : []);
           layer.draw();
       };
-
-
-      // --- 7. Konva Dependent Event Handlers ---
-      
-      textColorPicker?.addEventListener('input', e => {
-        selectedColorText = (e.target as HTMLInputElement).value;
-        if(colorPreviewText) colorPreviewText.style.backgroundColor = selectedColorText;
-        if(selectedNode) {
-          if (selectedNode.hasName('text')) {
-             selectedNode.fill(selectedColorText);
-             layer.draw();
-          }
-        }
-      });
-      
-      glowColorPicker?.addEventListener('input', e => {
-          selectedColorGlow = (e.target as HTMLInputElement).value;
-          if (colorPreviewGlow) colorPreviewGlow.style.backgroundColor = selectedColorGlow;
-          if (selectedNode && glowBtn?.classList.contains('active')) {
-              selectedNode.shadowColor(selectedColorGlow);
-              layer.draw();
-          }
-      });
-
-      addTextBtn?.addEventListener('click', handleAddOrUpdateText);
-
-
-      boldBtn?.addEventListener('click', () => { boldBtn.classList.toggle('active'); updateSelectedTextStyle(); });
-      italicBtn?.addEventListener('click', () => { italicBtn.classList.toggle('active'); updateSelectedTextStyle(); });
-      underlineBtn?.addEventListener('click', () => { 
-        underlineBtn.classList.toggle('active'); 
-        if(underlineBtn.classList.contains('active') && strikethroughBtn) strikethroughBtn.classList.remove('active');
-        updateSelectedTextStyle(); 
-      });
-      strikethroughBtn?.addEventListener('click', () => { 
-        strikethroughBtn.classList.toggle('active');
-        if(strikethroughBtn.classList.contains('active')) underlineBtn.classList.remove('active');
-        updateSelectedTextStyle(); 
-      });
-      
-      letterSpacingSlider?.addEventListener('input', updateSelectedTextStyle);
-      lineHeightSlider?.addEventListener('input', updateSelectedTextStyle);
-      textAlignContainer?.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          const button = target.closest('button');
-          if (!button) return;
-
-          if(textAlignContainer) textAlignContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-          updateSelectedTextStyle();
-      });
-
-
-      dropShadowBtn?.addEventListener('click', () => {
-        dropShadowBtn.classList.toggle('active');
-        if (dropShadowBtn.classList.contains('active')) {
-          glowBtn.classList.remove('active');
-          if(glowControls) glowControls.classList.add('hidden');
-        }
-        if(shadowControls) shadowControls.classList.toggle('hidden', !dropShadowBtn.classList.contains('active'));
-        updateSelectedTextStyle();
-      });
-
-      shadowBlurSlider?.addEventListener('input', () => {
-        if(shadowBlurValue) shadowBlurValue.textContent = shadowBlurSlider.value;
-        updateSelectedTextStyle();
-      });
-      shadowDistanceSlider?.addEventListener('input', () => {
-        if(shadowDistanceValue) shadowDistanceValue.textContent = shadowDistanceSlider.value;
-        updateSelectedTextStyle();
-      });
-      shadowOpacitySlider?.addEventListener('input', () => {
-        if(shadowOpacityValue) shadowOpacityValue.textContent = shadowOpacitySlider.value;
-        updateSelectedTextStyle();
-      });
-
-      glowBtn?.addEventListener('click', () => {
-        glowBtn.classList.toggle('active');
-        if (glowBtn.classList.contains('active')) {
-          dropShadowBtn.classList.remove('active');
-          if(shadowControls) shadowControls.classList.add('hidden');
-        }
-        if(glowControls) glowControls.classList.toggle('hidden', !glowBtn.classList.contains('active'));
-        updateSelectedTextStyle();
-      });
-      
-      glowBlurSlider?.addEventListener('input', () => {
-        if(glowBlurValue) glowBlurValue.textContent = glowBlurSlider.value;
-        updateSelectedTextStyle();
-      });
-      glowOpacitySlider?.addEventListener('input', () => {
-        if(glowOpacityValue) glowOpacityValue.textContent = glowOpacitySlider.value;
-        updateSelectedTextStyle();
-      });
-        
-      deleteBtn?.addEventListener('click', () => {
-        if (selectedNode) {
-          selectedNode.destroy();
-          deselectNode();
-          updateLayers();
-        }
-      });
-
 
       saveBtn?.addEventListener('click', () => {
         deselectNode();
@@ -713,7 +287,12 @@ export default function KonvaEditor() {
           return;
         }
 
-        const targetNode = e.target.hasName('circularText') ? e.target.getParent() : e.target;
+        let targetNode = e.target;
+        // Special handling for circular text children
+        if (e.target.parent?.hasName('circularText')) {
+            targetNode = e.target.parent;
+        }
+
         selectNode(targetNode);
       });
       
@@ -731,7 +310,7 @@ export default function KonvaEditor() {
     if ((window as any).Konva && isCanvasReady) {
       initializeKonva();
     }
-  }, [isCanvasReady]);
+  }, [isCanvasReady, selectedNode]);
 
   useEffect(() => {
     updateLayers();
@@ -989,6 +568,119 @@ export default function KonvaEditor() {
     }
   };
 
+  const handleAddOrUpdateText = (config: any) => {
+    if (!canvasRef.current) return;
+    const { stage, layer } = canvasRef.current;
+    
+    if (editingTextNode) {
+        editingTextNode.destroy();
+        deselectNode();
+        setEditingTextNode(null);
+    }
+
+    if (config.curvature > 0) {
+        const circularGroup = new window.Konva.Group({
+          x: stage.width() / 2,
+          y: stage.height() / 2,
+          draggable: true,
+          name: 'circularText',
+          // Store original data for editing
+          'data-text': config.text,
+          'data-radius': config.radius,
+          'data-curvature': config.curvature,
+          'data-color': config.fill,
+          'data-font-family': config.fontFamily,
+        });
+
+        const fontSize = Math.max(10, Math.floor(config.radius / 5));
+        const tempText = new window.Konva.Text({ text: config.text, fontSize: fontSize, fontFamily: config.fontFamily });
+        const charHeight = tempText.height();
+        const maxAngleRadians = 2 * Math.PI * (config.curvature / 100);
+
+        let totalFlatWidth = 0;
+        for (const char of config.text) {
+          tempText.text(char);
+          totalFlatWidth += tempText.width();
+        }
+        const totalFlatAngle = totalFlatWidth / config.radius;
+        const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
+        let cumulativeAngle = 0;
+
+        for (let i = 0; i < config.text.length; i++) {
+          const char = config.text[i];
+          tempText.text(char);
+          let charWidth = tempText.width();
+          const charAngularWidth = charWidth / config.radius;
+          const scaledAngularWidth = charAngularWidth * scaleFactor;
+          const centerAngle = cumulativeAngle + (scaledAngularWidth / 2);
+
+          const placementAngle = centerAngle - (Math.PI / 2); 
+          const x = config.radius * Math.cos(placementAngle);
+          const y = config.radius * Math.sin(placementAngle);
+          const rotationDegrees = centerAngle * 180 / Math.PI;
+
+          const charNode = new window.Konva.Text({
+            text: char,
+            x: x,
+            y: y,
+            fill: config.fill,
+            fontSize: fontSize,
+            fontFamily: config.fontFamily,
+            rotation: rotationDegrees,
+            offsetX: charWidth / 2,
+            offsetY: charHeight / 2,
+          });
+          circularGroup.add(charNode);
+          cumulativeAngle += scaledAngularWidth;
+        }
+
+        const totalArcWidth = cumulativeAngle;
+        circularGroup.rotation(-totalArcWidth * 180 / (2 * Math.PI));
+
+        layer.add(circularGroup);
+        setSelectedNode(circularGroup);
+
+    } else {
+        const newText = new window.Konva.Text({
+            ...config,
+            x: stage.width() / 4,
+            y: stage.height() / 4,
+            draggable: true,
+            name: 'text',
+        });
+        
+        let decorations = [];
+        if (config.isUnderline) decorations.push('underline');
+        if (config.isStrikethrough) decorations.push('line-through');
+        newText.textDecoration(decorations.join(' '));
+
+        newText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
+
+        if (config.isGlow) {
+            newText.shadowEnabled(true);
+            newText.shadowColor(config.glowColor);
+            newText.shadowBlur(config.glowBlur);
+            newText.shadowOpacity(config.glowOpacity);
+            newText.shadowOffset({ x: 0, y: 0 });
+        } else if (config.isShadow) {
+            newText.shadowEnabled(true);
+            newText.shadowColor('#000000');
+            newText.shadowBlur(config.shadowBlur);
+            newText.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+            newText.shadowOpacity(config.shadowOpacity);
+        } else {
+            newText.shadowEnabled(false);
+        }
+
+        layer.add(newText);
+        setSelectedNode(newText);
+    }
+
+    updateLayers();
+    layer.draw();
+    setTextDialogOpen(false);
+  };
+
 
   const handleSelectItem = (itemType: string) => {
     setAddItemDialogOpen(false);
@@ -996,7 +688,7 @@ export default function KonvaEditor() {
 
     switch (itemType) {
       case 'text':
-        resetTextDialog();
+        setEditingTextNode(null);
         setTextDialogOpen(true);
         break;
       case 'shape':
@@ -1056,58 +748,15 @@ export default function KonvaEditor() {
     imageFileInput.click();
   }
 
-  const resetTextDialog = () => {
-      const dialogTitle = document.getElementById('dialog-title');
-      const addTextBtn = document.getElementById('add-btn');
-      const textInput = document.getElementById('text-input') as HTMLInputElement;
-      const textFontSizeInput = document.getElementById('text-font-size') as HTMLInputElement;
-      const textFontFamilySelect = document.getElementById('text-font-family') as HTMLSelectElement;
-      const textColorPicker = document.getElementById('text-color-picker') as HTMLInputElement;
-      const colorPreviewText = document.getElementById('color-preview-text') as HTMLElement;
-      const boldBtn = document.getElementById('bold-btn') as HTMLElement;
-      const italicBtn = document.getElementById('italic-btn') as HTMLElement;
-      const underlineBtn = document.getElementById('underline-btn') as HTMLElement;
-      const strikethroughBtn = document.getElementById('strikethrough-btn') as HTMLElement;
-      const dropShadowBtn = document.getElementById('drop-shadow-btn') as HTMLElement;
-      const shadowControls = document.getElementById('shadow-controls') as HTMLElement;
-      const glowBtn = document.getElementById('glow-btn') as HTMLElement;
-      const glowControls = document.getElementById('glow-controls') as HTMLElement;
-      const glowColorPicker = document.getElementById('glow-color-picker') as HTMLInputElement;
-      const colorPreviewGlow = document.getElementById('color-preview-glow') as HTMLElement;
-      const letterSpacingSlider = document.getElementById('letter-spacing-slider') as HTMLInputElement;
-      const lineHeightSlider = document.getElementById('line-height-slider') as HTMLInputElement;
-      const circularTextRadius = document.getElementById('circular-text-radius') as HTMLInputElement;
-      const circularTextCurvature = document.getElementById('circular-text-curvature') as HTMLInputElement;
-
-      if(dialogTitle) dialogTitle.textContent = 'Add Text';
-      if(addTextBtn) addTextBtn.textContent = 'Add';
-      if(textInput) textInput.value = '';
-      if(textFontSizeInput) textFontSizeInput.value = '24';
-      if(textFontFamilySelect) textFontFamilySelect.value = 'Inter';
-      if(textColorPicker) textColorPicker.value = '#000000';
-      if(colorPreviewText) colorPreviewText.style.backgroundColor = '#000000';
-      boldBtn?.classList.remove('active');
-      italicBtn?.classList.remove('active');
-      underlineBtn?.classList.remove('active');
-      strikethroughBtn?.classList.remove('active');
-      dropShadowBtn?.classList.remove('active');
-      if(shadowControls) shadowControls.classList.add('hidden');
-      glowBtn?.classList.remove('active');
-      if(glowControls) glowControls.classList.add('hidden');
-      if(glowColorPicker) glowColorPicker.value = '#0000ff';
-      if(colorPreviewGlow) colorPreviewGlow.style.backgroundColor = '#0000ff';
-      if(letterSpacingSlider) letterSpacingSlider.value = '0';
-      if(lineHeightSlider) lineHeightSlider.value = '1';
-      document.querySelectorAll('#text-align-container button').forEach(btn => btn.classList.remove('active'));
-      document.querySelector('#text-align-container button[data-align="left"]')?.classList.add('active');
-      if(circularTextRadius) circularTextRadius.value = '150';
-      if(circularTextCurvature) circularTextCurvature.value = '0';
-  };
-
   const handleSelectNode = (nodeId: string) => {
     const node = canvasRef.current?.layer.findOne(`#${nodeId}`);
     if (node) {
-      setSelectedNode(node);
+      let targetNode = node;
+      // If it's a child of a group, select the group.
+      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask')) {
+          targetNode = node.parent;
+      }
+      setSelectedNode(targetNode);
     }
   };
 
@@ -1227,119 +876,12 @@ export default function KonvaEditor() {
             onSelectItem={handleSelectItem} 
         />
 
-        <div id="text-dialog" className="dialog-overlay" style={{ display: isTextDialogOpen ? 'flex' : 'none' }}>
-            <div className="dialog">
-                <div className="dialog-content">
-                    <h3 id="dialog-title" className="text-lg font-semibold mb-4">Add Text</h3>
-                    
-                    <div id="text-content" style={{maxHeight: '70vh', overflowY: 'auto'}}>
-                        <input type="text" id="text-input" className="dialog-input p-2 border rounded-md w-full mb-4" placeholder="Enter your text..." />
-                        <div id="text-controls" className="mt-4 pt-4 relative">
-                           <div className="color-picker-container-inline">
-                                <label htmlFor="text-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Text Color</label>
-                                <div id="color-preview-text" className="color-preview-circle" style={{backgroundColor: '#000000'}}></div>
-                                <input type="color" id="text-color-picker" defaultValue="#000000" className="color-picker-input-hidden" />
-                            </div>
-                            <div className="mb-4 mt-4">
-                                <label htmlFor="text-font-size" className="block text-sm font-medium text-gray-700">Font Size</label>
-                                <input type="number" id="text-font-size" className="w-full p-2 border rounded-md" defaultValue="24" min="12" max="100" />
-                            </div>
-                            <div className="mb-4">
-                                <label htmlFor="text-font-family" className="block text-sm font-medium text-gray-700">Font Family</label>
-                                <select id="text-font-family" className="w-full p-2 border border-gray-300 rounded-md">
-                                    <option value="Inter">Inter</option>
-                                    <option value="Arial">Arial</option>
-                                    <option value="Verdana">Verdana</option>
-                                    <option value="Times New Roman">Times New Roman</option>
-                                    <option value="Courier New">Courier New</option>
-                                    <option value="Georgia">Georgia</option>
-                                    <option value="Impact">Impact</option>
-                                    <option value="Comic Sans MS">Comic Sans MS</option>
-                                    <option value="Trebuchet MS">Trebuchet MS</option>
-                                    <option value="Arial Black">Arial Black</option>
-                                    <option value="Garamond">Garamond</option>
-                                </select>
-                            </div>
-                             <div className="mb-4 flex items-center justify-between">
-                                <label htmlFor="circular-text-radius" className="block text-sm font-medium text-gray-700">Radius</label>
-                                <input type="range" id="circular-text-radius" min="10" max="250" defaultValue="150" className="flex-grow ml-4" />
-                            </div>
-                            <div className="mb-4 flex flex-col items-start w-full">
-                                <label htmlFor="circular-text-curvature" className="block text-sm font-medium text-gray-700 mb-2">Curvature</label>
-                                <input type="range" id="circular-text-curvature" min="0" max="100" defaultValue="0" className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer" />
-                                <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
-                                    <span className="text-gray-600 font-semibold">Straight (0)</span>
-                                    <span className="text-gray-600 font-semibold">Full Wrap (100)</span>
-                                </div>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700">Font Style</label>
-                                <div className="flex gap-2 justify-center">
-                                    <button id="bold-btn" className="p-2 border rounded-md font-bold">B</button>
-                                    <button id="italic-btn" className="p-2 border rounded-md italic">I</button>
-                                    <button id="underline-btn" className="p-2 border rounded-md underline">U</button>
-                                    <button id="strikethrough-btn" className="p-2 border rounded-md line-through">S</button>
-                                    <button id="drop-shadow-btn" className="p-2 border rounded-md shadow-sm">Shadow</button>
-                                    <button id="glow-btn" className="p-2 border rounded-md shadow-sm">Glow</button>
-                                </div>
-                            </div>
-                            <div id="advanced-text-controls" className="flex flex-col gap-4 mt-4">
-                                <div>
-                                    <label htmlFor="letter-spacing-slider" className="block text-sm font-medium text-gray-700">Letter Spacing</label>
-                                    <input type="range" id="letter-spacing-slider" min="-10" max="20" step="1" defaultValue="0" className="w-full" />
-                                </div>
-                                <div>
-                                    <label htmlFor="line-height-slider" className="block text-sm font-medium text-gray-700">Line Height</label>
-                                    <input type="range" id="line-height-slider" min="0.5" max="3" step="0.1" defaultValue="1" className="w-full" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Alignment</label>
-                                    <div id="text-align-container" className="flex gap-2 justify-center mt-1">
-                                        <button data-align="left" className="p-2 border rounded-md active" title="Align Left">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
-                                        </button>
-                                        <button data-align="center" className="p-2 border rounded-md" title="Align Center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="17" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="7" y2="18"></line></svg>
-                                        </button>
-                                        <button data-align="right" className="p-2 border rounded-md" title="Align Right">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="7" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="shadow-controls" className="flex flex-col gap-2 mt-4 hidden">
-                                <label className="block text-sm font-medium text-gray-700">Shadow Blur (Current: <span id="shadow-blur-value">10</span>)</label>
-                                <input type="range" id="shadow-blur-slider" min="0" max="20" defaultValue="10" />
-                                <label className="block text-sm font-medium text-gray-700">Shadow Distance (Current: <span id="shadow-distance-value">5</span>)</label>
-                                <input type="range" id="shadow-distance-slider" min="0" max="20" defaultValue="5" />
-                                <label className="block text-sm font-medium text-gray-700">Shadow Opacity (Current: <span id="shadow-opacity-value">0.5</span>)</label>
-                                <input type="range" id="shadow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.5" />
-                            </div>
-                             <div id="glow-controls" className="flex flex-col gap-4 mt-4 hidden">
-                                <div className="color-picker-container-inline">
-                                    <label htmlFor="glow-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Glow Color</label>
-                                    <div id="color-preview-glow" className="color-preview-circle" style={{backgroundColor: '#0000ff'}}></div>
-                                    <input type="color" id="glow-color-picker" defaultValue="#0000ff" className="color-picker-input-hidden" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700">Glow Blur (Current: <span id="glow-blur-value">10</span>)</label>
-                                  <input type="range" id="glow-blur-slider" min="0" max="20" defaultValue="10" />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700">Glow Opacity (Current: <span id="glow-opacity-value">0.7</span>)</label>
-                                  <input type="range" id="glow-opacity-slider" min="0" max="1" step="0.1" defaultValue="0.7" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="dialog-actions flex justify-end gap-2 mt-4">
-                        <button id="cancel-btn" className="dialog-button dialog-button-secondary">Cancel</button>
-                        <button id="add-btn" className="dialog-button dialog-button-primary">Add</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <TextDialog
+            isOpen={isTextDialogOpen}
+            onClose={() => setTextDialogOpen(false)}
+            onAddOrUpdateText={handleAddOrUpdateText}
+            editingNode={editingTextNode}
+        />
 
         <ShapeDialog 
             isOpen={isShapeDialogOpen} 
