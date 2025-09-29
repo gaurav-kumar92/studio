@@ -27,7 +27,7 @@ declare global {
 
 
 export default function KonvaEditor() {
-  const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
+  const canvasRef = useRef<{ stage: any; layer: any; background: any; }>(null);
   const transformerRef = useRef<any>(null);
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -103,9 +103,8 @@ export default function KonvaEditor() {
 
 
   const initializeKonva = () => {
-    // Check if Konva is loaded and if we're in a browser environment
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
-        return;
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current || !canvasRef.current.stage) {
+      return;
     }
 
     const { stage, layer } = canvasRef.current;
@@ -182,7 +181,7 @@ export default function KonvaEditor() {
         if (!layer) return;
         // If it's a child of a group, select the group.
         let nodeToSelect = node;
-        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask')) {
+        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
           nodeToSelect = node.parent;
         }
 
@@ -195,7 +194,7 @@ export default function KonvaEditor() {
         // Remove previous listeners to avoid duplicates
         nodeToSelect.off('dblclick dbltap');
         nodeToSelect.on('dblclick dbltap', () => {
-             if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText')) {
+             if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
                 setEditingTextNode(nodeToSelect);
                 setTextDialogOpen(true);
             } else if (nodeToSelect.hasName('shape')) {
@@ -295,8 +294,8 @@ export default function KonvaEditor() {
         }
 
         let targetNode = e.target;
-        // Special handling for circular text children
-        if (e.target.parent?.hasName('circularText')) {
+        // Special handling for text children
+        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('textGroup')) {
             targetNode = e.target.parent;
         }
 
@@ -584,6 +583,29 @@ export default function KonvaEditor() {
         deselectNode();
         setEditingTextNode(null);
     }
+     const dataAttrs = {
+        'data-text': config.text,
+        'data-font-size': config.fontSize,
+        'data-font-family': config.fontFamily,
+        'data-color': config.fill,
+        'data-letter-spacing': config.letterSpacing,
+        'data-line-height': config.lineHeight,
+        'data-align': config.align,
+        'data-is-bold': config.isBold,
+        'data-is-italic': config.isItalic,
+        'data-is-underline': config.isUnderline,
+        'data-is-strikethrough': config.isStrikethrough,
+        'data-is-shadow': config.isShadow,
+        'data-shadow-blur': config.shadowBlur,
+        'data-shadow-distance': config.shadowDistance,
+        'data-shadow-opacity': config.shadowOpacity,
+        'data-is-glow': config.isGlow,
+        'data-glow-color': config.glowColor,
+        'data-glow-blur': config.glowBlur,
+        'data-glow-opacity': config.glowOpacity,
+        'data-radius': config.radius,
+        'data-curvature': config.curvature,
+    };
 
     if (config.curvature > 0) {
         const circularGroup = new window.Konva.Group({
@@ -591,25 +613,7 @@ export default function KonvaEditor() {
           y: stage.height() / 2,
           draggable: true,
           name: 'circularText',
-          // Store original data for editing
-          'data-text': config.text,
-          'data-radius': config.radius,
-          'data-curvature': config.curvature,
-          'data-color': config.fill,
-          'data-font-family': config.fontFamily,
-          'data-font-size': config.fontSize,
-          'data-is-bold': config.isBold,
-          'data-is-italic': config.isItalic,
-          'data-is-underline': config.isUnderline,
-          'data-is-strikethrough': config.isStrikethrough,
-          'data-is-shadow': config.isShadow,
-          'data-shadow-blur': config.shadowBlur,
-          'data-shadow-distance': config.shadowDistance,
-          'data-shadow-opacity': config.shadowOpacity,
-          'data-is-glow': config.isGlow,
-          'data-glow-color': config.glowColor,
-          'data-glow-blur': config.glowBlur,
-          'data-glow-opacity': config.glowOpacity,
+          ...dataAttrs
         });
 
         const tempText = new window.Konva.Text({ text: config.text, fontSize: config.fontSize, fontFamily: config.fontFamily });
@@ -659,12 +663,18 @@ export default function KonvaEditor() {
           });
 
           if (config.isGlow) {
-              charNode.shadowEnabled(true);
-              charNode.shadowColor(config.glowColor);
-              charNode.shadowBlur(config.glowBlur);
-              charNode.shadowOpacity(config.glowOpacity);
-              charNode.shadowOffset({ x: 0, y: 0 });
-          } else if (config.isShadow) {
+              const glowNode = charNode.clone({
+                fill: config.glowColor,
+                stroke: config.glowColor,
+                strokeWidth: config.glowBlur,
+              });
+              glowNode.cache();
+              glowNode.filters([window.Konva.Filters.Blur]);
+              glowNode.blurRadius(config.glowBlur);
+              glowNode.opacity(config.glowOpacity);
+              circularGroup.add(glowNode);
+          }
+          if (config.isShadow) {
               charNode.shadowEnabled(true);
               charNode.shadowColor('#000000');
               charNode.shadowBlur(config.shadowBlur);
@@ -683,39 +693,52 @@ export default function KonvaEditor() {
         setSelectedNode(circularGroup);
 
     } else {
-        const newText = new window.Konva.Text({
-            ...config,
+         const textGroup = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
             draggable: true,
+            name: 'textGroup',
+            ...dataAttrs
+        });
+        
+        const mainText = new window.Konva.Text({
+            ...config,
             name: 'text',
         });
         
         let decorations = [];
         if (config.isUnderline) decorations.push('underline');
         if (config.isStrikethrough) decorations.push('line-through');
-        newText.textDecoration(decorations.join(' '));
+        mainText.textDecoration(decorations.join(' '));
 
-        newText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
+        mainText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
 
         if (config.isGlow) {
-            newText.shadowEnabled(true);
-            newText.shadowColor(config.glowColor);
-            newText.shadowBlur(config.glowBlur);
-            newText.shadowOpacity(config.glowOpacity);
-            newText.shadowOffset({ x: 0, y: 0 });
-        } else if (config.isShadow) {
-            newText.shadowEnabled(true);
-            newText.shadowColor('#000000');
-            newText.shadowBlur(config.shadowBlur);
-            newText.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
-            newText.shadowOpacity(config.shadowOpacity);
-        } else {
-            newText.shadowEnabled(false);
+            const glowText = mainText.clone({
+                fill: config.glowColor,
+                stroke: config.glowColor,
+                strokeWidth: config.glowBlur,
+            });
+            glowText.cache();
+            glowText.filters([window.Konva.Filters.Blur]);
+            glowText.blurRadius(config.glowBlur);
+            glowText.opacity(config.glowOpacity);
+            textGroup.add(glowText);
         }
 
-        layer.add(newText);
-        setSelectedNode(newText);
+        if (config.isShadow) {
+            mainText.shadowEnabled(true);
+            mainText.shadowColor('#000000');
+            mainText.shadowBlur(config.shadowBlur);
+            mainText.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+            mainText.shadowOpacity(config.shadowOpacity);
+        } else {
+            mainText.shadowEnabled(false);
+        }
+
+        textGroup.add(mainText);
+        layer.add(textGroup);
+        setSelectedNode(textGroup);
     }
 
     updateLayers();
@@ -793,12 +816,12 @@ export default function KonvaEditor() {
   }
 
   const handleSelectNode = (nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
+    if (!canvasRef.current || !canvasRef.current.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       let targetNode = node;
       // If it's a child of a group, select the group.
-      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask')) {
+      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
           targetNode = node.parent;
       }
       setSelectedNode(targetNode);
@@ -806,7 +829,7 @@ export default function KonvaEditor() {
   };
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
+    if (!canvasRef.current || !canvasRef.current.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       if (action === 'up') {
@@ -820,7 +843,7 @@ export default function KonvaEditor() {
   };
   
   const handleAlign = (position: string) => {
-    if (!selectedNode || !canvasRef.current?.stage) return;
+    if (!selectedNode || !canvasRef.current || !canvasRef.current.stage) return;
     const stage = canvasRef.current.stage;
     const box = selectedNode.getClientRect({ relativeTo: stage });
 
@@ -970,4 +993,5 @@ export default function KonvaEditor() {
 
 
     
+
 

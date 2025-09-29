@@ -36,65 +36,28 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 
     useEffect(() => {
         if (editingNode) {
-            if (editingNode.name() === 'text') {
-                setText(editingNode.text());
-                setFontSize(editingNode.fontSize());
-                setFontFamily(editingNode.fontFamily());
-                setColor(editingNode.fill());
-                setLetterSpacing(editingNode.letterSpacing());
-                setLineHeight(editingNode.lineHeight());
-                setAlign(editingNode.align());
-                setBold(editingNode.fontStyle().includes('bold'));
-                setItalic(editingNode.fontStyle().includes('italic'));
-                setUnderline(editingNode.textDecoration().includes('underline'));
-                setStrikethrough(editingNode.textDecoration().includes('line-through'));
-
-                const isShadowEnabled = editingNode.shadowEnabled();
-                const isGlowEffect = isShadowEnabled && editingNode.shadowOffsetX() === 0 && editingNode.shadowOffsetY() === 0;
-                setGlow(isGlowEffect);
-                setShadow(isShadowEnabled && !isGlowEffect);
-
-                if (isGlowEffect) {
-                    setGlowColor(editingNode.shadowColor());
-                    setGlowBlur(editingNode.shadowBlur());
-                    setGlowOpacity(editingNode.shadowOpacity());
-                } else if (isShadowEnabled) {
-                    setShadowBlur(editingNode.shadowBlur());
-                    setShadowDistance(editingNode.shadowOffset().x);
-                    setShadowOpacity(editingNode.shadowOpacity());
-                }
-
-                setCurvature(0); // Reset curvature for normal text
-
-            } else if (editingNode.name() === 'circularText') {
-                setText(editingNode.getAttr('data-text') || '');
-                setFontSize(editingNode.getAttr('data-font-size') || 24);
-                setFontFamily(editingNode.getAttr('data-font-family') || 'Inter');
-                setColor(editingNode.getAttr('data-color') || '#000000');
-                setBold(editingNode.getAttr('data-is-bold') || false);
-                setItalic(editingNode.getAttr('data-is-italic') || false);
-                setUnderline(editingNode.getAttr('data-is-underline') || false);
-                setStrikethrough(editingNode.getAttr('data-is-strikethrough') || false);
-                setRadius(editingNode.getAttr('data-radius') || 150);
-                setCurvature(editingNode.getAttr('data-curvature') || 0);
-
-                const isGlowEffect = editingNode.getAttr('data-is-glow');
-                const isShadowEffect = editingNode.getAttr('data-is-shadow');
-
-                setGlow(isGlowEffect || false);
-                setShadow(isShadowEffect || false);
-
-                if (isGlowEffect) {
-                    setGlowColor(editingNode.getAttr('data-glow-color'));
-                    setGlowBlur(editingNode.getAttr('data-glow-blur'));
-                    setGlowOpacity(editingNode.getAttr('data-glow-opacity'));
-                }
-                if (isShadowEffect) {
-                    setShadowBlur(editingNode.getAttr('data-shadow-blur'));
-                    setShadowDistance(editingNode.getAttr('data-shadow-distance'));
-                    setShadowOpacity(editingNode.getAttr('data-shadow-opacity'));
-                }
-            }
+             const data = editingNode.attrs;
+            setText(data['data-text'] || '');
+            setFontSize(data['data-font-size'] || 24);
+            setFontFamily(data['data-font-family'] || 'Inter');
+            setColor(data['data-color'] || '#000000');
+            setLetterSpacing(data['data-letter-spacing'] || 0);
+            setLineHeight(data['data-line-height'] || 1);
+            setAlign(data['data-align'] || 'left');
+            setBold(data['data-is-bold'] || false);
+            setItalic(data['data-is-italic'] || false);
+            setUnderline(data['data-is-underline'] || false);
+            setStrikethrough(data['data-is-strikethrough'] || false);
+            setShadow(data['data-is-shadow'] || false);
+            setShadowBlur(data['data-shadow-blur'] || 10);
+            setShadowDistance(data['data-shadow-distance'] || 5);
+            setShadowOpacity(data['data-shadow-opacity'] || 0.5);
+            setGlow(data['data-is-glow'] || false);
+            setGlowColor(data['data-glow-color'] || '#0000ff');
+            setGlowBlur(data['data-glow-blur'] || 10);
+            setGlowOpacity(data['data-glow-opacity'] || 0.7);
+            setRadius(data['data-radius'] || 150);
+            setCurvature(data['data-curvature'] || 0);
         } else {
             resetDialog();
         }
@@ -244,8 +207,8 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                                 <button onClick={() => setItalic(!isItalic)} className={`p-2 border rounded-md italic ${isItalic ? 'active' : ''}`}>I</button>
                                 <button onClick={() => setUnderline(!isUnderline)} className={`p-2 border rounded-md underline ${isUnderline ? 'active' : ''}`}>U</button>
                                 <button onClick={() => setStrikethrough(!isStrikethrough)} className={`p-2 border rounded-md line-through ${isStrikethrough ? 'active' : ''}`}>S</button>
-                                <button onClick={() => { setShadow(!isShadow); setGlow(false); }} className={`p-2 border rounded-md shadow-sm ${isShadow ? 'active' : ''}`}>Shadow</button>
-                                <button onClick={() => { setGlow(!isGlow); setShadow(false); }} className={`p-2 border rounded-md shadow-sm ${isGlow ? 'active' : ''}`}>Glow</button>
+                                <button onClick={() => setShadow(!isShadow)} className={`p-2 border rounded-md shadow-sm ${isShadow ? 'active' : ''}`}>Shadow</button>
+                                <button onClick={() => setGlow(!isGlow)} className={`p-2 border rounded-md shadow-sm ${isGlow ? 'active' : ''}`}>Glow</button>
                             </div>
                         </div>
                         <div id="advanced-text-controls" className={`flex flex-col gap-4 mt-4 ${curvature > 0 ? 'hidden' : ''}`}>

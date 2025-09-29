@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -16,9 +17,10 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
         let iconSvg = '';
         let name = 'Object';
 
-        if (node.hasName('text') || node.hasName('circularText')) {
+        if (node.hasName('textGroup') || node.hasName('circularText')) {
+            const textContent = node.getAttr('data-text') || '';
             iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
-            name = node.hasName('text') ? `Text: "${node.text().substring(0, 15)}..."` : `Curved Text`;
+            name = node.hasName('textGroup') ? `Text: "${textContent.substring(0, 15)}..."` : `Curved Text`;
         } else if (node.hasName('shape')) {
             const shapeType = node.getAttr('data-type');
             iconSvg = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
@@ -95,4 +97,3 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
 };
 
 export default LayersPanel;
-
