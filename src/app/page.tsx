@@ -596,9 +596,10 @@ export default function KonvaEditor() {
           'data-curvature': config.curvature,
           'data-color': config.fill,
           'data-font-family': config.fontFamily,
+          'data-font-size': config.fontSize,
         });
 
-        const fontSize = Math.max(10, Math.floor(config.radius / 5));
+        const fontSize = config.fontSize;
         const tempText = new window.Konva.Text({ text: config.text, fontSize: fontSize, fontFamily: config.fontFamily });
         const charHeight = tempText.height();
         const maxAngleRadians = 2 * Math.PI * (config.curvature / 100);
@@ -756,7 +757,7 @@ export default function KonvaEditor() {
   }
 
   const handleSelectNode = (nodeId: string) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       let targetNode = node;
@@ -769,7 +770,7 @@ export default function KonvaEditor() {
   };
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current?.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       if (action === 'up') {
@@ -811,7 +812,9 @@ export default function KonvaEditor() {
   const handleOpacityChange = (opacity: number) => {
     if (selectedNode) {
       selectedNode.opacity(opacity);
-      canvasRef.current?.layer.draw();
+      if (canvasRef.current?.layer) {
+        canvasRef.current.layer.draw();
+      }
     }
   };
 
@@ -926,4 +929,5 @@ export default function KonvaEditor() {
     
 
     
+
 

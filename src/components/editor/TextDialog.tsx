@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -71,9 +72,9 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                 setCurvature(editingNode.getAttr('data-curvature'));
                 setColor(editingNode.getAttr('data-color'));
                 setFontFamily(editingNode.getAttr('data-font-family'));
+                setFontSize(editingNode.getAttr('data-font-size') || 24);
 
                 // Reset normal text properties not applicable to circular text
-                setFontSize(24);
                 setBold(false);
                 setItalic(false);
                 setUnderline(false);
@@ -148,7 +149,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
             <div className="dialog flex flex-col">
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">{dialogTitle}</h3>
                 
-                <div className="flex-grow overflow-y-auto pr-4">
+                <div className="overflow-y-auto pr-4 flex-grow">
                     <input 
                         type="text" 
                         value={text}
