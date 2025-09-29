@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -727,6 +728,7 @@ export default function KonvaEditor() {
             const reader = new FileReader();
             reader.onload = (e) => {
                 window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                    if (!canvasRef.current) return;
                     const { stage, layer } = canvasRef.current;
                     const MAX_WIDTH = stage.width() * 0.8;
                     const MAX_HEIGHT = stage.height() * 0.8;
@@ -754,7 +756,8 @@ export default function KonvaEditor() {
   }
 
   const handleSelectNode = (nodeId: string) => {
-    const node = canvasRef.current?.layer.findOne(`#${nodeId}`);
+    if (!canvasRef.current) return;
+    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       let targetNode = node;
       // If it's a child of a group, select the group.
@@ -766,7 +769,8 @@ export default function KonvaEditor() {
   };
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    const node = canvasRef.current?.layer.findOne(`#${nodeId}`);
+    if (!canvasRef.current) return;
+    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       if (action === 'up') {
         node.moveUp();
@@ -922,3 +926,4 @@ export default function KonvaEditor() {
     
 
     
+
