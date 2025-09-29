@@ -67,20 +67,33 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                 setCurvature(0); // Reset curvature for normal text
 
             } else if (editingNode.name() === 'circularText') {
-                setText(editingNode.getAttr('data-text'));
-                setRadius(editingNode.getAttr('data-radius'));
-                setCurvature(editingNode.getAttr('data-curvature'));
-                setColor(editingNode.getAttr('data-color'));
-                setFontFamily(editingNode.getAttr('data-font-family'));
+                setText(editingNode.getAttr('data-text') || '');
                 setFontSize(editingNode.getAttr('data-font-size') || 24);
+                setFontFamily(editingNode.getAttr('data-font-family') || 'Inter');
+                setColor(editingNode.getAttr('data-color') || '#000000');
                 setBold(editingNode.getAttr('data-is-bold') || false);
                 setItalic(editingNode.getAttr('data-is-italic') || false);
                 setUnderline(editingNode.getAttr('data-is-underline') || false);
                 setStrikethrough(editingNode.getAttr('data-is-strikethrough') || false);
+                setRadius(editingNode.getAttr('data-radius') || 150);
+                setCurvature(editingNode.getAttr('data-curvature') || 0);
 
-                // Reset normal text properties not applicable to circular text
-                setShadow(false);
-                setGlow(false);
+                const isGlowEffect = editingNode.getAttr('data-is-glow');
+                const isShadowEffect = editingNode.getAttr('data-is-shadow');
+
+                setGlow(isGlowEffect || false);
+                setShadow(isShadowEffect || false);
+
+                if (isGlowEffect) {
+                    setGlowColor(editingNode.getAttr('data-glow-color'));
+                    setGlowBlur(editingNode.getAttr('data-glow-blur'));
+                    setGlowOpacity(editingNode.getAttr('data-glow-opacity'));
+                }
+                if (isShadowEffect) {
+                    setShadowBlur(editingNode.getAttr('data-shadow-blur'));
+                    setShadowDistance(editingNode.getAttr('data-shadow-distance'));
+                    setShadowOpacity(editingNode.getAttr('data-shadow-opacity'));
+                }
             }
         } else {
             resetDialog();
@@ -146,7 +159,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 
     return (
         <div className="dialog-overlay" style={{ display: 'flex' }}>
-            <div className="dialog flex flex-col" style={{maxHeight: '85vh'}}>
+            <div className="dialog flex flex-col" style={{ maxHeight: '85vh' }}>
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">{dialogTitle}</h3>
                 
                 <div className="overflow-y-auto pr-4 flex-grow">

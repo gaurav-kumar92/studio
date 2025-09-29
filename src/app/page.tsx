@@ -104,7 +104,7 @@ export default function KonvaEditor() {
 
   const initializeKonva = () => {
     // Check if Konva is loaded and if we're in a browser environment
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current) {
         return;
     }
 
@@ -601,6 +601,14 @@ export default function KonvaEditor() {
           'data-is-italic': config.isItalic,
           'data-is-underline': config.isUnderline,
           'data-is-strikethrough': config.isStrikethrough,
+          'data-is-shadow': config.isShadow,
+          'data-shadow-blur': config.shadowBlur,
+          'data-shadow-distance': config.shadowDistance,
+          'data-shadow-opacity': config.shadowOpacity,
+          'data-is-glow': config.isGlow,
+          'data-glow-color': config.glowColor,
+          'data-glow-blur': config.glowBlur,
+          'data-glow-opacity': config.glowOpacity,
         });
 
         const tempText = new window.Konva.Text({ text: config.text, fontSize: config.fontSize, fontFamily: config.fontFamily });
@@ -616,10 +624,10 @@ export default function KonvaEditor() {
         const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
         let cumulativeAngle = 0;
 
-        let decorations = [];
+        const fontStyle = `${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim();
+        const decorations = [];
         if (config.isUnderline) decorations.push('underline');
         if (config.isStrikethrough) decorations.push('line-through');
-        const fontStyle = `${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim();
 
 
         for (let i = 0; i < config.text.length; i++) {
@@ -648,6 +656,21 @@ export default function KonvaEditor() {
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
           });
+
+          if (config.isGlow) {
+              charNode.shadowEnabled(true);
+              charNode.shadowColor(config.glowColor);
+              charNode.shadowBlur(config.glowBlur);
+              charNode.shadowOpacity(config.glowOpacity);
+              charNode.shadowOffset({ x: 0, y: 0 });
+          } else if (config.isShadow) {
+              charNode.shadowEnabled(true);
+              charNode.shadowColor('#000000');
+              charNode.shadowBlur(config.shadowBlur);
+              charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+              charNode.shadowOpacity(config.shadowOpacity);
+          }
+
           circularGroup.add(charNode);
           cumulativeAngle += scaledAngularWidth;
         }
