@@ -597,10 +597,13 @@ export default function KonvaEditor() {
           'data-color': config.fill,
           'data-font-family': config.fontFamily,
           'data-font-size': config.fontSize,
+          'data-is-bold': config.isBold,
+          'data-is-italic': config.isItalic,
+          'data-is-underline': config.isUnderline,
+          'data-is-strikethrough': config.isStrikethrough,
         });
 
-        const fontSize = config.fontSize;
-        const tempText = new window.Konva.Text({ text: config.text, fontSize: fontSize, fontFamily: config.fontFamily });
+        const tempText = new window.Konva.Text({ text: config.text, fontSize: config.fontSize, fontFamily: config.fontFamily });
         const charHeight = tempText.height();
         const maxAngleRadians = 2 * Math.PI * (config.curvature / 100);
 
@@ -612,6 +615,12 @@ export default function KonvaEditor() {
         const totalFlatAngle = totalFlatWidth / config.radius;
         const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
         let cumulativeAngle = 0;
+
+        let decorations = [];
+        if (config.isUnderline) decorations.push('underline');
+        if (config.isStrikethrough) decorations.push('line-through');
+        const fontStyle = `${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim();
+
 
         for (let i = 0; i < config.text.length; i++) {
           const char = config.text[i];
@@ -631,8 +640,10 @@ export default function KonvaEditor() {
             x: x,
             y: y,
             fill: config.fill,
-            fontSize: fontSize,
+            fontSize: config.fontSize,
             fontFamily: config.fontFamily,
+            fontStyle: fontStyle,
+            textDecoration: decorations.join(' '),
             rotation: rotationDegrees,
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
@@ -690,6 +701,7 @@ export default function KonvaEditor() {
 
 
   const handleSelectItem = (itemType: string) => {
+    if (!canvasRef.current) return;
     setAddItemDialogOpen(false);
     deselectNode();
 
@@ -806,7 +818,7 @@ export default function KonvaEditor() {
             selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
             break;
     }
-    canvasRef.current.layer.draw();
+    if (canvasRef.current) canvasRef.current.layer.draw();
   };
   
   const handleOpacityChange = (opacity: number) => {
@@ -931,3 +943,6 @@ export default function KonvaEditor() {
     
 
 
+
+
+    

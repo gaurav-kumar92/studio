@@ -73,12 +73,12 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                 setColor(editingNode.getAttr('data-color'));
                 setFontFamily(editingNode.getAttr('data-font-family'));
                 setFontSize(editingNode.getAttr('data-font-size') || 24);
+                setBold(editingNode.getAttr('data-is-bold') || false);
+                setItalic(editingNode.getAttr('data-is-italic') || false);
+                setUnderline(editingNode.getAttr('data-is-underline') || false);
+                setStrikethrough(editingNode.getAttr('data-is-strikethrough') || false);
 
                 // Reset normal text properties not applicable to circular text
-                setBold(false);
-                setItalic(false);
-                setUnderline(false);
-                setStrikethrough(false);
                 setShadow(false);
                 setGlow(false);
             }
@@ -146,7 +146,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 
     return (
         <div className="dialog-overlay" style={{ display: 'flex' }}>
-            <div className="dialog flex flex-col">
+            <div className="dialog flex flex-col" style={{maxHeight: '85vh'}}>
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">{dialogTitle}</h3>
                 
                 <div className="overflow-y-auto pr-4 flex-grow">
@@ -295,5 +295,8 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 }
 
 export default TextDialog;
+
+    
+
 
     
