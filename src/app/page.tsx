@@ -669,9 +669,10 @@ export default function KonvaEditor() {
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
           });
-
-          if (config.isGlow) {
-              const glowNode = charNode.clone({
+          
+          const cloneAndApplyEffects = (node: any) => {
+            if (config.isGlow) {
+              const glowNode = node.clone({
                 fill: config.glowColor,
                 stroke: config.glowColor,
                 strokeWidth: config.glowBlur,
@@ -682,15 +683,18 @@ export default function KonvaEditor() {
               glowNode.blurRadius(config.glowBlur);
               glowNode.opacity(config.glowOpacity);
               circularGroup.add(glowNode);
-          }
-          
-          if (config.isShadow) {
-              charNode.shadowEnabled(true);
-              charNode.shadowColor('#000000');
-              charNode.shadowBlur(config.shadowBlur);
-              charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
-              charNode.shadowOpacity(config.shadowOpacity);
-          }
+            }
+
+            if (config.isShadow) {
+                node.shadowEnabled(true);
+                node.shadowColor('#000000');
+                node.shadowBlur(config.shadowBlur);
+                node.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+                node.shadowOpacity(config.shadowOpacity);
+            }
+          };
+
+          cloneAndApplyEffects(charNode.clone());
 
           circularGroup.add(charNode);
           cumulativeAngle += scaledAngularWidth;
@@ -866,16 +870,14 @@ export default function KonvaEditor() {
             selectedNode.x(selectedNode.x() - box.x);
             break;
         case 'center':
-            const newX = selectedNode.x() + (stage.width() / 2 - (box.x + box.width / 2));
-            const newY = selectedNode.y() + (stage.height() / 2 - (box.y + box.height / 2));
-            selectedNode.x(newX);
-            selectedNode.y(newY);
+            selectedNode.x(selectedNode.x() - box.x - box.width / 2 + stage.width() / 2);
+            selectedNode.y(selectedNode.y() - box.y - box.height / 2 + stage.height() / 2);
             break;
         case 'right':
-            selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
+            selectedNode.x(selectedNode.x() - (box.x + box.width) + stage.width());
             break;
         case 'bottom':
-            selectedNode.y(stage.height() - box.height - (selectedNode.y() - box.y));
+            selectedNode.y(selectedNode.y() - (box.y + box.height) + stage.height());
             break;
     }
     if (canvasRef.current?.layer) canvasRef.current.layer.draw();
@@ -1006,6 +1008,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
