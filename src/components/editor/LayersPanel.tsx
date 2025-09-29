@@ -56,7 +56,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
 
                     return (
                         <li
-                            key={node.id()}
+                            key={`${node.id()}-${index}`}
                             className={`layer-item ${isSelected ? 'selected' : ''}`}
                             data-id={node.id()}
                         >
