@@ -97,7 +97,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 
     return (
         <div id="shape-dialog" className="dialog-overlay" style={{display: 'flex'}}>
-            <div className="dialog flex flex-col" style={{ maxHeight: '85vh' }}>
+            <div className="dialog flex flex-col" style={{ maxHeight: '85vh', maxWidth: '300px' }}>
                 <h3 id="shape-dialog-title" className="text-lg font-semibold mb-4 flex-shrink-0">
                     {editingNode ? 'Edit Shape' : 'Add a Shape'}
                 </h3>
@@ -174,3 +174,4 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 export default ShapeDialog;
 
     
+
