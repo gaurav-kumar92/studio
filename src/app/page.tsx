@@ -52,7 +52,12 @@ export default function KonvaEditor() {
     const nodes = canvasRef.current.layer.getChildren((node: any) => {
       return node.name() !== 'background' && node.className !== 'Transformer';
     });
-    setKonvaObjects(nodes.toArray());
+    // The result of getChildren can be a collection or an array. A collection has toArray().
+    if (nodes.toArray) {
+        setKonvaObjects(nodes.toArray());
+    } else {
+        setKonvaObjects(nodes);
+    }
   };
 
   useEffect(() => {
@@ -912,6 +917,8 @@ export default function KonvaEditor() {
     </>
   );
 }
+    
+
     
 
     
