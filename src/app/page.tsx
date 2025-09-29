@@ -1730,3 +1730,5 @@ export default function KonvaEditor() {
 
 
     
+
+    
