@@ -101,8 +101,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     // Apply or remove circular clipping
     if (isCircular) {
       canvasContainer.style.borderRadius = '50%';
+      const radius = Math.min(newWidth, newHeight) / 2;
       layer.clipFunc((ctx: any) => {
-        ctx.arc(newWidth / 2, newHeight / 2, Math.min(newWidth, newHeight) / 2, 0, Math.PI * 2, false);
+        ctx.arc(newWidth / 2, newHeight / 2, radius, 0, Math.PI * 2, false);
       });
     } else {
       canvasContainer.style.borderRadius = '0';
