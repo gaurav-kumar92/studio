@@ -260,6 +260,10 @@ export default function KonvaEditor() {
     }
 
     try {
+      if (!stage) {
+        console.error("Stage is not initialized. Cannot proceed.");
+        return;
+      }
       updateLayers();
       
       const applyFilter = (filter: any) => {
@@ -579,10 +583,14 @@ export default function KonvaEditor() {
     const { stage, layer } = canvasRef.current;
     
     if (editingTextNode) {
+        // Find and remove all related nodes (main text, glow, shadow)
+        const nodesToRemove = layer.find((node:any) => node.getAttr('groupId') === editingTextNode.id());
+        nodesToRemove.forEach((node:any) => node.destroy());
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
     }
+
      const dataAttrs = {
         'data-text': config.text,
         'data-font-size': config.fontSize,
@@ -848,7 +856,7 @@ export default function KonvaEditor() {
   const handleAlign = (position: string) => {
     if (!selectedNode || !canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
-    const box = selectedNode.getClientRect({ relativeTo: stage });
+    const box = selectedNode.getClientRect();
 
     switch(position) {
         case 'top':
@@ -858,12 +866,10 @@ export default function KonvaEditor() {
             selectedNode.x(selectedNode.x() - box.x);
             break;
         case 'center':
-            const objectWidth = selectedNode.width() * selectedNode.scaleX();
-            const objectHeight = selectedNode.height() * selectedNode.scaleY();
-            selectedNode.offsetX(selectedNode.width() / 2);
-            selectedNode.offsetY(selectedNode.height() / 2);
-            selectedNode.x(stage.width() / 2);
-            selectedNode.y(stage.height() / 2);
+            const newX = selectedNode.x() + (stage.width() / 2 - (box.x + box.width / 2));
+            const newY = selectedNode.y() + (stage.height() / 2 - (box.y + box.height / 2));
+            selectedNode.x(newX);
+            selectedNode.y(newY);
             break;
         case 'right':
             selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
@@ -1000,6 +1006,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
