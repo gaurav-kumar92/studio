@@ -103,7 +103,7 @@ export default function KonvaEditor() {
 
 
   const initializeKonva = () => {
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current || !canvasRef.current.stage) {
+    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
       return;
     }
 
@@ -319,6 +319,7 @@ export default function KonvaEditor() {
   }, [isCanvasReady, selectedNode]);
 
   useEffect(() => {
+    if (!canvasRef.current) return;
     updateLayers();
   }, [selectedNode]);
 
@@ -379,25 +380,24 @@ export default function KonvaEditor() {
   }
 
   const handleUpdateShape = (attrs: any) => {
-    if (editingShapeNode) {
-        if (attrs.color) {
-            if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow') {
-                editingShapeNode.stroke(attrs.color);
-            } else {
-                editingShapeNode.fill(attrs.color);
-            }
-             if (editingShapeNode.getAttr('data-type') === 'arrow') {
-                editingShapeNode.fill(attrs.color);
-            }
+    if (!editingShapeNode) return;
+    if (attrs.color) {
+        if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow') {
+            editingShapeNode.stroke(attrs.color);
+        } else {
+            editingShapeNode.fill(attrs.color);
         }
-        if (attrs.thickness) {
-            editingShapeNode.strokeWidth(attrs.thickness);
+         if (editingShapeNode.getAttr('data-type') === 'arrow') {
+            editingShapeNode.fill(attrs.color);
         }
-        if (attrs.sides) {
-            editingShapeNode.sides(attrs.sides);
-        }
-        canvasRef.current?.layer.draw();
     }
+    if (attrs.thickness) {
+        editingShapeNode.strokeWidth(attrs.thickness);
+    }
+    if (attrs.sides) {
+        editingShapeNode.sides(attrs.sides);
+    }
+    canvasRef.current?.layer.draw();
   }
 
   const handleAddFrame = (config: any) => {
@@ -449,18 +449,17 @@ export default function KonvaEditor() {
   };
 
   const handleUpdateFrame = (attrs: any) => {
-    if (editingFrameNode) {
-      if (attrs.color) {
-        editingFrameNode.stroke(attrs.color);
-      }
-      if (attrs.thickness) {
-        editingFrameNode.strokeWidth(attrs.thickness);
-      }
-      if (attrs.sides) {
-        editingFrameNode.sides(attrs.sides);
-      }
-      canvasRef.current?.layer.draw();
+    if (!editingFrameNode) return;
+    if (attrs.color) {
+      editingFrameNode.stroke(attrs.color);
     }
+    if (attrs.thickness) {
+      editingFrameNode.strokeWidth(attrs.thickness);
+    }
+    if (attrs.sides) {
+      editingFrameNode.sides(attrs.sides);
+    }
+    canvasRef.current?.layer.draw();
   };
 
   const handleAddMask = (config: any) => {
@@ -557,21 +556,20 @@ export default function KonvaEditor() {
   };
 
   const handleUpdateMask = (attrs: any) => {
-    if (editingMaskNode) {
-      const border = editingMaskNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
-      if (border) {
-        if (attrs.borderColor) {
-          border.stroke(attrs.borderColor);
-        }
-        if (attrs.borderThickness) {
-          border.strokeWidth(attrs.borderThickness);
-        }
-        if (attrs.sides) {
-          border.sides(attrs.sides);
-        }
+    if (!editingMaskNode) return;
+    const border = editingMaskNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+    if (border) {
+      if (attrs.borderColor) {
+        border.stroke(attrs.borderColor);
       }
-      canvasRef.current?.layer.draw();
+      if (attrs.borderThickness) {
+        border.strokeWidth(attrs.borderThickness);
+      }
+      if (attrs.sides) {
+        border.sides(attrs.sides);
+      }
     }
+    canvasRef.current?.layer.draw();
   };
 
   const handleAddOrUpdateText = (config: any) => {
@@ -816,7 +814,7 @@ export default function KonvaEditor() {
   }
 
   const handleSelectNode = (nodeId: string) => {
-    if (!canvasRef.current || !canvasRef.current.layer) return;
+    if (!canvasRef.current?.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       let targetNode = node;
@@ -829,7 +827,7 @@ export default function KonvaEditor() {
   };
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current || !canvasRef.current.layer) return;
+    if (!canvasRef.current?.layer) return;
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       if (action === 'up') {
@@ -843,7 +841,7 @@ export default function KonvaEditor() {
   };
   
   const handleAlign = (position: string) => {
-    if (!selectedNode || !canvasRef.current || !canvasRef.current.stage) return;
+    if (!selectedNode || !canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
     const box = selectedNode.getClientRect({ relativeTo: stage });
 
@@ -855,8 +853,8 @@ export default function KonvaEditor() {
             selectedNode.x(selectedNode.x() - box.x);
             break;
         case 'center':
-            selectedNode.x(stage.width() / 2);
-            selectedNode.y(stage.height() / 2);
+            selectedNode.x(stage.width() / 2 - box.width / 2);
+            selectedNode.y(stage.height() / 2 - box.height / 2);
             break;
         case 'right':
             selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
@@ -993,5 +991,6 @@ export default function KonvaEditor() {
 
 
     
+
 
 
