@@ -64,7 +64,9 @@ export default function KonvaEditor() {
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
       canvasRef.current.background.fill(backgroundColor);
-      canvasRef.current.layer.draw();
+      if (canvasRef.current.layer) {
+          canvasRef.current.layer.draw();
+      }
     }
   }, [backgroundColor, isCanvasReady]);
 
@@ -103,7 +105,7 @@ export default function KonvaEditor() {
 
 
   const initializeKonva = () => {
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || !canvasRef.current?.stage) {
+    if (!canvasRef.current || !canvasRef.current.stage) {
       return;
     }
 
@@ -665,6 +667,7 @@ export default function KonvaEditor() {
                 fill: config.glowColor,
                 stroke: config.glowColor,
                 strokeWidth: config.glowBlur,
+                name: 'glowEffect'
               });
               glowNode.cache();
               glowNode.filters([window.Konva.Filters.Blur]);
@@ -672,6 +675,7 @@ export default function KonvaEditor() {
               glowNode.opacity(config.glowOpacity);
               circularGroup.add(glowNode);
           }
+          
           if (config.isShadow) {
               charNode.shadowEnabled(true);
               charNode.shadowColor('#000000');
@@ -716,6 +720,7 @@ export default function KonvaEditor() {
                 fill: config.glowColor,
                 stroke: config.glowColor,
                 strokeWidth: config.glowBlur,
+                name: 'glowEffect'
             });
             glowText.cache();
             glowText.filters([window.Konva.Filters.Blur]);
@@ -853,8 +858,12 @@ export default function KonvaEditor() {
             selectedNode.x(selectedNode.x() - box.x);
             break;
         case 'center':
-            selectedNode.x(stage.width() / 2 - box.width / 2);
-            selectedNode.y(stage.height() / 2 - box.height / 2);
+            const objectWidth = selectedNode.width() * selectedNode.scaleX();
+            const objectHeight = selectedNode.height() * selectedNode.scaleY();
+            selectedNode.offsetX(selectedNode.width() / 2);
+            selectedNode.offsetY(selectedNode.height() / 2);
+            selectedNode.x(stage.width() / 2);
+            selectedNode.y(stage.height() / 2);
             break;
         case 'right':
             selectedNode.x(stage.width() - box.width - (selectedNode.x() - box.x));
@@ -991,6 +1000,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
