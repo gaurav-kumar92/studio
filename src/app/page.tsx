@@ -319,7 +319,7 @@ export default function KonvaEditor() {
 
   useEffect(() => {
     updateLayers();
-  }, [konvaObjects, selectedNode]);
+  }, [selectedNode]);
 
   const handleAddShape = (config: any) => {
     if (!canvasRef.current) return;
