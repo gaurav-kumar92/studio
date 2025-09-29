@@ -47,6 +47,8 @@ export default function KonvaEditor() {
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
   const [editingTextNode, setEditingTextNode] = useState<any>(null);
 
+  const isCircular = canvasSize.endsWith('-circle');
+  const sizeString = canvasSize.split('-')[0];
 
   const updateLayers = () => {
     if (!canvasRef.current?.layer) return;
@@ -583,7 +585,6 @@ export default function KonvaEditor() {
     const { stage, layer } = canvasRef.current;
     
     if (editingTextNode) {
-        // Find and remove all related nodes (main text, glow, shadow)
         const nodesToRemove = layer.find((node:any) => node.getAttr('groupId') === editingTextNode.id());
         nodesToRemove.forEach((node:any) => node.destroy());
         editingTextNode.destroy();
@@ -669,14 +670,12 @@ export default function KonvaEditor() {
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
           });
-          
-          const cloneAndApplyEffects = (node: any) => {
-            if (config.isGlow) {
-              const glowNode = node.clone({
+
+          if (config.isGlow) {
+              const glowNode = charNode.clone({
                 fill: config.glowColor,
                 stroke: config.glowColor,
                 strokeWidth: config.glowBlur,
-                name: 'glowEffect'
               });
               glowNode.cache();
               glowNode.filters([window.Konva.Filters.Blur]);
@@ -686,16 +685,13 @@ export default function KonvaEditor() {
             }
 
             if (config.isShadow) {
-                node.shadowEnabled(true);
-                node.shadowColor('#000000');
-                node.shadowBlur(config.shadowBlur);
-                node.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
-                node.shadowOpacity(config.shadowOpacity);
+                charNode.shadowEnabled(true);
+                charNode.shadowColor('#000000');
+                charNode.shadowBlur(config.shadowBlur);
+                charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+                charNode.shadowOpacity(config.shadowOpacity);
             }
-          };
-
-          cloneAndApplyEffects(charNode.clone());
-
+          
           circularGroup.add(charNode);
           cumulativeAngle += scaledAngularWidth;
         }
@@ -862,22 +858,30 @@ export default function KonvaEditor() {
     const stage = canvasRef.current.stage;
     const box = selectedNode.getClientRect();
 
+    let newX, newY;
+
     switch(position) {
         case 'top':
-            selectedNode.y(selectedNode.y() - box.y);
+            newY = selectedNode.y() - box.y;
+            selectedNode.y(newY);
             break;
         case 'left':
-            selectedNode.x(selectedNode.x() - box.x);
+            newX = selectedNode.x() - box.x;
+            selectedNode.x(newX);
             break;
         case 'center':
-            selectedNode.x(selectedNode.x() - box.x - box.width / 2 + stage.width() / 2);
-            selectedNode.y(selectedNode.y() - box.y - box.height / 2 + stage.height() / 2);
+            newX = selectedNode.x() - (box.x + box.width / 2) + stage.width() / 2;
+            newY = selectedNode.y() - (box.y + box.height / 2) + stage.height() / 2;
+            selectedNode.x(newX);
+            selectedNode.y(newY);
             break;
         case 'right':
-            selectedNode.x(selectedNode.x() - (box.x + box.width) + stage.width());
+            newX = selectedNode.x() - (box.x + box.width) + stage.width();
+            selectedNode.x(newX);
             break;
         case 'bottom':
-            selectedNode.y(selectedNode.y() - (box.y + box.height) + stage.height());
+            newY = selectedNode.y() - (box.y + box.height) + stage.height();
+            selectedNode.y(newY);
             break;
     }
     if (canvasRef.current?.layer) canvasRef.current.layer.draw();
@@ -910,7 +914,8 @@ export default function KonvaEditor() {
                 
                 <Canvas 
                     ref={canvasRef} 
-                    canvasSize={canvasSize} 
+                    canvasSize={sizeString}
+                    isCircular={isCircular}
                     onReady={() => setCanvasReady(true)}
                 />
                 
@@ -1008,6 +1013,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 

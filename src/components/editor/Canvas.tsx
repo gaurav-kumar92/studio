@@ -12,10 +12,11 @@ declare global {
 
 type CanvasProps = {
   canvasSize: string;
+  isCircular: boolean;
   onReady: () => void;
 };
 
-const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
+const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }, ref) => {
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
@@ -68,7 +69,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
   }, [stage, onReady]);
 
   useEffect(() => {
-    if (!stage) return;
+    if (!stage || !layer) return;
 
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) {
@@ -97,14 +98,25 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, onReady }, ref) => {
     canvasContainer.style.width = `${newWidth}px`;
     canvasContainer.style.height = `${newHeight}px`;
 
+    // Apply or remove circular clipping
+    if (isCircular) {
+      canvasContainer.style.borderRadius = '50%';
+      layer.clipFunc((ctx: any) => {
+        ctx.arc(newWidth / 2, newHeight / 2, Math.min(newWidth, newHeight) / 2, 0, Math.PI * 2, false);
+      });
+    } else {
+      canvasContainer.style.borderRadius = '0';
+      layer.clipFunc(null);
+    }
+
     stage.draw();
 
-  }, [canvasSize, stage]);
+  }, [canvasSize, isCircular, stage, layer]);
 
 
   return (
     <div className="relative-canvas">
-      <div id="canvas-container"></div>
+      <div id="canvas-container" style={{overflow: 'hidden'}}></div>
     </div>
   );
 });
