@@ -45,14 +45,16 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedNode, onSelec
         return { iconSvg, name };
     };
 
+    const reversedLayers = layers.slice().reverse();
+
     return (
         <div id="layers-panel">
             <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
             <ul id="layers-list">
-                {layers.slice().reverse().map((node: any, index: number) => {
+                {reversedLayers.map((node: any, index: number) => {
                     const { iconSvg, name } = getLayerNameAndIcon(node);
                     const isSelected = selectedNode && selectedNode.id() === node.id();
-                    const nodeCount = layers.length;
+                    const nodeCount = reversedLayers.length;
 
                     return (
                         <li
