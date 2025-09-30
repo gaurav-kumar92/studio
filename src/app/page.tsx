@@ -853,7 +853,9 @@ export default function KonvaEditor() {
       } else {
         node.moveDown();
       }
-      updateLayers();
+      // Force a re-render by creating a new array from the children
+      const children = canvasRef.current.layer.getChildren((n:any) => n.name() !== 'background' && n.className !== 'Transformer');
+      setKonvaObjects(children.toArray());
       canvasRef.current.layer.draw();
     }
   };
@@ -881,11 +883,11 @@ export default function KonvaEditor() {
             selectedNode.y(newY);
             break;
         case 'right':
-            newX = selectedNode.x() - (box.x + box.width - stage.width());
+            newX = selectedNode.x() + (stage.width() - (box.x + box.width));
             selectedNode.x(newX);
             break;
         case 'bottom':
-            newY = selectedNode.y() - (box.y + box.height - stage.height());
+            newY = selectedNode.y() + (stage.height() - (box.y + box.height));
             selectedNode.y(newY);
             break;
     }
@@ -1018,6 +1020,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
