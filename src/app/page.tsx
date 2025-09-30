@@ -844,25 +844,24 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-  
+    
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (!node) return;
-  
+    
     if (action === 'up') {
-      node.moveUp();
+        node.moveUp();
     } else if (action === 'down') {
-      // Safeguard: Prevent moving below the background (z-index 1)
-      if (node.getZIndex() > 1) {
-        node.moveDown();
-      }
+        if (node.getZIndex() > 1) { // Safeguard to not move behind background
+            node.moveDown();
+        }
     }
-  
+    
     // This is the crucial part: get the updated children list from Konva
     // and create a new array to force React to re-render the LayersPanel.
-    const updatedChildren = canvasRef.current.layer.getChildren(
+    const children = canvasRef.current.layer.getChildren(
         (n: any) => n.name() !== 'background' && n.className !== 'Transformer'
     );
-    const newObjects = updatedChildren.toArray ? updatedChildren.toArray() : Array.from(updatedChildren);
+    const newObjects = children.toArray ? children.toArray() : Array.from(children);
     setKonvaObjects(newObjects);
     
     canvasRef.current.layer.batchDraw();
@@ -1033,6 +1032,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
