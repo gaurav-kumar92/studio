@@ -843,29 +843,36 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    const { layer } = canvasRef.current;
-    const node = layer.findOne(`#${nodeId}`);
   
+    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (!node) return;
   
-    // Find the actual node to move (could be a group)
-    const nodeToMove = (node.parent?.name() !== 'Layer') ? node.parent : node;
+    const oldIndex = konvaObjects.findIndex(item => item.id() === nodeId);
+    if (oldIndex === -1) return;
+  
+    const newItems = [...konvaObjects]; 
   
     if (action === 'up') {
-      nodeToMove.moveUp();
+      if (oldIndex < newItems.length - 1) {
+        node.moveUp();
+        // Swap in the React state array
+        const temp = newItems[oldIndex];
+        newItems[oldIndex] = newItems[oldIndex + 1];
+        newItems[oldIndex + 1] = temp;
+      }
     } else if (action === 'down') {
-      // Prevent moving behind the background
-      if (nodeToMove.getZIndex() > 1) {
-        nodeToMove.moveDown();
+      // Prevent moving below the background (z-index 0)
+      if (node.getZIndex() > 1 && oldIndex > 0) {
+        node.moveDown();
+        // Swap in the React state array
+        const temp = newItems[oldIndex];
+        newItems[oldIndex] = newItems[oldIndex - 1];
+        newItems[oldIndex - 1] = temp;
       }
     }
   
-    // Force React to re-render the layers panel
-    const children = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer');
-    const newKonvaObjects = Array.from(children);
-    setKonvaObjects(newKonvaObjects);
-  
-    layer.batchDraw();
+    setKonvaObjects(newItems);
+    canvasRef.current.layer.batchDraw();
   };
   
   const handleAlign = (position: string) => {
@@ -1033,6 +1040,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
