@@ -106,6 +106,7 @@ export default function KonvaEditor() {
   }
 
 
+
   const initializeKonva = () => {
     if (!canvasRef.current || !canvasRef.current.stage) {
       return;
@@ -536,7 +537,7 @@ export default function KonvaEditor() {
 
     group.add(borderShape);
 
-    const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
+    const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2 2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
     const placeholderIcon = new window.Konva.Path({
         data: placeholderSvgPath,
         fill: '#9ca3af',
@@ -845,17 +846,12 @@ export default function KonvaEditor() {
     if (!canvasRef.current?.layer) return;
     let node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
-      if (node.parent?.name() !== 'Layer') {
-          node = node.parent;
-      }
       if (action === 'up') {
         node.moveUp();
       } else {
         node.moveDown();
       }
-      // Re-call updateLayers to correctly handle the return type and trigger a re-render.
       updateLayers();
-      canvasRef.current.layer.draw();
     }
   };
   
@@ -882,11 +878,11 @@ export default function KonvaEditor() {
             selectedNode.y(newY);
             break;
         case 'right':
-             newX = selectedNode.x() - (box.x + box.width - stage.width());
-             selectedNode.x(newX);
+            newX = selectedNode.x() + (stage.width() - (box.x + box.width));
+            selectedNode.x(newX);
             break;
         case 'bottom':
-            newY = selectedNode.y() - (box.y + box.height - stage.height());
+            newY = selectedNode.y() + (stage.height() - (box.y + box.height));
             selectedNode.y(newY);
             break;
     }
