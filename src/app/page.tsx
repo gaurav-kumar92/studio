@@ -676,21 +676,24 @@ export default function KonvaEditor() {
                 fill: config.glowColor,
                 stroke: config.glowColor,
                 strokeWidth: config.glowBlur,
+                name: 'glowEffect'
               });
               glowNode.cache();
               glowNode.filters([window.Konva.Filters.Blur]);
               glowNode.blurRadius(config.glowBlur);
               glowNode.opacity(config.glowOpacity);
               circularGroup.add(glowNode);
-            }
+          }
 
-            if (config.isShadow) {
-                charNode.shadowEnabled(true);
-                charNode.shadowColor('#000000');
-                charNode.shadowBlur(config.shadowBlur);
-                charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
-                charNode.shadowOpacity(config.shadowOpacity);
-            }
+          if (config.isShadow) {
+              charNode.shadowEnabled(true);
+              charNode.shadowColor('#000000');
+              charNode.shadowBlur(config.shadowBlur);
+              charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+              charNode.shadowOpacity(config.shadowOpacity);
+          } else {
+              charNode.shadowEnabled(false);
+          }
           
           circularGroup.add(charNode);
           cumulativeAngle += scaledAngularWidth;
@@ -841,8 +844,13 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
+    let node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
+      // If it's a child of a group, move the group.
+      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+          node = node.parent;
+      }
+
       if (action === 'up') {
         node.moveUp();
       } else {
@@ -1013,6 +1021,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
