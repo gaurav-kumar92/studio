@@ -858,16 +858,17 @@ export default function KonvaEditor() {
   
     if (!node) return;
   
+    const oldIndex = konvaObjects.findIndex(item => item.id() === nodeId);
+  
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      // Prevent moving behind the background object, which is at z-index 0
-      if (node.getZIndex() > 1) { 
+      if (node.getZIndex() > 1) { // Prevent moving behind the background
         node.moveDown();
       }
     }
     
-    // Crucially, create a new array to force React to re-render the LayersPanel.
+    // Create a new array to force React to re-render the LayersPanel.
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
     setKonvaObjects(newChildrenArray);
     
@@ -920,22 +921,25 @@ export default function KonvaEditor() {
   const handleFlip = (direction: 'horizontal' | 'vertical') => {
     const node = selectedNode;
     if (!node) return;
-  
+
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    const width = node.width();
-    const height = node.height();
+    const box = node.getClientRect();
+
+    const centerX = box.width / 2;
+    const centerY = box.height / 2;
   
     if (direction === 'horizontal') {
-      // Flip horizontally by inverting scaleX and adjusting offsetX
       node.scaleX(-scaleX);
-      node.offsetX(scaleX > 0 ? width : 0);
+      node.offsetX(centerX);
+      node.x(node.x() + centerX * scaleX);
     } else if (direction === 'vertical') {
-      // Flip vertically by inverting scaleY and adjusting offsetY
       node.scaleY(-scaleY);
-      node.offsetY(scaleY > 0 ? height : 0);
+      node.offsetY(centerY);
+      node.y(node.y() + centerY * scaleY);
     }
-    canvasRef.current?.layer.draw();
+  
+    canvasRef.current?.layer.batchDraw();
   };
   
   return (
@@ -1061,6 +1065,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
