@@ -838,7 +838,7 @@ export default function KonvaEditor() {
       } else {
         node.moveDown();
       }
-      updateLayers(); // This will trigger a re-render
+      updateLayers(); 
     }
   };
   
@@ -949,10 +949,6 @@ export default function KonvaEditor() {
                 onSelectNode={(id) => {
                     const node = canvasRef.current?.layer.findOne(`#${id}`);
                     if (node && (window as any).Konva && isCanvasReady) {
-                        // The selectNode function is defined inside initializeKonva,
-                        // so we have to re-create it here or find it.
-                        // For simplicity, we just call the setSelectedNode.
-                        // The full logic is inside initializeKonva's selectNode.
                         let nodeToSelect = node;
                         if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
                             nodeToSelect = node.parent;
@@ -1015,6 +1011,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
