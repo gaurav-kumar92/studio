@@ -105,18 +105,21 @@ export default function KonvaEditor() {
     setSelectedNode(null);
   }
 
-
-
-  const initializeKonva = () => {
-    if (!canvasRef.current || !canvasRef.current.stage) {
-      return;
+  const selectNode = (node: any) => {
+    if (!canvasRef.current?.layer) return;
+    const { layer, stage } = canvasRef.current;
+    
+    // If it's a child of a group, select the group.
+    let nodeToSelect = node;
+    if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+      nodeToSelect = node.parent;
     }
 
-    const { stage, layer } = canvasRef.current;
-
-
-    // --- 1. Element References ---
-    const saveBtn = document.getElementById('save-btn');
+    if (nodeToSelect === selectedNode) {
+        return;
+    }
+    
+    setSelectedNode(nodeToSelect);
     
     // Image Specific
     const imageFileInput = document.createElement('input');
@@ -125,11 +128,6 @@ export default function KonvaEditor() {
     imageFileInput.style.display = 'none';
     document.body.appendChild(imageFileInput);
 
-
-    // --- 3. UI and Helper Functions (Declared after variables) ---
-    
-    // Forward declare functions that are called by others before they are defined
-    let selectNode: (node: any) => void;
     let addImageToMask: (maskGroup: any) => void;
 
     addImageToMask = (maskGroup: any) => {
@@ -182,78 +180,78 @@ export default function KonvaEditor() {
         imageFileInput.click();
     };
 
-    selectNode = (node: any) => {
-        if (!layer) return;
-        // If it's a child of a group, select the group.
-        let nodeToSelect = node;
-        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-          nodeToSelect = node.parent;
-        }
-
-        if (nodeToSelect === selectedNode) {
-            return;
-        }
-        
-        setSelectedNode(nodeToSelect);
-        
-        // Remove previous listeners to avoid duplicates
-        nodeToSelect.off('dblclick dbltap');
-        nodeToSelect.on('dblclick dbltap', () => {
-             if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
-                setEditingTextNode(nodeToSelect);
-                setTextDialogOpen(true);
-            } else if (nodeToSelect.hasName('shape')) {
-              setEditingShapeNode(nodeToSelect);
-              setShapeDialogOpen(true);
-            } else if (nodeToSelect.hasName('image')) {
-                // This logic is for replacing an existing image.
-                imageFileInput.onchange = () => {
-                    if (imageFileInput.files && imageFileInput.files.length > 0) {
-                        const file = imageFileInput.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                                const MAX_WIDTH = stage.width() * 0.8;
-                                const MAX_HEIGHT = stage.height() * 0.8;
-                                const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-                                
-                                // Replace the old image with the new one
-                                nodeToSelect.destroy();
-                                
-                                img.setAttrs({
-                                    x: (stage.width() - img.width() * scale) / 2,
-                                    y: (stage.height() - img.height() * scale) / 2,
-                                    scaleX: scale,
-                                    scaleY: scale,
-                                    name: 'image',
-                                    draggable: true,
-                                });
-                                layer.add(img);
-                                selectNode(img); // Reselect the new image
-                                updateLayers();
-                                layer.draw();
+    // Remove previous listeners to avoid duplicates
+    nodeToSelect.off('dblclick dbltap');
+    nodeToSelect.on('dblclick dbltap', () => {
+         if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
+            setEditingTextNode(nodeToSelect);
+            setTextDialogOpen(true);
+        } else if (nodeToSelect.hasName('shape')) {
+          setEditingShapeNode(nodeToSelect);
+          setShapeDialogOpen(true);
+        } else if (nodeToSelect.hasName('image')) {
+            // This logic is for replacing an existing image.
+            imageFileInput.onchange = () => {
+                if (imageFileInput.files && imageFileInput.files.length > 0) {
+                    const file = imageFileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                            const MAX_WIDTH = stage.width() * 0.8;
+                            const MAX_HEIGHT = stage.height() * 0.8;
+                            const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
+                            
+                            // Replace the old image with the new one
+                            nodeToSelect.destroy();
+                            
+                            img.setAttrs({
+                                x: (stage.width() - img.width() * scale) / 2,
+                                y: (stage.height() - img.height() * scale) / 2,
+                                scaleX: scale,
+                                scaleY: scale,
+                                name: 'image',
+                                draggable: true,
                             });
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                    imageFileInput.value = ''; // Reset input
-                };
-                imageFileInput.click();
-            } else if (nodeToSelect.hasName('frame')) {
-                setEditingFrameNode(nodeToSelect);
-                setFrameDialogOpen(true);
-            } else if (nodeToSelect.hasName('mask')) {
-                const hasImage = nodeToSelect.findOne('.mask-image');
-                if (hasImage) {
-                    setEditingMaskNode(nodeToSelect);
-                    setMaskDialogOpen(true);
-                } else {
-                    addImageToMask(nodeToSelect);
+                            layer.add(img);
+                            selectNode(img); // Reselect the new image
+                            updateLayers();
+                            layer.draw();
+                        });
+                    };
+                    reader.readAsDataURL(file);
                 }
+                imageFileInput.value = ''; // Reset input
+            };
+            imageFileInput.click();
+        } else if (nodeToSelect.hasName('frame')) {
+            setEditingFrameNode(nodeToSelect);
+            setFrameDialogOpen(true);
+        } else if (nodeToSelect.hasName('mask')) {
+            const hasImage = nodeToSelect.findOne('.mask-image');
+            if (hasImage) {
+                setEditingMaskNode(nodeToSelect);
+                setMaskDialogOpen(true);
+            } else {
+                addImageToMask(nodeToSelect);
             }
-        });
-    };
+        }
+    });
+};
 
+  const initializeKonva = () => {
+    if (!canvasRef.current || !canvasRef.current.stage) {
+      return;
+    }
+
+    const { stage, layer } = canvasRef.current;
+
+
+    // --- 1. Element References ---
+    const saveBtn = document.getElementById('save-btn');
+    
+    // --- 3. UI and Helper Functions (Declared after variables) ---
+    
+    
     // --- 4. Core Button Listeners (Dialog Control) ---
     
     // --- 5. Konva Initialization ---
@@ -304,7 +302,7 @@ export default function KonvaEditor() {
 
         let targetNode = e.target;
         // Special handling for text children
-        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('textGroup')) {
+        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('textGroup') || e.target.parent?.hasName('mask')) {
             targetNode = e.target.parent;
         }
 
@@ -838,12 +836,14 @@ export default function KonvaEditor() {
       if (action === 'up') {
         node.moveUp();
       } else {
-        // Prevent moving below the background (which is at z-index 0)
         if (node.getZIndex() > 1) {
           node.moveDown();
         }
       }
-      updateLayers(); 
+      
+      const children = layer.getChildren((n:any) => n.name() !== 'background' && n.className !== 'Transformer');
+      setKonvaObjects([...children]);
+      layer.draw();
     }
   };
   
@@ -953,12 +953,8 @@ export default function KonvaEditor() {
                 selectedNode={selectedNode}
                 onSelectNode={(id) => {
                     const node = canvasRef.current?.layer.findOne(`#${id}`);
-                    if (node && (window as any).Konva && isCanvasReady) {
-                        let nodeToSelect = node;
-                        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-                            nodeToSelect = node.parent;
-                        }
-                        setSelectedNode(nodeToSelect);
+                    if (node) {
+                      selectNode(node);
                     }
                 }}
                 onMoveNode={handleMoveNode}
@@ -1016,6 +1012,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
