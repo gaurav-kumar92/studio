@@ -585,8 +585,6 @@ export default function KonvaEditor() {
     const { stage, layer } = canvasRef.current;
     
     if (editingTextNode) {
-        const nodesToRemove = layer.find((node:any) => node.getAttr('groupId') === editingTextNode.id());
-        nodesToRemove.forEach((node:any) => node.destroy());
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
@@ -669,6 +667,7 @@ export default function KonvaEditor() {
             rotation: rotationDegrees,
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
+            name: 'mainChar'
           });
 
           if (config.isGlow) {
@@ -846,11 +845,9 @@ export default function KonvaEditor() {
     if (!canvasRef.current?.layer) return;
     let node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
-      // If it's a child of a group, move the group.
-      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+      if (node.parent?.name() !== 'Layer') {
           node = node.parent;
       }
-
       if (action === 'up') {
         node.moveUp();
       } else {
@@ -1021,6 +1018,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
