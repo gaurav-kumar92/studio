@@ -831,12 +831,17 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
+    const { layer } = canvasRef.current;
+    const node = layer.findOne(`#${nodeId}`);
+
     if (node) {
       if (action === 'up') {
         node.moveUp();
       } else {
-        node.moveDown();
+        // Prevent moving below the background (which is at z-index 0)
+        if (node.getZIndex() > 1) {
+          node.moveDown();
+        }
       }
       updateLayers(); 
     }
@@ -1011,6 +1016,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
