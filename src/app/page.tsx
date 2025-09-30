@@ -57,7 +57,6 @@ export default function KonvaEditor() {
       (node: any) => node.name() !== 'background' && node.className !== 'Transformer'
     );
   
-    // Convert collection to array to update state
     const childrenArray = children.toArray ? children.toArray() : Array.from(children);
     setKonvaObjects(childrenArray);
   
@@ -858,22 +857,22 @@ export default function KonvaEditor() {
   
     if (!node) return;
   
-    const oldIndex = konvaObjects.findIndex(item => item.id() === nodeId);
-  
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      if (node.getZIndex() > 1) { // Prevent moving behind the background
+      // Prevent moving behind the background which is always at z-index 0
+      if (node.getZIndex() > 1) {
         node.moveDown();
       }
     }
-    
-    // Create a new array to force React to re-render the LayersPanel.
+  
+    // Force a re-render by creating a new array from the updated children list
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
     setKonvaObjects(newChildrenArray);
-    
+  
     layer.batchDraw();
   };
+  
   
   const handleAlign = (position: string) => {
     if (!selectedNode || !canvasRef.current?.stage) return;
@@ -921,26 +920,36 @@ export default function KonvaEditor() {
   const handleFlip = (direction: 'horizontal' | 'vertical') => {
     const node = selectedNode;
     if (!node) return;
-
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    const box = node.getClientRect();
-
-    const centerX = box.width / 2;
-    const centerY = box.height / 2;
   
     if (direction === 'horizontal') {
-      node.scaleX(-scaleX);
-      node.offsetX(centerX);
-      node.x(node.x() + centerX * scaleX);
+      // Toggle scaleX
+      const newScaleX = node.scaleX() * -1;
+      node.scaleX(newScaleX);
+      
+      // Get the width from getClientRect for accuracy
+      const width = node.getClientRect().width;
+      
+      // Adjust x position to keep it in place
+      // The adjustment depends on the current scale direction
+      const adjustment = newScaleX > 0 ? -width : width;
+      node.x(node.x() + adjustment);
+
     } else if (direction === 'vertical') {
-      node.scaleY(-scaleY);
-      node.offsetY(centerY);
-      node.y(node.y() + centerY * scaleY);
+      // Toggle scaleY
+      const newScaleY = node.scaleY() * -1;
+      node.scaleY(newScaleY);
+      
+      // Get the height from getClientRect for accuracy
+      const height = node.getClientRect().height;
+      
+      // Adjust y position to keep it in place
+      const adjustment = newScaleY > 0 ? -height : height;
+      node.y(node.y() + adjustment);
     }
   
     canvasRef.current?.layer.batchDraw();
   };
+  
   
   return (
     <>
@@ -1065,6 +1074,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
