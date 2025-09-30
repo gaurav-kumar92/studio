@@ -861,13 +861,12 @@ export default function KonvaEditor() {
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      // Prevent moving behind the background which is at zIndex 0
-      if (node.getZIndex() > 1) {
+      if (node.getZIndex() > 1) { // Prevent moving behind the background
         node.moveDown();
       }
     }
-    
-    // Create a new array to force React to re-render the LayersPanel
+  
+    // This is the crucial part: create a new array to force React to re-render.
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
     setKonvaObjects(newChildrenArray);
     
@@ -917,6 +916,48 @@ export default function KonvaEditor() {
     }
   };
 
+  const handleFlip = (direction: 'horizontal' | 'vertical') => {
+    let nodeToFlip = selectedNode;
+    if (!nodeToFlip) return;
+    
+    // If it's a mask, find the image inside it
+    if (nodeToFlip.hasName('mask')) {
+      nodeToFlip = nodeToFlip.findOne('.mask-image');
+      if (!nodeToFlip) return; // No image in mask
+    }
+
+    if (direction === 'horizontal') {
+      // Flip horizontally by inverting scaleX and adjusting offsetX
+      const newScaleX = -nodeToFlip.scaleX();
+      nodeToFlip.scaleX(newScaleX);
+    } else if (direction === 'vertical') {
+      // Flip vertically by inverting scaleY and adjusting offsetY
+      const newScaleY = -nodeToFlip.scaleY();
+      nodeToFlip.scaleY(newScaleY);
+    }
+    canvasRef.current?.layer.draw();
+  };
+  
+  const handleResetCrop = () => {
+    let imageNode = selectedNode;
+    if (!imageNode) return;
+    
+    // If it's a mask, find the image inside it
+    if (imageNode.hasName('mask')) {
+      imageNode = imageNode.findOne('.mask-image');
+      if (!imageNode) return; // No image in mask
+    }
+    
+    // Reset crop attributes
+    imageNode.setAttrs({
+      cropX: 0,
+      cropY: 0,
+      cropWidth: imageNode.image().width,
+      cropHeight: imageNode.image().height,
+    });
+    canvasRef.current?.layer.draw();
+  };
+
   return (
     <>
       <Script
@@ -950,6 +991,8 @@ export default function KonvaEditor() {
                             selectedNode={selectedNode}
                             onAlign={handleAlign}
                             onOpacityChange={handleOpacityChange}
+                            onFlip={handleFlip}
+                            onResetCrop={handleResetCrop}
                         />
                     )}
 
@@ -1039,6 +1082,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
