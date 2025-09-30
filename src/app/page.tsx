@@ -57,8 +57,9 @@ export default function KonvaEditor() {
       (node: any) => node.name() !== 'background' && node.className !== 'Transformer'
     );
   
-    // Convert collection to array and reverse to show top-most node first in LayersPanel
-    setKonvaObjects(Array.from(children));
+    // Convert collection to array to update state
+    const childrenArray = children.toArray ? children.toArray() : Array.from(children);
+    setKonvaObjects(childrenArray);
   
     canvasRef.current.layer.draw();
   };
@@ -847,31 +848,23 @@ export default function KonvaEditor() {
     const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (!node) return;
   
-    const oldIndex = konvaObjects.findIndex(item => item.id() === nodeId);
-    if (oldIndex === -1) return;
-  
-    const newItems = [...konvaObjects]; 
-  
     if (action === 'up') {
-      if (oldIndex < newItems.length - 1) {
-        node.moveUp();
-        // Swap in the React state array
-        const temp = newItems[oldIndex];
-        newItems[oldIndex] = newItems[oldIndex + 1];
-        newItems[oldIndex + 1] = temp;
-      }
+      node.moveUp();
     } else if (action === 'down') {
-      // Prevent moving below the background (z-index 0)
-      if (node.getZIndex() > 1 && oldIndex > 0) {
+      // Safeguard: Prevent moving below the background (z-index 1)
+      if (node.getZIndex() > 1) {
         node.moveDown();
-        // Swap in the React state array
-        const temp = newItems[oldIndex];
-        newItems[oldIndex] = newItems[oldIndex - 1];
-        newItems[oldIndex - 1] = temp;
       }
     }
   
-    setKonvaObjects(newItems);
+    // This is the crucial part: get the updated children list from Konva
+    // and create a new array to force React to re-render the LayersPanel.
+    const updatedChildren = canvasRef.current.layer.getChildren(
+        (n: any) => n.name() !== 'background' && n.className !== 'Transformer'
+    );
+    const newObjects = updatedChildren.toArray ? updatedChildren.toArray() : Array.from(updatedChildren);
+    setKonvaObjects(newObjects);
+    
     canvasRef.current.layer.batchDraw();
   };
   
@@ -1040,6 +1033,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
