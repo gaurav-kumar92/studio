@@ -829,29 +829,16 @@ export default function KonvaEditor() {
     imageFileInput.click();
   }
 
-  const handleSelectNode = (nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
-    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
-    if (node) {
-      let targetNode = node;
-      // If it's a child of a group, select the group.
-      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-          targetNode = node.parent;
-      }
-      setSelectedNode(targetNode);
-    }
-  };
-
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    let node = canvasRef.current.layer.findOne(`#${nodeId}`);
+    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
     if (node) {
       if (action === 'up') {
         node.moveUp();
       } else {
         node.moveDown();
       }
-      updateLayers();
+      updateLayers(); // This will trigger a re-render
     }
   };
   
@@ -882,7 +869,7 @@ export default function KonvaEditor() {
             selectedNode.x(newX);
             break;
         case 'bottom':
-            newY = selectedNode.y() + (stage.height() - (box.y + box.height));
+            newY = selectedNode.y() - (box.y + box.height - stage.height());
             selectedNode.y(newY);
             break;
     }
@@ -959,7 +946,20 @@ export default function KonvaEditor() {
             <LayersPanel 
                 layers={konvaObjects}
                 selectedNode={selectedNode}
-                onSelectNode={handleSelectNode}
+                onSelectNode={(id) => {
+                    const node = canvasRef.current?.layer.findOne(`#${id}`);
+                    if (node && (window as any).Konva && isCanvasReady) {
+                        // The selectNode function is defined inside initializeKonva,
+                        // so we have to re-create it here or find it.
+                        // For simplicity, we just call the setSelectedNode.
+                        // The full logic is inside initializeKonva's selectNode.
+                        let nodeToSelect = node;
+                        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+                            nodeToSelect = node.parent;
+                        }
+                        setSelectedNode(nodeToSelect);
+                    }
+                }}
                 onMoveNode={handleMoveNode}
             />
         
@@ -1015,6 +1015,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
