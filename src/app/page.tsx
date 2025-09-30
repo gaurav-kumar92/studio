@@ -816,7 +816,7 @@ export default function KonvaEditor() {
   const addImageFromComputer = () => {
     const imageFileInput = document.createElement('input');
     imageFileInput.type = 'file';
-    imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
+    imageFileInput.accept = "image/png, image/jpeg,_jpg, image/gif, image/svg+xml";
 
     imageFileInput.onchange = () => {
         if (imageFileInput.files && imageFileInput.files.length > 0) {
@@ -861,12 +861,13 @@ export default function KonvaEditor() {
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      if (node.getZIndex() > 1) { // Prevent moving behind the background
+      // Prevent moving behind the background object, which is at z-index 0
+      if (node.getZIndex() > 1) { 
         node.moveDown();
       }
     }
-  
-    // This is the crucial part: create a new array to force React to re-render.
+    
+    // Crucially, create a new array to force React to re-render the LayersPanel.
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
     setKonvaObjects(newChildrenArray);
     
@@ -917,47 +918,26 @@ export default function KonvaEditor() {
   };
 
   const handleFlip = (direction: 'horizontal' | 'vertical') => {
-    let nodeToFlip = selectedNode;
-    if (!nodeToFlip) return;
-    
-    // If it's a mask, find the image inside it
-    if (nodeToFlip.hasName('mask')) {
-      nodeToFlip = nodeToFlip.findOne('.mask-image');
-      if (!nodeToFlip) return; // No image in mask
-    }
-
+    const node = selectedNode;
+    if (!node) return;
+  
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const width = node.width();
+    const height = node.height();
+  
     if (direction === 'horizontal') {
       // Flip horizontally by inverting scaleX and adjusting offsetX
-      const newScaleX = -nodeToFlip.scaleX();
-      nodeToFlip.scaleX(newScaleX);
+      node.scaleX(-scaleX);
+      node.offsetX(scaleX > 0 ? width : 0);
     } else if (direction === 'vertical') {
       // Flip vertically by inverting scaleY and adjusting offsetY
-      const newScaleY = -nodeToFlip.scaleY();
-      nodeToFlip.scaleY(newScaleY);
+      node.scaleY(-scaleY);
+      node.offsetY(scaleY > 0 ? height : 0);
     }
     canvasRef.current?.layer.draw();
   };
   
-  const handleResetCrop = () => {
-    let imageNode = selectedNode;
-    if (!imageNode) return;
-    
-    // If it's a mask, find the image inside it
-    if (imageNode.hasName('mask')) {
-      imageNode = imageNode.findOne('.mask-image');
-      if (!imageNode) return; // No image in mask
-    }
-    
-    // Reset crop attributes
-    imageNode.setAttrs({
-      cropX: 0,
-      cropY: 0,
-      cropWidth: imageNode.image().width,
-      cropHeight: imageNode.image().height,
-    });
-    canvasRef.current?.layer.draw();
-  };
-
   return (
     <>
       <Script
@@ -992,7 +972,6 @@ export default function KonvaEditor() {
                             onAlign={handleAlign}
                             onOpacityChange={handleOpacityChange}
                             onFlip={handleFlip}
-                            onResetCrop={handleResetCrop}
                         />
                     )}
 
@@ -1082,6 +1061,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 

@@ -8,7 +8,6 @@ type ObjectPropertiesPanelProps = {
   onAlign: (position: string) => void;
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
-  onResetCrop: () => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -16,7 +15,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onAlign,
   onOpacityChange,
   onFlip,
-  onResetCrop,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
 
@@ -38,8 +36,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
-  const isImageNode = selectedNode.name() === 'image' || (selectedNode.name() === 'mask' && selectedNode.findOne('.mask-image'));
-
   return (
     <div id="object-properties">
       <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -163,16 +159,13 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           onChange={handleOpacitySliderChange}
         />
       </div>
-      {isImageNode && (
-        <div id="image-transform-controls" className="mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Image Tools</h4>
-          <div className="flex gap-2">
-            <button onClick={() => onFlip('horizontal')} className="button button-secondary flex-grow text-xs px-2 py-1">Flip Horizontal</button>
-            <button onClick={() => onFlip('vertical')} className="button button-secondary flex-grow text-xs px-2 py-1">Flip Vertical</button>
-            <button onClick={onResetCrop} className="button button-secondary flex-grow text-xs px-2 py-1">Reset Crop</button>
-          </div>
+      <div id="image-transform-controls" className="mt-4">
+        <h4 className="text-sm font-medium text-gray-700 mb-2">Transform Tools</h4>
+        <div className="flex gap-2">
+          <button onClick={() => onFlip('horizontal')} className="button button-secondary flex-grow text-xs px-2 py-1">Flip Horizontal</button>
+          <button onClick={() => onFlip('vertical')} className="button button-secondary flex-grow text-xs px-2 py-1">Flip Vertical</button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
