@@ -52,16 +52,17 @@ export default function KonvaEditor() {
 
   const updateLayers = () => {
     if (!canvasRef.current?.layer) return;
-    const nodes = canvasRef.current.layer.getChildren((node: any) => {
-      return node.name() !== 'background' && node.className !== 'Transformer';
-    });
-    // The result of getChildren can be a collection or an array. A collection has toArray().
-    if (nodes.toArray) {
-        setKonvaObjects(nodes.toArray());
-    } else {
-        setKonvaObjects(nodes);
-    }
+  
+    const children = canvasRef.current.layer.getChildren(
+      (node: any) => node.name() !== 'background' && node.className !== 'Transformer'
+    );
+  
+    // Convert collection to array and reverse to show top-most node first in LayersPanel
+    setKonvaObjects(Array.from(children));
+  
+    canvasRef.current.layer.draw();
   };
+  
 
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
@@ -333,6 +334,9 @@ export default function KonvaEditor() {
   const handleAddShape = (config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
+    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+
 
     let newShape;
     const x = stage.width() / 4;
@@ -382,6 +386,7 @@ export default function KonvaEditor() {
       updateLayers();
       layer.draw();
       setSelectedNode(newShape);
+      newShape.setAttr('id', uniqueId); // <--- add this line
     }
     setShapeDialogOpen(false);
   }
@@ -451,6 +456,8 @@ export default function KonvaEditor() {
         updateLayers();
         layer.draw();
         setSelectedNode(newFrame);
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        newFrame.setAttr('id', uniqueId); // <--- add this line
     }
     setFrameDialogOpen(false);
   };
@@ -560,6 +567,9 @@ export default function KonvaEditor() {
     layer.draw();
     setSelectedNode(group);
     setMaskDialogOpen(false);
+    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    group.setAttr('id', uniqueId); // <--- add this line
+
   };
 
   const handleUpdateMask = (attrs: any) => {
@@ -751,11 +761,15 @@ export default function KonvaEditor() {
         textGroup.add(mainText);
         layer.add(textGroup);
         setSelectedNode(textGroup);
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        textGroup.setAttr('id', uniqueId); // <--- add this line
+
     }
 
     updateLayers();
     layer.draw();
     setTextDialogOpen(false);
+    
   };
 
 
@@ -829,27 +843,29 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    const node = konvaObjects.find((n) => n.id() === nodeId);
+    const { layer } = canvasRef.current;
+    const node = layer.findOne(`#${nodeId}`);
+  
     if (!node) return;
   
-    const newKonvaObjects = [...konvaObjects];
-    const index = newKonvaObjects.findIndex((n) => n.id() === nodeId);
+    // Find the actual node to move (could be a group)
+    const nodeToMove = (node.parent?.name() !== 'Layer') ? node.parent : node;
   
     if (action === 'up') {
-      if (index >= newKonvaObjects.length - 1) return; // Already at the top
-      node.moveUp();
-      // Swap in the state array
-      [newKonvaObjects[index], newKonvaObjects[index + 1]] = [newKonvaObjects[index + 1], newKonvaObjects[index]];
-    } else { // 'down'
-      if (index <= 0) return; // Already at the bottom (just above background)
-      if (node.getZIndex() <= 1) return; // Safeguard for background
-      node.moveDown();
-      // Swap in the state array
-      [newKonvaObjects[index], newKonvaObjects[index - 1]] = [newKonvaObjects[index - 1], newKonvaObjects[index]];
+      nodeToMove.moveUp();
+    } else if (action === 'down') {
+      // Prevent moving behind the background
+      if (nodeToMove.getZIndex() > 1) {
+        nodeToMove.moveDown();
+      }
     }
   
+    // Force React to re-render the layers panel
+    const children = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer');
+    const newKonvaObjects = Array.from(children);
     setKonvaObjects(newKonvaObjects);
-    canvasRef.current.layer.batchDraw();
+  
+    layer.batchDraw();
   };
   
   const handleAlign = (position: string) => {
@@ -1017,6 +1033,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
