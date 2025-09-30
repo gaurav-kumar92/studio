@@ -328,7 +328,8 @@ export default function KonvaEditor() {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    updateLayers();
+    const newChildren = canvasRef.current.layer?.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray() || [];
+    setKonvaObjects(newChildren);
   }, [selectedNode]);
 
 const applyShapeFill = (shape: any, config: any) => {
@@ -654,6 +655,38 @@ const applyShapeFill = (shape: any, config: any) => {
     canvasRef.current?.layer.draw();
   };
 
+  const applyTextFill = (node: any, config: any) => {
+    if (config.isGradient) {
+        let start = { x: 0, y: 0 };
+        let end = { x: 0, y: 0 };
+        const { width, height } = node.getClientRect();
+
+        switch (config.gradientDirection) {
+            case 'top-to-bottom':
+                end = { x: 0, y: height };
+                break;
+            case 'left-to-right':
+                end = { x: width, y: 0 };
+                break;
+            case 'diagonal-tl-br':
+                end = { x: width, y: height };
+                break;
+            case 'diagonal-tr-bl':
+                start = { x: width, y: 0 };
+                end = { x: 0, y: height };
+                break;
+        }
+
+        node.fill(null);
+        node.fillLinearGradientStartPoint(start);
+        node.fillLinearGradientEndPoint(end);
+        node.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
+    } else {
+        node.fillLinearGradientColorStops([]);
+        node.fill(config.fill);
+    }
+};
+
   const handleAddOrUpdateText = (config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
@@ -668,7 +701,11 @@ const applyShapeFill = (shape: any, config: any) => {
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
-        'data-color': config.fill,
+        'data-fill': config.fill,
+        'data-is-gradient': config.isGradient,
+        'data-color1': config.isGradient ? config.color1 : null,
+        'data-color2': config.isGradient ? config.color2 : null,
+        'data-gradient-direction': config.isGradient ? config.gradientDirection : null,
         'data-letter-spacing': config.letterSpacing,
         'data-line-height': config.lineHeight,
         'data-align': config.align,
@@ -733,7 +770,6 @@ const applyShapeFill = (shape: any, config: any) => {
             text: char,
             x: x,
             y: y,
-            fill: config.fill,
             fontSize: config.fontSize,
             fontFamily: config.fontFamily,
             fontStyle: fontStyle,
@@ -743,6 +779,7 @@ const applyShapeFill = (shape: any, config: any) => {
             offsetY: charHeight / 2,
             name: 'mainChar'
           });
+          applyTextFill(charNode, config);
           
            if (config.isGlow) {
               const glowNode = charNode.clone({
@@ -791,6 +828,7 @@ const applyShapeFill = (shape: any, config: any) => {
             ...config,
             name: 'text',
         });
+        applyTextFill(mainText, config);
         
         let decorations = [];
         if (config.isUnderline) decorations.push('underline');
@@ -920,7 +958,7 @@ const applyShapeFill = (shape: any, config: any) => {
         node.moveDown();
       }
     }
-  
+    
     // Force a re-render by creating a new array from the updated children list
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
     setKonvaObjects(newChildrenArray);
@@ -978,14 +1016,11 @@ const applyShapeFill = (shape: any, config: any) => {
   
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    const { width, height } = node.getClientRect();
   
     if (direction === 'horizontal') {
       node.scaleX(-scaleX);
-      node.x(node.x() + width);
     } else if (direction === 'vertical') {
       node.scaleY(-scaleY);
-      node.y(node.y() + height);
     }
   
     canvasRef.current?.layer.batchDraw();
@@ -1115,6 +1150,7 @@ const applyShapeFill = (shape: any, config: any) => {
 
 
     
+
 
 
 

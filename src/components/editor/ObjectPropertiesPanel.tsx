@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -17,17 +18,17 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onFlip,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
-
+  
   useEffect(() => {
     if (selectedNode) {
       setOpacity(selectedNode.opacity() ?? 1);
     }
   }, [selectedNode]);
-
+  
   if (!selectedNode) {
     return null;
   }
-
+  
   const handleOpacitySliderChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
