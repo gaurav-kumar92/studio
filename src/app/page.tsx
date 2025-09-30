@@ -828,23 +828,26 @@ export default function KonvaEditor() {
   }
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
-    const { layer } = canvasRef.current;
-    const node = layer.findOne(`#${nodeId}`);
+    const node = konvaObjects.find((n) => n.id() === nodeId);
+    if (!node) return;
 
-    if (node) {
-      if (action === 'up') {
-        node.moveUp();
-      } else {
-        if (node.getZIndex() > 1) {
-          node.moveDown();
-        }
-      }
-      
-      const children = layer.getChildren((n:any) => n.name() !== 'background' && n.className !== 'Transformer');
-      setKonvaObjects([...children]);
-      layer.draw();
+    if (action === 'down' && node.getZIndex() <= 1) {
+        return; // Prevent moving behind the background
     }
+    
+    if (action === 'up') {
+        node.moveUp();
+    } else {
+        node.moveDown();
+    }
+    
+    // THIS IS THE CRITICAL FIX:
+    // We get the updated children list from Konva and create a NEW array.
+    // This forces React to re-render the LayersPanel.
+    const newOrderedNodes = canvasRef.current.layer.getChildren((n:any) => n.name() !== 'background' && n.className !== 'Transformer');
+    setKonvaObjects(newOrderedNodes.toArray ? newOrderedNodes.toArray() : [...newOrderedNodes]);
+    
+    canvasRef.current.layer.draw();
   };
   
   const handleAlign = (position: string) => {
@@ -1012,6 +1015,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
