@@ -16,6 +16,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
     const [color, setColor] = useState('#3b82f6');
     const [thickness, setThickness] = useState(5);
     const [sides, setSides] = useState(6);
+    const [tension, setTension] = useState(0.5);
 
     useEffect(() => {
         if (editingNode) {
@@ -23,11 +24,14 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
             setColor(shapeColor);
 
             const shapeType = editingNode.getAttr('data-type');
-            if (shapeType === 'line' || shapeType === 'arrow') {
+            if (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve') {
                 setThickness(editingNode.strokeWidth());
             }
             if (shapeType === 'polygon') {
                 setSides(editingNode.sides());
+            }
+            if (shapeType === 'curve') {
+                setTension(editingNode.getAttr('data-tension') || 0.5);
             }
         } else {
             // Reset to defaults when adding a new shape
@@ -39,25 +43,32 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
         if (editingNode) {
             onUpdateShape({ color });
         }
-    }, [color]);
+    }, [color, editingNode, onUpdateShape]);
 
     useEffect(() => {
         if (editingNode) {
             onUpdateShape({ thickness });
         }
-    }, [thickness]);
+    }, [thickness, editingNode, onUpdateShape]);
 
     useEffect(() => {
         if (editingNode) {
             onUpdateShape({ sides });
         }
-    }, [sides]);
+    }, [sides, editingNode, onUpdateShape]);
+
+    useEffect(() => {
+        if (editingNode && editingNode.getAttr('data-type') === 'curve') {
+            onUpdateShape({ tension });
+        }
+    }, [tension, editingNode, onUpdateShape]);
 
     const resetDialog = () => {
         setActiveShapeForAddition(null);
         setColor('#3b82f6');
         setThickness(5);
         setSides(6);
+        setTension(0.5);
     };
 
     const handleClose = () => {
@@ -72,13 +83,14 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                 color,
                 thickness,
                 sides,
+                tension
             });
             handleClose();
         }
     };
 
     const handleShapeSelection = (shapeType: string) => {
-        if (shapeType === 'polygon' || shapeType === 'line' || shapeType === 'arrow') {
+        if (['polygon', 'line', 'arrow', 'curve'].includes(shapeType)) {
             setActiveShapeForAddition(shapeType);
         } else {
             onAddShape({ type: shapeType, color });
@@ -90,8 +102,9 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
         return null;
     }
 
-    const showThicknessControl = activeShapeForAddition === 'line' || activeShapeForAddition === 'arrow' || (editingNode && (editingNode.getAttr('data-type') === 'line' || editingNode.getAttr('data-type') === 'arrow'));
+    const showThicknessControl = activeShapeForAddition === 'line' || activeShapeForAddition === 'arrow' || activeShapeForAddition === 'curve' || (editingNode && (editingNode.getAttr('data-type') === 'line' || editingNode.getAttr('data-type') === 'arrow' || editingNode.getAttr('data-type') === 'curve'));
     const showSidesControl = activeShapeForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon');
+    const showTensionControl = activeShapeForAddition === 'curve' || (editingNode && editingNode.getAttr('data-type') === 'curve');
     const showMainButtons = !activeShapeForAddition && !editingNode;
     const showAddButton = !!activeShapeForAddition;
 
@@ -125,6 +138,15 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <input type="range" id="shape-sides-slider" min="3" max="12" step="1" value={sides} onChange={(e) => setSides(Number(e.target.value))} className="w-full" />
                         </div>
                     )}
+                    
+                    {(showTensionControl) && (
+                        <div id="shape-tension-controls" className="shape-slider-container">
+                            <label htmlFor="shape-tension-slider" className="block text-sm font-medium text-gray-700">
+                                Tension (<span id="shape-tension-value">{tension.toFixed(2)}</span>)
+                            </label>
+                            <input type="range" id="shape-tension-slider" min="0" max="2" step="0.05" value={tension} onChange={(e) => setTension(Number(e.target.value))} className="w-full" />
+                        </div>
+                    )}
 
                     {showMainButtons && (
                         <div id="shape-buttons-container" className="shape-button-container mt-4">
@@ -139,6 +161,9 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             </button>
                             <button className="shape-btn" data-shape="line" title="Line" onClick={() => handleShapeSelection('line')}>
                             <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M3 12h18"/></svg>
+                            </button>
+                            <button className="shape-btn" data-shape="curve" title="Curve" onClick={() => handleShapeSelection('curve')}>
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12c4.4-4.4 8.8-4.4 13.2 0"/><path d="M20 12c-4.4 4.4-8.8 4.4-13.2 0"/></svg>
                             </button>
                             <button className="shape-btn" data-shape="star" title="Star" onClick={() => handleShapeSelection('star')}>
                                 <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -174,4 +199,5 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 export default ShapeDialog;
 
     
+
 

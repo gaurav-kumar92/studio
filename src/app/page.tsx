@@ -367,6 +367,11 @@ export default function KonvaEditor() {
         newShape.x(x); // Manually set x and y for line
         newShape.y(y);
         break;
+      case 'curve':
+        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size / 2, size / 2, size, 0], stroke: config.color, strokeWidth: config.thickness, tension: config.tension, x: x, y: y, 'data-tension': config.tension, });
+        newShape.x(x); // Manually set x and y for curve
+        newShape.y(y);
+        break;
       case 'star':
         newShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: config.color });
         break;
@@ -395,7 +400,7 @@ export default function KonvaEditor() {
   const handleUpdateShape = (attrs: any) => {
     if (!editingShapeNode) return;
     if (attrs.color) {
-        if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow') {
+        if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
             editingShapeNode.stroke(attrs.color);
         } else {
             editingShapeNode.fill(attrs.color);
@@ -409,6 +414,10 @@ export default function KonvaEditor() {
     }
     if (attrs.sides) {
         editingShapeNode.sides(attrs.sides);
+    }
+    if (attrs.tension !== undefined) {
+        editingShapeNode.tension(attrs.tension);
+        editingShapeNode.setAttr('data-tension', attrs.tension);
     }
     canvasRef.current?.layer.draw();
   }
@@ -844,27 +853,25 @@ export default function KonvaEditor() {
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
-    
-    const node = canvasRef.current.layer.findOne(`#${nodeId}`);
+    const { layer } = canvasRef.current;
+    const node = layer.findOne(`#${nodeId}`);
+  
     if (!node) return;
-    
+  
     if (action === 'up') {
-        node.moveUp();
+      node.moveUp();
     } else if (action === 'down') {
-        if (node.getZIndex() > 1) { // Safeguard to not move behind background
-            node.moveDown();
-        }
+      // Prevent moving behind the background which is at zIndex 0
+      if (node.getZIndex() > 1) {
+        node.moveDown();
+      }
     }
     
-    // This is the crucial part: get the updated children list from Konva
-    // and create a new array to force React to re-render the LayersPanel.
-    const children = canvasRef.current.layer.getChildren(
-        (n: any) => n.name() !== 'background' && n.className !== 'Transformer'
-    );
-    const newObjects = children.toArray ? children.toArray() : Array.from(children);
-    setKonvaObjects(newObjects);
+    // Create a new array to force React to re-render the LayersPanel
+    const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
+    setKonvaObjects(newChildrenArray);
     
-    canvasRef.current.layer.batchDraw();
+    layer.batchDraw();
   };
   
   const handleAlign = (position: string) => {
@@ -1032,6 +1039,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
