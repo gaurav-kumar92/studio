@@ -331,13 +331,52 @@ export default function KonvaEditor() {
     updateLayers();
   }, [selectedNode]);
 
+const applyShapeFill = (shape: any, config: any) => {
+    shape.setAttrs({
+        'data-is-gradient': config.isGradient,
+        'data-color1': config.isGradient ? config.color1 : config.color,
+        'data-color2': config.isGradient ? config.color2 : null,
+        'data-gradient-direction': config.isGradient ? config.gradientDirection : null
+    });
+
+    if (config.isGradient) {
+        let start = { x: 0, y: 0 };
+        let end = { x: 0, y: 0 };
+
+        const shapeWidth = shape.width() || (shape.radius && shape.radius() * 2) || 100;
+        const shapeHeight = shape.height() || (shape.radius && shape.radius() * 2) || 100;
+
+        switch (config.gradientDirection) {
+            case 'top-to-bottom':
+                end = { x: 0, y: shapeHeight };
+                break;
+            case 'left-to-right':
+                end = { x: shapeWidth, y: 0 };
+                break;
+            case 'diagonal-tl-br':
+                end = { x: shapeWidth, y: shapeHeight };
+                break;
+            case 'diagonal-tr-bl':
+                start = { x: shapeWidth, y: 0 };
+                end = { x: 0, y: shapeHeight };
+                break;
+        }
+
+        shape.fill(null);
+        shape.fillLinearGradientStartPoint(start);
+        shape.fillLinearGradientEndPoint(end);
+        shape.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
+    } else {
+        shape.fillLinearGradientColorStops([]); // Clear gradient
+        shape.fill(config.color);
+    }
+};
+
   const handleAddShape = (config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
     const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
-
-
     let newShape;
     const x = stage.width() / 4;
     const y = stage.height() / 4;
@@ -353,32 +392,32 @@ export default function KonvaEditor() {
 
     switch (config.type) {
       case 'rect':
-        newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, fill: config.color });
+        newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
         break;
       case 'circle':
-        newShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, fill: config.color });
+        newShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
         break;
       case 'triangle':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, fill: config.color });
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
         break;
       case 'line':
         newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size, 0], stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
-        newShape.x(x); // Manually set x and y for line
+        newShape.x(x); 
         newShape.y(y);
         break;
       case 'curve':
         newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size / 2, size / 2, size, 0], stroke: config.color, strokeWidth: config.thickness, tension: config.tension, x: x, y: y, 'data-tension': config.tension, });
-        newShape.x(x); // Manually set x and y for curve
+        newShape.x(x);
         newShape.y(y);
         break;
       case 'star':
-        newShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40, fill: config.color });
+        newShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40 });
         break;
       case 'pentagon':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 5, radius: size / 2, fill: config.color });
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 5, radius: size / 2 });
         break;
       case 'polygon':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2, fill: config.color });
+        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2 });
         break;
       case 'arrow':
         newShape = new window.Konva.Arrow({ ...commonAttrs, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: config.color, stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
@@ -387,27 +426,44 @@ export default function KonvaEditor() {
         break;
     }
     if(newShape) {
+        if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
+            newShape.stroke(config.color);
+        } else {
+            applyShapeFill(newShape, config);
+        }
       layer.add(newShape);
       updateLayers();
       layer.draw();
       setSelectedNode(newShape);
-      newShape.setAttr('id', uniqueId); // <--- add this line
+      newShape.setAttr('id', uniqueId);
     }
     setShapeDialogOpen(false);
   }
 
   const handleUpdateShape = (attrs: any) => {
     if (!editingShapeNode) return;
-    if (attrs.color) {
-        if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
-            editingShapeNode.stroke(attrs.color);
-        } else {
-            editingShapeNode.fill(attrs.color);
-        }
-         if (editingShapeNode.getAttr('data-type') === 'arrow') {
-            editingShapeNode.fill(attrs.color);
+    if (attrs.isGradient !== undefined) {
+         if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
+             editingShapeNode.stroke(attrs.color);
+         } else {
+            applyShapeFill(editingShapeNode, attrs);
+         }
+    } else {
+        if (attrs.color) {
+            if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
+                editingShapeNode.stroke(attrs.color);
+            } else {
+                 if (!editingShapeNode.getAttr('data-is-gradient')) {
+                    editingShapeNode.fill(attrs.color);
+                    editingShapeNode.setAttr('data-color1', attrs.color);
+                }
+            }
+             if (editingShapeNode.getAttr('data-type') === 'arrow') {
+                editingShapeNode.fill(attrs.color);
+            }
         }
     }
+
     if (attrs.thickness) {
         editingShapeNode.strokeWidth(attrs.thickness);
     }
@@ -860,8 +916,7 @@ export default function KonvaEditor() {
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      // Prevent moving behind the background which is always at z-index 0
-      if (node.getZIndex() > 1) {
+      if (node.getZIndex() > 1) { // Prevent moving behind the background
         node.moveDown();
       }
     }
@@ -921,30 +976,16 @@ export default function KonvaEditor() {
     const node = selectedNode;
     if (!node) return;
   
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const { width, height } = node.getClientRect();
+  
     if (direction === 'horizontal') {
-      // Toggle scaleX
-      const newScaleX = node.scaleX() * -1;
-      node.scaleX(newScaleX);
-      
-      // Get the width from getClientRect for accuracy
-      const width = node.getClientRect().width;
-      
-      // Adjust x position to keep it in place
-      // The adjustment depends on the current scale direction
-      const adjustment = newScaleX > 0 ? -width : width;
-      node.x(node.x() + adjustment);
-
+      node.scaleX(-scaleX);
+      node.x(node.x() + width);
     } else if (direction === 'vertical') {
-      // Toggle scaleY
-      const newScaleY = node.scaleY() * -1;
-      node.scaleY(newScaleY);
-      
-      // Get the height from getClientRect for accuracy
-      const height = node.getClientRect().height;
-      
-      // Adjust y position to keep it in place
-      const adjustment = newScaleY > 0 ? -height : height;
-      node.y(node.y() + adjustment);
+      node.scaleY(-scaleY);
+      node.y(node.y() + height);
     }
   
     canvasRef.current?.layer.batchDraw();
@@ -1074,6 +1115,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
