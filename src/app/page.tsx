@@ -669,8 +669,8 @@ export default function KonvaEditor() {
             offsetY: charHeight / 2,
             name: 'mainChar'
           });
-
-          if (config.isGlow) {
+          
+           if (config.isGlow) {
               const glowNode = charNode.clone({
                 fill: config.glowColor,
                 stroke: config.glowColor,
@@ -693,7 +693,7 @@ export default function KonvaEditor() {
           } else {
               charNode.shadowEnabled(false);
           }
-          
+
           circularGroup.add(charNode);
           cumulativeAngle += scaledAngularWidth;
         }
@@ -724,7 +724,7 @@ export default function KonvaEditor() {
         mainText.textDecoration(decorations.join(' '));
 
         mainText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
-
+        
         if (config.isGlow) {
             const glowText = mainText.clone({
                 fill: config.glowColor,
@@ -875,17 +875,17 @@ export default function KonvaEditor() {
             selectedNode.x(newX);
             break;
         case 'center':
-            newX = selectedNode.x() - (box.x + box.width / 2) + stage.width() / 2;
-            newY = selectedNode.y() - (box.y + box.height / 2) + stage.height() / 2;
+            newX = selectedNode.x() + (stage.width() / 2 - (box.x + box.width / 2));
+            newY = selectedNode.y() + (stage.height() / 2 - (box.y + box.height / 2));
             selectedNode.x(newX);
             selectedNode.y(newY);
             break;
         case 'right':
-            newX = selectedNode.x() - (box.x + box.width) + stage.width();
+            newX = selectedNode.x() - (box.x + box.width - stage.width());
             selectedNode.x(newX);
             break;
         case 'bottom':
-            newY = selectedNode.y() - (box.y + box.height) + stage.height();
+            newY = selectedNode.y() - (box.y + box.height - stage.height());
             selectedNode.y(newY);
             break;
     }
@@ -1018,6 +1018,7 @@ export default function KonvaEditor() {
 
 
     
+
 
 
 
