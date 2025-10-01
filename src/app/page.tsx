@@ -613,7 +613,7 @@ const applyFill = (node: any, config: any) => {
 
     group.clipFunc(function (ctx: any) {
         if (borderShape) {
-            borderShape.drawScene(ctx, group);
+             borderShape._sceneFunc(ctx);
         }
     });
 
@@ -1152,6 +1152,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
