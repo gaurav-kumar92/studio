@@ -117,7 +117,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
     const dialogTitle = editingNode ? 'Update Text' : 'Add Text';
 
     return (
-        <div id="text-dialog-container" className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="dialog-overlay" onClick={onClose}></div>
             <div className="dialog flex flex-col" style={{ maxHeight: '85vh' }}>
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">{dialogTitle}</h3>
@@ -262,3 +262,5 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 }
 
 export default TextDialog;
+
+    

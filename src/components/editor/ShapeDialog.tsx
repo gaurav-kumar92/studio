@@ -89,7 +89,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
     const isEditingLineLike = editingNode && (showThicknessControl || showSidesControl || showTensionControl);
 
     return (
-        <div id="shape-dialog-container" className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="dialog-overlay" onClick={handleClose}></div>
             <div className="dialog flex flex-col" style={{ maxHeight: '85vh', maxWidth: '300px' }}>
                 <h3 id="shape-dialog-title" className="text-lg font-semibold mb-4 flex-shrink-0">
@@ -193,3 +193,5 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 };
 
 export default ShapeDialog;
+
+    

@@ -19,7 +19,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
     };
 
     return (
-        <div id="add-item-dialog-container" className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="dialog-overlay" onClick={onClose}></div>
             <div className="dialog flex flex-col" style={{ maxHeight: '85vh' }}>
                 <h3 className="text-lg font-semibold mb-6 flex-shrink-0">What would you like to add?</h3>
@@ -58,3 +58,5 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
 };
 
 export default AddItemDialog;
+
+    
