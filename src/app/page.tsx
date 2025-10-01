@@ -138,14 +138,16 @@ export default function KonvaEditor() {
                       
                       img.setAttrs({
                           name: 'mask-image',
-                          x: 0,
-                          y: 0,
-                          width: imgWidth * scale,
-                          height: imgHeight * scale,
+                          x: maskWidth / 2,
+                          y: maskHeight / 2,
+                          offsetX: (imgWidth) / 2,
+                          offsetY: (imgHeight) / 2,
+                          scaleX: scale,
+                          scaleY: scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
                             const imageRect = this.getClientRect({skipTransform: false});
-
+                            
                             let minX = maskWidth - imageRect.width;
                             let maxX = 0;
                             let minY = maskHeight - imageRect.height;
@@ -161,7 +163,7 @@ export default function KonvaEditor() {
                           }
                       });
                       
-                      const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
+                      const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
                       if (borderShape) {
                            borderShape.fill('transparent');
                       }
@@ -574,16 +576,16 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
             break;
         case 'star':
-            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'triangle':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'polygon':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'diamond':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), offsetX: size/2, offsetY: size/2 });
             break;
         case 'alphabet':
             const textForClip = new window.Konva.Text({
@@ -606,6 +608,8 @@ const applyFill = (node: any, config: any) => {
                 fill: '#f0f0f0',
                 stroke: config.borderColor,
                 strokeWidth: config.borderThickness,
+                offsetX: textForClip.width() / 2,
+                offsetY: textForClip.height() / 2,
             });
             break;
         default: // rect
@@ -640,11 +644,8 @@ const applyFill = (node: any, config: any) => {
 
     group.clipFunc(function (ctx: any) {
         if (borderShape) {
-             const localPos = {x: 0, y: 0};
-             if(config.type !== 'rect') {
-                localPos.x = size/2;
-                localPos.y = size/2;
-             }
+             const localPos = {x: size/2, y: size/2};
+             
              ctx.beginPath();
              if (borderShape.getClassName() === 'Rect') {
                 ctx.rect(0,0, size, size);
@@ -1000,7 +1001,7 @@ const applyFill = (node: any, config: any) => {
     }
 
     // Get the updated children list from Konva itself
-    const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
+    const newChildrenArray = Array.from(layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer'));
 
     // Force a re-render by setting the new array
     setKonvaObjects(newChildrenArray);
