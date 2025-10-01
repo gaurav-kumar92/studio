@@ -15,7 +15,6 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
     const [text, setText] = useState('');
     const [fontSize, setFontSize] = useState(24);
     const [fontFamily, setFontFamily] = useState('Inter');
-    const [color, setColor] = useState('#000000');
     const [isBold, setBold] = useState(false);
     const [isItalic, setItalic] = useState(false);
     const [isUnderline, setUnderline] = useState(false);
@@ -34,23 +33,12 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
     const [radius, setRadius] = useState(150);
     const [curvature, setCurvature] = useState(0);
 
-    // Gradient State
-    const [isGradient, setGradient] = useState(false);
-    const [color1, setColor1] = useState('#3b82f6');
-    const [color2, setColor2] = useState('#a855f7');
-    const [gradientDirection, setGradientDirection] = useState('top-to-bottom');
-
     useEffect(() => {
         if (editingNode) {
              const data = editingNode.attrs;
             setText(data['data-text'] || '');
             setFontSize(data['data-font-size'] || 24);
             setFontFamily(data['data-font-family'] || 'Inter');
-            setColor(data['data-fill'] || '#000000');
-            setGradient(data['data-is-gradient'] || false);
-            setColor1(data['data-color1'] || '#3b82f6');
-            setColor2(data['data-color2'] || '#a855f7');
-            setGradientDirection(data['data-gradient-direction'] || 'top-to-bottom');
             setLetterSpacing(data['data-letter-spacing'] || 0);
             setLineHeight(data['data-line-height'] || 1);
             setAlign(data['data-align'] || 'left');
@@ -77,7 +65,6 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
         setText('');
         setFontSize(24);
         setFontFamily('Inter');
-        setColor('#000000');
         setBold(false);
         setItalic(false);
         setUnderline(false);
@@ -95,10 +82,6 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
         setGlowOpacity(0.7);
         setRadius(150);
         setCurvature(0);
-        setGradient(false);
-        setColor1('#3b82f6');
-        setColor2('#a855f7');
-        setGradientDirection('top-to-bottom');
     };
 
     const handleAddOrUpdate = () => {
@@ -106,11 +89,6 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
             text: text || 'New Text',
             fontSize,
             fontFamily,
-            fill: color,
-            isGradient,
-            color1,
-            color2,
-            gradientDirection,
             letterSpacing,
             lineHeight,
             align,
@@ -152,47 +130,9 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
                         placeholder="Enter your text..." 
                     />
                      <div className="mt-4 pt-4 relative">
-                        <div className="mb-4">
-                            <div className="flex items-center">
-                                <input type="checkbox" id="text-gradient-checkbox" checked={isGradient} onChange={(e) => setGradient(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
-                                <label htmlFor="text-gradient-checkbox" className="ml-2 block text-sm text-gray-900">Gradient</label>
-                            </div>
-                        </div>
-
-                        {isGradient ? (
-                            <div id="text-gradient-controls" className="flex flex-col gap-4">
-                                <div className="color-picker-container">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Color</label>
-                                    <div className="color-preview-circle" style={{backgroundColor: color1}}></div>
-                                    <input type="color" value={color1} onChange={(e) => setColor1(e.target.value)} className="color-picker-input-hidden" />
-                                </div>
-                                <div className="color-picker-container">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Color</label>
-                                    <div className="color-preview-circle" style={{backgroundColor: color2}}></div>
-                                    <input type="color" value={color2} onChange={(e) => setColor2(e.target.value)} className="color-picker-input-hidden" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
-                                    <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                                        <option value="top-to-bottom">Top to Bottom</option>
-                                        <option value="left-to-right">Left to Right</option>
-                                        <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
-                                        <option value="diagonal-tr-bl">Diagonal (TR to BL)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="color-picker-container-inline">
-                                <label className="block text-sm font-medium text-gray-700 mr-4">Text Color</label>
-                                <div className="color-preview-circle" style={{backgroundColor: color}}></div>
-                                <input 
-                                    type="color" 
-                                    value={color}
-                                    onChange={(e) => setColor(e.target.value)}
-                                    className="color-picker-input-hidden" 
-                                />
-                            </div>
-                        )}
+                        { editingNode && (
+                            <p className="text-center text-gray-500 mb-4">Color properties can be changed in the main panel.</p>
+                         )}
 
                         <div className="mb-4 mt-4">
                             <label className="block text-sm font-medium text-gray-700">Font Size</label>
@@ -321,9 +261,3 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 }
 
 export default TextDialog;
-
-    
-
-
-    
-

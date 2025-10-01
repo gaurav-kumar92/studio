@@ -3,12 +3,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import ColorPropertiesPanel from './ColorPropertiesPanel';
 
 type ObjectPropertiesPanelProps = {
   selectedNode: any;
   onAlign: (position: string) => void;
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
+  onColorChange: (config: any) => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -16,6 +18,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onAlign,
   onOpacityChange,
   onFlip,
+  onColorChange,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -37,11 +40,23 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
+  const canHaveColor = selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText');
+  const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve';
+
   return (
     <div id="object-properties">
       <h4 className="text-sm font-medium text-gray-700 mb-2">
         Object Properties
       </h4>
+
+      {canHaveColor && (
+        <ColorPropertiesPanel 
+            selectedNode={selectedNode}
+            onColorChange={onColorChange}
+            isStroke={isLineOrCurve}
+        />
+      )}
+
       <div className="alignment-controls">
         <button
           onClick={() => onAlign('top')}
@@ -148,7 +163,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           </svg>
         </button>
       </div>
-      <div className="opacity-controls">
+      <div className="opacity-controls mt-2">
         <label htmlFor="opacity-slider">Opacity</label>
         <input
           type="range"
@@ -160,7 +175,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           onChange={handleOpacitySliderChange}
         />
       </div>
-      <div id="image-transform-controls" className="mt-4">
+      <div id="transform-controls" className="mt-4">
         <h4 className="text-sm font-medium text-gray-700 mb-2">Transform Tools</h4>
         <div className="flex gap-2">
           <button onClick={() => onFlip('horizontal')} className="button button-secondary flex-grow text-xs px-2 py-1">Flip Horizontal</button>

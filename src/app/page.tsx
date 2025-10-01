@@ -333,45 +333,39 @@ setFrameDialogOpen(true);
     setKonvaObjects(newChildren);
   }, [selectedNode]);
 
-const applyShapeFill = (shape: any, config: any) => {
-    shape.setAttrs({
-        'data-is-gradient': config.isGradient,
-        'data-color1': config.isGradient ? config.color1 : config.color,
-        'data-color2': config.isGradient ? config.color2 : null,
-        'data-gradient-direction': config.isGradient ? config.gradientDirection : null
-    });
+const applyFill = (node: any, config: any) => {
+    const targetNode = (node.hasName('textGroup') || node.hasName('circularText')) 
+      ? (node.find('.mainChar, .text').toArray().length > 0 ? node.find('.mainChar, .text') : [node]) 
+      : [node];
 
-    if (config.isGradient) {
-        let start = { x: 0, y: 0 };
-        let end = { x: 0, y: 0 };
+    targetNode.forEach((n: any) => {
+        n.setAttrs({
+            'data-is-gradient': config.isGradient,
+            'data-color1': config.isGradient ? config.color1 : config.color,
+            'data-color2': config.isGradient ? config.color2 : null,
+            'data-gradient-direction': config.isGradient ? config.gradientDirection : null
+        });
 
-        const shapeWidth = shape.width() || (shape.radius && shape.radius() * 2) || 100;
-        const shapeHeight = shape.height() || (shape.radius && shape.radius() * 2) || 100;
+        if (config.isGradient) {
+            let start = { x: 0, y: 0 };
+            let end = { x: 0, y: 0 };
+            const { width, height } = n.getClientRect({ relativeTo: n.getParent() });
 
-        switch (config.gradientDirection) {
-            case 'top-to-bottom':
-                end = { x: 0, y: shapeHeight };
-                break;
-            case 'left-to-right':
-                end = { x: shapeWidth, y: 0 };
-                break;
-            case 'diagonal-tl-br':
-                end = { x: shapeWidth, y: shapeHeight };
-                break;
-            case 'diagonal-tr-bl':
-                start = { x: shapeWidth, y: 0 };
-                end = { x: 0, y: shapeHeight };
-                break;
+            switch (config.gradientDirection) {
+                case 'top-to-bottom': end = { x: 0, y: height }; break;
+                case 'left-to-right': end = { x: width, y: 0 }; break;
+                case 'diagonal-tl-br': end = { x: width, y: height }; break;
+                case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
+            }
+            n.fill(null);
+            n.fillLinearGradientStartPoint(start);
+            n.fillLinearGradientEndPoint(end);
+            n.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
+        } else {
+            n.fillLinearGradientColorStops([]);
+            n.fill(config.color);
         }
-
-        shape.fill(null);
-        shape.fillLinearGradientStartPoint(start);
-        shape.fillLinearGradientEndPoint(end);
-        shape.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
-    } else {
-        shape.fillLinearGradientColorStops([]); // Clear gradient
-        shape.fill(config.color);
-    }
+    });
 };
 
   const handleAddShape = (config: any) => {
@@ -403,12 +397,12 @@ const applyShapeFill = (shape: any, config: any) => {
         newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
         break;
       case 'line':
-        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size, 0], stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
+        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size, 0], strokeWidth: config.thickness, x: x, y: y });
         newShape.x(x); 
         newShape.y(y);
         break;
       case 'curve':
-        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size / 2, size / 2, size, 0], stroke: config.color, strokeWidth: config.thickness, tension: config.tension, x: x, y: y, 'data-tension': config.tension, });
+        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size / 2, size / 2, size, 0], strokeWidth: config.thickness, tension: config.tension, x: x, y: y, 'data-tension': config.tension, });
         newShape.x(x);
         newShape.y(y);
         break;
@@ -422,16 +416,21 @@ const applyShapeFill = (shape: any, config: any) => {
         newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2 });
         break;
       case 'arrow':
-        newShape = new window.Konva.Arrow({ ...commonAttrs, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, fill: config.color, stroke: config.color, strokeWidth: config.thickness, x: x, y: y });
+        newShape = new window.Konva.Arrow({ ...commonAttrs, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, strokeWidth: config.thickness, x: x, y: y });
         newShape.x(x);
         newShape.y(y);
         break;
     }
     if(newShape) {
+       newShape.setAttrs({
+            'data-is-gradient': false,
+            'data-color1': '#3b82f6',
+        });
         if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
-            newShape.stroke(config.color);
+            newShape.stroke('#3b82f6');
+            if (config.type === 'arrow') newShape.fill('#3b82f6');
         } else {
-            applyShapeFill(newShape, config);
+            newShape.fill('#3b82f6');
         }
       layer.add(newShape);
       updateLayers();
@@ -444,28 +443,6 @@ const applyShapeFill = (shape: any, config: any) => {
 
   const handleUpdateShape = (attrs: any) => {
     if (!editingShapeNode) return;
-    if (attrs.isGradient !== undefined) {
-         if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
-             editingShapeNode.stroke(attrs.color);
-         } else {
-            applyShapeFill(editingShapeNode, attrs);
-         }
-    } else {
-        if (attrs.color) {
-            if (editingShapeNode.getAttr('data-type') === 'line' || editingShapeNode.getAttr('data-type') === 'arrow' || editingShapeNode.getAttr('data-type') === 'curve') {
-                editingShapeNode.stroke(attrs.color);
-            } else {
-                 if (!editingShapeNode.getAttr('data-is-gradient')) {
-                    editingShapeNode.fill(attrs.color);
-                    editingShapeNode.setAttr('data-color1', attrs.color);
-                }
-            }
-             if (editingShapeNode.getAttr('data-type') === 'arrow') {
-                editingShapeNode.fill(attrs.color);
-            }
-        }
-    }
-
     if (attrs.thickness) {
         editingShapeNode.strokeWidth(attrs.thickness);
     }
@@ -656,38 +633,6 @@ const applyShapeFill = (shape: any, config: any) => {
     canvasRef.current?.layer.draw();
   };
 
-  const applyTextFill = (node: any, config: any) => {
-    if (config.isGradient) {
-        let start = { x: 0, y: 0 };
-        let end = { x: 0, y: 0 };
-        const { width, height } = node.getClientRect();
-
-        switch (config.gradientDirection) {
-            case 'top-to-bottom':
-                end = { x: 0, y: height };
-                break;
-            case 'left-to-right':
-                end = { x: width, y: 0 };
-                break;
-            case 'diagonal-tl-br':
-                end = { x: width, y: height };
-                break;
-            case 'diagonal-tr-bl':
-                start = { x: width, y: 0 };
-                end = { x: 0, y: height };
-                break;
-        }
-
-        node.fill(null);
-        node.fillLinearGradientStartPoint(start);
-        node.fillLinearGradientEndPoint(end);
-        node.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
-    } else {
-        node.fillLinearGradientColorStops([]);
-        node.fill(config.fill);
-    }
-};
-
   const handleAddOrUpdateText = (config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
@@ -702,11 +647,11 @@ const applyShapeFill = (shape: any, config: any) => {
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
-        'data-fill': config.fill,
-        'data-is-gradient': config.isGradient,
-        'data-color1': config.isGradient ? config.color1 : null,
-        'data-color2': config.isGradient ? config.color2 : null,
-        'data-gradient-direction': config.isGradient ? config.gradientDirection : null,
+        'data-fill': '#000000', // Default solid color
+        'data-is-gradient': false,
+        'data-color1': '#3b82f6',
+        'data-color2': '#a855f7',
+        'data-gradient-direction': 'top-to-bottom',
         'data-letter-spacing': config.letterSpacing,
         'data-line-height': config.lineHeight,
         'data-align': config.align,
@@ -778,9 +723,9 @@ const applyShapeFill = (shape: any, config: any) => {
             rotation: rotationDegrees,
             offsetX: charWidth / 2,
             offsetY: charHeight / 2,
-            name: 'mainChar'
+            name: 'mainChar',
+            fill: '#000000'
           });
-          applyTextFill(charNode, config);
           
            if (config.isGlow) {
               const glowNode = charNode.clone({
@@ -827,9 +772,9 @@ const applyShapeFill = (shape: any, config: any) => {
         
         const mainText = new window.Konva.Text({
             ...config,
+            fill: '#000000',
             name: 'text',
         });
-        applyTextFill(mainText, config);
         
         let decorations = [];
         if (config.isUnderline) decorations.push('underline');
@@ -866,7 +811,7 @@ const applyShapeFill = (shape: any, config: any) => {
         layer.add(textGroup);
         setSelectedNode(textGroup);
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        textGroup.setAttr('id', uniqueId); // <--- add this line
+        textGroup.setAttr('id', uniqueId);
 
     }
 
@@ -946,19 +891,19 @@ const applyShapeFill = (shape: any, config: any) => {
   }
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
+    if (!canvasRef.current?.layer) return;
     const { layer } = canvasRef.current;
-    if (!layer) return;
 
     const node = layer.findOne(`#${nodeId}`);
     if (!node) return;
 
     if (action === 'up') {
-        node.moveUp();
+      node.moveUp();
     } else if (action === 'down') {
-        // Prevent moving behind the background
-        if (node.getZIndex() > 1) { 
-            node.moveDown();
-        }
+      // Prevent moving behind the background
+      if (node.getZIndex() > 1) {
+        node.moveDown();
+      }
     }
 
     // Get the updated children list from Konva itself
@@ -1020,22 +965,55 @@ const applyShapeFill = (shape: any, config: any) => {
   
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    const { width, height } = node.getClientRect();
+    const { width, height } = node.getClientRect({skipTransform: false});
 
     if (direction === 'horizontal') {
         node.scaleX(-scaleX);
-        node.offsetX(node.width()/2);
-        node.x(node.x() + node.width() * scaleX);
+        node.x(node.x() + width * scaleX);
+
     } else {
         node.scaleY(-scaleY);
-        node.offsetY(node.height()/2);
-        node.y(node.y() + node.height() * scaleY);
+        node.y(node.y() + height * scaleY);
     }
   
     canvasRef.current?.layer.batchDraw();
   };
   
-  
+    const handleColorUpdate = (config: any) => {
+        if (!selectedNode) return;
+
+        const nodeType = selectedNode.name();
+        const shapeType = selectedNode.getAttr('data-type');
+        const isLineOrArrow = shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve';
+
+        selectedNode.setAttrs({
+            'data-is-gradient': config.isGradient,
+            'data-color1': config.isGradient ? config.color1 : config.color,
+            'data-color2': config.isGradient ? config.color2 : null,
+            'data-gradient-direction': config.isGradient ? config.gradientDirection : null,
+        });
+
+        if (nodeType === 'shape' && isLineOrArrow) {
+            // Lines and arrows only use stroke
+            selectedNode.stroke(config.color);
+            if (shapeType === 'arrow') {
+                selectedNode.fill(config.color); // Arrowhead fill
+            }
+        } else if (nodeType.includes('text') || nodeType.includes('Text')) {
+            // This handles textGroup and circularText
+             const textNodes = selectedNode.find('Text');
+             textNodes.forEach((textNode: any) => {
+                applyFill(textNode, config);
+             });
+
+        } else {
+            // All other shapes
+            applyFill(selectedNode, config);
+        }
+        
+        canvasRef.current?.layer.draw();
+    };
+
   return (
     <>
       <Script
@@ -1070,6 +1048,7 @@ const applyShapeFill = (shape: any, config: any) => {
                             onAlign={handleAlign}
                             onOpacityChange={handleOpacityChange}
                             onFlip={handleFlip}
+                            onColorChange={handleColorUpdate}
                         />
                     )}
 
@@ -1159,6 +1138,7 @@ const applyShapeFill = (shape: any, config: any) => {
 
 
     
+
 
 
 
