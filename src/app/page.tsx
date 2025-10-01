@@ -89,10 +89,8 @@ export default function KonvaEditor() {
         nodes: [selectedNode],
         rotateEnabled: true,
         boundBoxFunc: (oldBox: any, newBox: any) => {
-            const isCircle = selectedNode.getClassName() === 'Circle';
-
-            if (isCircle) {
-                // For circles, we need special handling to adjust the radius
+            // For circles, we need special handling to adjust the radius
+            if (selectedNode.getClassName() === 'Circle') {
                 const newRadius = Math.max(Math.abs(newBox.width), Math.abs(newBox.height)) / 2;
                 if (newRadius < 5) { // Prevent from becoming too small
                     return oldBox;
@@ -182,8 +180,7 @@ export default function KonvaEditor() {
                             let minY = maskRect.y + maskRect.height - imgRect.height;
                             let maxY = maskRect.y;
 
-                            // Adjust position based on drag
-                            // The `pos` is the top-left of the image, not its center
+                            // The `pos` is the top-left of the image
                             const newX = Math.max(minX, Math.min(pos.x, maxX));
                             const newY = Math.max(minY, Math.min(pos.y, maxY));
 
@@ -1197,13 +1194,3 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
-
-    
-
-    
-
-    
-
-    
-
-    
