@@ -80,7 +80,8 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
     const dialogTitle = editingNode ? 'Edit Frame' : 'Add a Frame';
 
     return (
-        <div id="frame-dialog" className="dialog-overlay" style={{ display: 'flex' }}>
+        <div id="frame-dialog-container" className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="dialog-overlay" onClick={handleClose}></div>
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">{dialogTitle}</h3>
                 <div className="flex flex-col gap-4 mb-4">
