@@ -262,5 +262,4 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
 }
 
 export default TextDialog;
-
     

@@ -193,5 +193,4 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 };
 
 export default ShapeDialog;
-
     
