@@ -970,15 +970,17 @@ const applyFill = (node: any, config: any) => {
   const handleFlip = (direction: 'horizontal' | 'vertical') => {
     const node = selectedNode;
     if (!node) return;
-  
+    
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     const { width, height } = node.getClientRect({skipTransform: false});
-
+    
     if (direction === 'horizontal') {
         node.scaleX(-scaleX);
+        node.x(node.x() + width);
     } else {
         node.scaleY(-scaleY);
+        node.y(node.y() + height);
     }
   
     canvasRef.current?.layer.batchDraw();
@@ -1169,3 +1171,6 @@ const applyFill = (node: any, config: any) => {
 
 
 
+
+
+    
