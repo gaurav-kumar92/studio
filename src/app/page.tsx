@@ -138,10 +138,8 @@ export default function KonvaEditor() {
                       
                       img.setAttrs({
                           name: 'mask-image',
-                          x: maskWidth / 2,
-                          y: maskHeight / 2,
-                          offsetX: (imgWidth * scale) / 2,
-                          offsetY: (imgHeight * scale) / 2,
+                          x: 0,
+                          y: 0,
                           width: imgWidth * scale,
                           height: imgHeight * scale,
                           draggable: true,
@@ -1189,15 +1187,3 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
