@@ -89,19 +89,24 @@ export default function KonvaEditor() {
         nodes: [selectedNode],
         rotateEnabled: true,
         boundBoxFunc: (oldBox: any, newBox: any) => {
-            const box = selectedNode.getClientRect();
             const isCircle = selectedNode.getClassName() === 'Circle';
 
             if (isCircle) {
-                const radius = selectedNode.radius() * selectedNode.scaleX();
+                // For circles, we need special handling to adjust the radius
                 const newRadius = Math.max(Math.abs(newBox.width), Math.abs(newBox.height)) / 2;
-                if (newRadius < 2.5) {
+                if (newRadius < 5) { // Prevent from becoming too small
                     return oldBox;
                 }
-                selectedNode.radius(newRadius / selectedNode.scaleX());
+                // Instead of scaling, we update the radius directly
+                selectedNode.radius(newRadius / Math.max(selectedNode.scaleX(), selectedNode.scaleY()));
+                // We reset scale because radius is the source of truth for size
+                selectedNode.scaleX(1);
+                selectedNode.scaleY(1);
+                // Return the new client rect of the circle
                 return selectedNode.getClientRect();
             }
 
+            // For other shapes, just prevent from becoming too small
             if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
                 return oldBox;
             }
