@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -135,15 +134,33 @@ export default function KonvaEditor() {
                       
                       // Scale image to fill mask
                       const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-                      const scaledWidth = imgWidth * scale;
-                      const scaledHeight = imgHeight * scale;
-
+                      
                       img.setAttrs({
                           name: 'mask-image',
-                          x: (maskWidth - scaledWidth) / 2,
-                          y: (maskHeight - scaledHeight) / 2,
-                          width: scaledWidth,
-                          height: scaledHeight,
+                          x: maskWidth / 2,
+                          y: maskHeight / 2,
+                          offsetX: imgWidth / 2,
+                          offsetY: imgHeight / 2,
+                          scaleX: scale,
+                          scaleY: scale,
+                          draggable: true,
+                          dragBoundFunc: function(pos: { x: number, y: number }) {
+                              const scaledWidth = imgWidth * scale;
+                              const scaledHeight = imgHeight * scale;
+                              const centeredX = maskWidth / 2;
+                              const centeredY = maskHeight / 2;
+
+                              // Calculate boundaries based on the image being centered
+                              const minX = centeredX - (scaledWidth / 2) + maskWidth / 2;
+                              const maxX = centeredX + (scaledWidth / 2) - maskWidth / 2;
+                              const minY = centeredY - (scaledHeight / 2) + maskHeight / 2;
+                              const maxY = centeredY + (scaledHeight / 2) - maskHeight / 2;
+                              
+                              const newX = Math.max(minX, Math.min(pos.x, maxX));
+                              const newY = Math.max(minY, Math.min(pos.y, maxY));
+                              
+                              return { x: newX, y: newY };
+                          }
                       });
                       
                       const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
@@ -153,7 +170,7 @@ export default function KonvaEditor() {
                       }
                       
                       maskGroup.add(img);
-                      img.moveToTop(); // This is wrong, should move border to top
+                      img.moveToTop();
                       borderShape.moveToTop();
 
 
@@ -1152,6 +1169,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
