@@ -145,20 +145,22 @@ export default function KonvaEditor() {
                           scaleY: scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
-                            const imgRect = this.getClientRect({skipTransform: false});
+                            const newAbsPos = {
+                                x: pos.x + maskGroup.x(),
+                                y: pos.y + maskGroup.y(),
+                            };
+                            
+                            const imageRect = this.getClientRect({skipTransform: false});
                             const maskRect = {x: 0, y: 0, width: maskWidth, height: maskHeight};
 
-                            const newAbsX = pos.x + maskGroup.x();
-                            const newAbsY = pos.y + maskGroup.y();
-
-                            let minX = maskGroup.x() + maskRect.width - imgRect.width;
+                            let minX = maskGroup.x() + maskRect.width - imageRect.width;
                             let maxX = maskGroup.x();
-                            let minY = maskGroup.y() + maskRect.height - imgRect.height;
+                            let minY = maskGroup.y() + maskRect.height - imageRect.height;
                             let maxY = maskGroup.y();
-                            
-                            const boundedX = Math.max(minX, Math.min(newAbsX, maxX));
-                            const boundedY = Math.max(minY, Math.min(newAbsY, maxY));
 
+                            const boundedX = Math.max(minX, Math.min(newAbsPos.x, maxX));
+                            const boundedY = Math.max(minY, Math.min(newAbsPos.y, maxY));
+                            
                             return {
                                 x: boundedX - maskGroup.x(),
                                 y: boundedY - maskGroup.y(),
@@ -1170,6 +1172,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
