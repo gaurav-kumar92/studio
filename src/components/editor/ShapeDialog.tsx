@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type ShapeDialogProps = {
     isOpen: boolean;
@@ -24,8 +24,14 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
     const [color2, setColor2] = useState('#a855f7');
     const [gradientDirection, setGradientDirection] = useState('top-to-bottom');
 
-    useEffect(() => {
+    const handleUpdate = useCallback((attrs: any) => {
         if (editingNode) {
+            onUpdateShape(attrs);
+        }
+    }, [editingNode, onUpdateShape]);
+
+    useEffect(() => {
+        if (isOpen && editingNode) {
             const shapeType = editingNode.getAttr('data-type');
             const nodeIsGradient = editingNode.getAttr('data-is-gradient') || false;
             setGradient(nodeIsGradient);
@@ -49,27 +55,12 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
             if (shapeType === 'curve') {
                 setTension(editingNode.getAttr('data-tension') || 0.5);
             }
-        } else {
+        } else if (isOpen) {
             // Reset to defaults when adding a new shape
             resetDialog();
         }
     }, [editingNode, isOpen]);
 
-    useEffect(() => {
-        if (editingNode) {
-            const attrs: any = {
-                isGradient,
-                color,
-                color1,
-                color2,
-                gradientDirection,
-                thickness,
-                sides,
-                tension
-            };
-            onUpdateShape(attrs);
-        }
-    }, [isGradient, color, color1, color2, gradientDirection, thickness, sides, tension, editingNode, onUpdateShape]);
 
     const resetDialog = () => {
         setActiveShapeForAddition(null);
@@ -145,7 +136,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 
                     <div className="mb-4">
                         <div className="flex items-center">
-                            <input type="checkbox" id="gradient-checkbox" checked={isGradient} onChange={(e) => setGradient(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
+                            <input type="checkbox" id="gradient-checkbox" checked={isGradient} onChange={(e) => { setGradient(e.target.checked); handleUpdate({ isGradient: e.target.checked, color, color1, color2, gradientDirection }); }} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
                             <label htmlFor="gradient-checkbox" className="ml-2 block text-sm text-gray-900">Gradient</label>
                         </div>
                     </div>
@@ -155,16 +146,16 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <div className="color-picker-container">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Color</label>
                                 <div className="color-preview-circle" style={{backgroundColor: color1}}></div>
-                                <input type="color" value={color1} onChange={(e) => setColor1(e.target.value)} className="color-picker-input-hidden" />
+                                <input type="color" value={color1} onChange={(e) => { setColor1(e.target.value); handleUpdate({ isGradient: true, color1: e.target.value, color2, gradientDirection }); }} className="color-picker-input-hidden" />
                             </div>
                              <div className="color-picker-container">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">End Color</label>
                                 <div className="color-preview-circle" style={{backgroundColor: color2}}></div>
-                                <input type="color" value={color2} onChange={(e) => setColor2(e.target.value)} className="color-picker-input-hidden" />
+                                <input type="color" value={color2} onChange={(e) => { setColor2(e.target.value); handleUpdate({ isGradient: true, color1, color2: e.target.value, gradientDirection }); }} className="color-picker-input-hidden" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
-                                <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
+                                <select value={gradientDirection} onChange={(e) => { setGradientDirection(e.target.value); handleUpdate({ isGradient: true, color1, color2, gradientDirection: e.target.value }); }} className="w-full p-2 border border-gray-300 rounded-md">
                                     <option value="top-to-bottom">Top to Bottom</option>
                                     <option value="left-to-right">Left to Right</option>
                                     <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
@@ -176,7 +167,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                          <div className="color-picker-container">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Shape Color</label>
                             <div id="color-preview-shape" className="color-preview-circle" style={{backgroundColor: color}}></div>
-                            <input type="color" id="shape-color-picker" value={color} onChange={(e) => setColor(e.target.value)} className="color-picker-input-hidden" />
+                            <input type="color" id="shape-color-picker" value={color} onChange={(e) => { setColor(e.target.value); handleUpdate({ color: e.target.value }); }} className="color-picker-input-hidden" />
                         </div>
                     )}
                    
@@ -186,7 +177,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <label htmlFor="shape-thickness-slider" className="block text-sm font-medium text-gray-700">
                                 Thickness (<span id="shape-thickness-value">{thickness}</span>px)
                             </label>
-                            <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" value={thickness} onChange={(e) => setThickness(Number(e.target.value))} className="w-full" />
+                            <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" value={thickness} onChange={(e) => { setThickness(Number(e.target.value)); handleUpdate({ thickness: Number(e.target.value) }); }} className="w-full" />
                         </div>
                     )}
 
@@ -195,7 +186,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <label htmlFor="shape-sides-slider" className="block text-sm font-medium text-gray-700">
                                 Sides (<span id="shape-sides-value">{sides}</span>)
                             </label>
-                            <input type="range" id="shape-sides-slider" min="3" max="12" step="1" value={sides} onChange={(e) => setSides(Number(e.target.value))} className="w-full" />
+                            <input type="range" id="shape-sides-slider" min="3" max="12" step="1" value={sides} onChange={(e) => { setSides(Number(e.target.value)); handleUpdate({ sides: Number(e.target.value) }); }} className="w-full" />
                         </div>
                     )}
                     
@@ -204,7 +195,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <label htmlFor="shape-tension-slider" className="block text-sm font-medium text-gray-700">
                                 Tension (<span id="shape-tension-value">{tension.toFixed(2)}</span>)
                             </label>
-                            <input type="range" id="shape-tension-slider" min="0" max="2" step="0.05" value={tension} onChange={(e) => setTension(Number(e.target.value))} className="w-full" />
+                            <input type="range" id="shape-tension-slider" min="0" max="2" step="0.05" value={tension} onChange={(e) => { setTension(Number(e.target.value)); handleUpdate({ tension: Number(e.target.value) }); }} className="w-full" />
                         </div>
                     )}
 
@@ -259,6 +250,7 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 export default ShapeDialog;
 
     
+
 
 
 

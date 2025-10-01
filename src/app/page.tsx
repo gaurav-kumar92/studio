@@ -57,7 +57,7 @@ export default function KonvaEditor() {
       (node: any) => node.name() !== 'background' && node.className !== 'Transformer'
     );
   
-    const childrenArray = children.toArray ? children.toArray() : Array.from(children);
+    const childrenArray = Array.from(children);
     setKonvaObjects(childrenArray);
   
     canvasRef.current.layer.draw();
@@ -226,7 +226,7 @@ export default function KonvaEditor() {
             imageFileInput.click();
         } else if (nodeToSelect.hasName('frame')) {
             setEditingFrameNode(nodeToSelect);
-            setFrameDialogOpen(true);
+setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
             const hasImage = nodeToSelect.findOne('.mask-image');
             if (hasImage) {
@@ -469,7 +469,7 @@ const applyShapeFill = (shape: any, config: any) => {
     if (attrs.thickness) {
         editingShapeNode.strokeWidth(attrs.thickness);
     }
-    if (attrs.sides) {
+    if (attrs.sides && editingShapeNode.getAttr('data-type') === 'polygon') {
         editingShapeNode.sides(attrs.sides);
     }
     if (attrs.tension !== undefined) {
@@ -1020,11 +1020,16 @@ const applyShapeFill = (shape: any, config: any) => {
   
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-  
+    const { width, height } = node.getClientRect();
+
     if (direction === 'horizontal') {
-      node.scaleX(-scaleX);
-    } else if (direction === 'vertical') {
-      node.scaleY(-scaleY);
+        node.scaleX(-scaleX);
+        node.offsetX(node.width()/2);
+        node.x(node.x() + node.width() * scaleX);
+    } else {
+        node.scaleY(-scaleY);
+        node.offsetY(node.height()/2);
+        node.y(node.y() + node.height() * scaleY);
     }
   
     canvasRef.current?.layer.batchDraw();
@@ -1154,6 +1159,7 @@ const applyShapeFill = (shape: any, config: any) => {
 
 
     
+
 
 
 
