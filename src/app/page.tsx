@@ -595,14 +595,7 @@ const applyFill = (node: any, config: any) => {
     group.add(placeholderIcon);
 
     group.clipFunc(function (ctx: any) {
-        const shape = borderShape;
-        ctx.beginPath();
-        if (shape.getClassName() === 'Circle') {
-            ctx.arc(shape.x(), shape.y(), shape.radius(), 0, Math.PI * 2, false);
-        } else {
-            shape.sceneFunc().call(shape, ctx, shape);
-        }
-        ctx.closePath();
+        borderShape.drawScene(ctx, group);
     });
 
     layer.add(group);
