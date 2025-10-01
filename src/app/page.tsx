@@ -88,7 +88,6 @@ export default function KonvaEditor() {
       const tr = new window.Konva.Transformer({
         nodes: [selectedNode],
         rotateEnabled: true,
-        // No custom boundBoxFunc needed if group dimensions are correct
       });
       layer.add(tr);
       transformerRef.current = tr;
