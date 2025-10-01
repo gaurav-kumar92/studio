@@ -163,9 +163,8 @@ export default function KonvaEditor() {
                         
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
-                             borderShape.fill(null);
-                             borderShape.stroke(null);
-                             borderShape.opacity(0);
+                             borderShape.fill(null); // Make the fill transparent
+                             // Do not change opacity or stroke
                         }
 
 
@@ -225,7 +224,7 @@ export default function KonvaEditor() {
             imageFileInput.click();
         } else if (nodeToSelect.hasName('frame')) {
             setEditingFrameNode(nodeToSelect);
-setFrameDialogOpen(true);
+            setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
             const hasImage = nodeToSelect.findOne('.mask-image');
             if (hasImage) {
@@ -328,7 +327,7 @@ setFrameDialogOpen(true);
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
     const children = canvasRef.current.layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer');
-    const newChildren = children ? Array.from(children) : [];
+    const newChildren = Array.from(children || []);
     setKonvaObjects(newChildren);
   }, [selectedNode]);
 
@@ -970,19 +969,15 @@ const applyFill = (node: any, config: any) => {
   const handleFlip = (direction: 'horizontal' | 'vertical') => {
     const node = selectedNode;
     if (!node) return;
-    
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    const { width, height } = node.getClientRect({skipTransform: false});
-    
+
     if (direction === 'horizontal') {
+        const scaleX = node.scaleX();
         node.scaleX(-scaleX);
-        node.x(node.x() + width);
     } else {
+        const scaleY = node.scaleY();
         node.scaleY(-scaleY);
-        node.y(node.y() + height);
     }
-  
+
     canvasRef.current?.layer.batchDraw();
   };
   
