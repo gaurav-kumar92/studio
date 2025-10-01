@@ -162,13 +162,15 @@ export default function KonvaEditor() {
                         });
 
                         maskGroup.add(img);
-                        img.moveToBottom(); 
                         
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
                              borderShape.fill('transparent');
+                             borderShape.moveToBottom();
+                             img.moveUp();
                         }
 
+                        img.moveToBottom();
 
                         layer.draw();
                         updateLayers();
@@ -1188,6 +1190,7 @@ const applyFill = (node: any, config: any) => {
 
 
     
+
 
 
 
