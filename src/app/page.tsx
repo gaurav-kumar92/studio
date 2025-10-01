@@ -88,6 +88,7 @@ export default function KonvaEditor() {
       const tr = new window.Konva.Transformer({
         nodes: [selectedNode],
         rotateEnabled: true,
+        keepRatio: true,
       });
       layer.add(tr);
       transformerRef.current = tr;
@@ -137,33 +138,30 @@ export default function KonvaEditor() {
                       
                       img.setAttrs({
                           name: 'mask-image',
-                          x: maskWidth / 2,
-                          y: maskHeight / 2,
-                          offsetX: img.width() / 2,
-                          offsetY: img.height() / 2,
-                          scaleX: scale,
-                          scaleY: scale,
+                          x: 0,
+                          y: 0,
+                          width: imgWidth * scale,
+                          height: imgHeight * scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
                             const newAbsPos = {
-                                x: pos.x + maskGroup.x(),
-                                y: pos.y + maskGroup.y(),
+                                x: pos.x,
+                                y: pos.y,
                             };
                             
                             const imageRect = this.getClientRect({skipTransform: false});
-                            const maskRect = {x: 0, y: 0, width: maskWidth, height: maskHeight};
 
-                            let minX = maskGroup.x() + maskRect.width - imageRect.width;
-                            let maxX = maskGroup.x();
-                            let minY = maskGroup.y() + maskRect.height - imageRect.height;
-                            let maxY = maskGroup.y();
-
+                            let minX = maskWidth - imageRect.width;
+                            let maxX = 0;
+                            let minY = maskHeight - imageRect.height;
+                            let maxY = 0;
+                            
                             const boundedX = Math.max(minX, Math.min(newAbsPos.x, maxX));
                             const boundedY = Math.max(minY, Math.min(newAbsPos.y, maxY));
                             
                             return {
-                                x: boundedX - maskGroup.x(),
-                                y: boundedY - maskGroup.y(),
+                                x: boundedX,
+                                y: boundedY,
                             };
                           }
                       });
