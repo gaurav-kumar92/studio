@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, FC } from 'react';
@@ -67,12 +68,8 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
     };
     
     const handleShapeSelection = (shapeType: string) => {
-        if (['polygon', 'diamond'].includes(shapeType)) {
-             setActiveMaskForAddition(shapeType);
-        } else {
-            onAddMask({ type: shapeType, borderColor, borderThickness, sides: 6 });
-            handleClose();
-        }
+        onAddMask({ type: shapeType, borderColor, borderThickness, sides });
+        handleClose();
     };
     
     const handleAlphabetSelection = (letter: string) => {
@@ -133,7 +130,7 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
                                 <button className="shape-btn" data-mask-shape="star" title="Star Mask" onClick={() => handleShapeSelection('star')}>
                                     <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
                                 </button>
-                                <button className="shape-btn" data-mask-shape="polygon" title="Polygon Mask" onClick={() => handleShapeSelection('polygon')}>
+                                <button className="shape-btn" data-mask-shape="polygon" title="Polygon Mask" onClick={() => setActiveMaskForAddition('polygon')}>
                                     <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2.5l7.79 4.5 0 9 -7.79 4.5 -7.79 -4.5 0 -9Z"/></svg>
                                 </button>
                                 <button className="shape-btn" data-mask-shape="diamond" title="Diamond Mask" onClick={() => handleShapeSelection('diamond')}>
@@ -167,3 +164,5 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
 };
 
 export default MaskDialog;
+
+    
