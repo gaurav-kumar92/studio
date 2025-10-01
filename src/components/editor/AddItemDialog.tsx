@@ -20,9 +20,9 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
 
     return (
         <div id="add-item-dialog" className="dialog-overlay" style={{ display: 'flex' }}>
-            <div className="dialog">
-                <h3 className="text-lg font-semibold mb-6">What would you like to add?</h3>
-                <div id="add-item-options" className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="dialog flex flex-col" style={{ maxHeight: '85vh' }}>
+                <h3 className="text-lg font-semibold mb-6 flex-shrink-0">What would you like to add?</h3>
+                <div id="add-item-options" className="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-4 flex-grow">
                     <button className="add-item-card" data-item-type="text" onClick={() => handleItemClick('text')}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                         <span>Text</span>
@@ -48,7 +48,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
                         <span>QR Code</span>
                     </button>
                 </div>
-                <div className="dialog-actions mt-6">
+                <div className="dialog-actions mt-6 flex-shrink-0">
                     <button id="cancel-add-item-btn" className="dialog-button dialog-button-secondary" onClick={onClose}>Cancel</button>
                 </div>
             </div>
