@@ -143,5 +143,3 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
 }
 
 export default FrameDialog;
-
-    
