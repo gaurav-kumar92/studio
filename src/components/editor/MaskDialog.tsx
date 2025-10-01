@@ -70,7 +70,7 @@ const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onU
         if (shapeType === 'polygon' || shapeType === 'diamond') {
             setActiveMaskForAddition(shapeType);
         } else {
-            onAddMask({ type: shapeType, borderColor, borderThickness });
+            onAddMask({ type: shapeType, borderColor, borderThickness, sides: 6 });
             handleClose();
         }
     };

@@ -141,6 +141,7 @@ export default function KonvaEditor() {
                 reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                        // Clear existing content
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
                         const maskWidth = maskGroup.width();
@@ -148,6 +149,7 @@ export default function KonvaEditor() {
                         const imgWidth = img.width();
                         const imgHeight = img.height();
                         
+                        // Scale image to fill mask
                         const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
                         const scaledWidth = imgWidth * scale;
                         const scaledHeight = imgHeight * scale;
@@ -167,7 +169,7 @@ export default function KonvaEditor() {
                         }
                         
                         maskGroup.add(img);
-                        img.moveToTop();
+                        img.moveToTop(); // Ensure image is on top to be clipped
 
                         layer.draw();
                         updateLayers();
@@ -235,7 +237,14 @@ export default function KonvaEditor() {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-            addImageToMask(nodeToSelect);
+             if (nodeToSelect.findOne('.mask-image')) {
+                // If image exists, open edit dialog
+                setEditingMaskNode(nodeToSelect);
+                setMaskDialogOpen(true);
+            } else {
+                // If no image, prompt to add one
+                addImageToMask(nodeToSelect);
+            }
         }
     });
 };
@@ -618,7 +627,7 @@ const applyFill = (node: any, config: any) => {
       if (attrs.borderThickness) {
         border.strokeWidth(attrs.borderThickness);
       }
-      if (attrs.sides && border.getClassName() === 'RegularPolygon') {
+       if (attrs.sides && border.getClassName() === 'RegularPolygon') {
         border.sides(attrs.sides);
       }
     }
@@ -830,9 +839,10 @@ const applyFill = (node: any, config: any) => {
 
 
   const handleSelectItem = (itemType: string) => {
-    if (!canvasRef.current) return;
     setAddItemDialogOpen(false);
     deselectNode();
+
+    if (!canvasRef.current) return;
 
     switch (itemType) {
       case 'text':
