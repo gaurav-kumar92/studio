@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -236,12 +235,7 @@ export default function KonvaEditor() {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-            // If the mask already has an image, open the editor. Otherwise, add an image.
-            if (nodeToSelect.findOne('.mask-image')) {
-                addImageToMask(nodeToSelect); // Always allow replacing the image
-            } else {
-                addImageToMask(nodeToSelect);
-            }
+            addImageToMask(nodeToSelect);
         }
     });
 };
@@ -601,10 +595,14 @@ const applyFill = (node: any, config: any) => {
     group.add(placeholderIcon);
 
     group.clipFunc(function (ctx: any) {
-         const shape = borderShape;
-         ctx.beginPath();
-         shape.sceneFunc().call(shape, ctx, shape);
-         ctx.closePath();
+        const shape = borderShape;
+        ctx.beginPath();
+        if (shape.getClassName() === 'Circle') {
+            ctx.arc(shape.x(), shape.y(), shape.radius(), 0, Math.PI * 2, false);
+        } else {
+            shape.sceneFunc().call(shape, ctx, shape);
+        }
+        ctx.closePath();
     });
 
     layer.add(group);
@@ -1191,6 +1189,9 @@ const applyFill = (node: any, config: any) => {
 
 
 
+
+
+    
 
 
     
