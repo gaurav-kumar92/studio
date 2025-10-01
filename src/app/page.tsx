@@ -623,10 +623,10 @@ const applyFill = (node: any, config: any) => {
         fill: '#9ca3af',
         scale: { x: 2.5, y: 2.5 },
         name: 'placeholder-icon',
-        offsetX: 12,
-        offsetY: 12,
         x: size / 2,
         y: size / 2,
+        offsetX: 12,
+        offsetY: 12,
     });
     group.add(placeholderIcon);
 
@@ -1171,5 +1171,7 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
