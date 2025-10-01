@@ -138,8 +138,10 @@ export default function KonvaEditor() {
                       
                       img.setAttrs({
                           name: 'mask-image',
-                          x: 0,
-                          y: 0,
+                          x: maskWidth / 2,
+                          y: maskHeight / 2,
+                          offsetX: (imgWidth * scale) / 2,
+                          offsetY: (imgHeight * scale) / 2,
                           width: imgWidth * scale,
                           height: imgHeight * scale,
                           draggable: true,
@@ -586,48 +588,51 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         case 'alphabet':
-            // For alphabet, the 'group' needs to be adjusted after text creation
             const textForClip = new window.Konva.Text({
                 text: config.letter || 'A',
                 fontSize: size,
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontStyle: 'bold',
-                align: 'center',
-                verticalAlign: 'middle',
-                // Temporarily add to layer to measure
             });
             
             group.width(textForClip.width());
             group.height(textForClip.height());
 
             borderShape = new window.Konva.Text({
-                x: 0,
-                y: 0,
+                x: group.width() / 2,
+                y: group.height() / 2,
+                offsetX: group.width() / 2,
+                offsetY: group.height() / 2,
                 text: config.letter || 'A',
                 fontSize: size,
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontStyle: 'bold',
-                align: 'center',
-                verticalAlign: 'middle',
-                width: textForClip.width(),
-                height: textForClip.height(),
                 fill: '#f0f0f0',
                 stroke: config.borderColor,
                 strokeWidth: config.borderThickness,
             });
             break;
         default: // rect
-            borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, fill: '#f0f0f0', stroke: config.borderColor, strokeWidth: config.borderThickness });
-            // For rect, position is already 0,0 and size is correct. No change to commonAttrs needed.
-            borderShape.x(size/2);
-            borderShape.y(size/2);
-            borderShape.offsetX(size/2);
-            borderShape.offsetY(size/2);
+             borderShape = new window.Konva.Rect({ 
+                x: size / 2, 
+                y: size / 2,
+                offsetX: size / 2,
+                offsetY: size / 2,
+                width: size, 
+                height: size, 
+                fill: '#f0f0f0', 
+                stroke: config.borderColor, 
+                strokeWidth: config.borderThickness 
+            });
             break;
     }
 
     if (borderShape) {
         group.add(borderShape);
+        // Override getClientRect for the group as per user's recommendation
+        group.getClientRect = function() {
+            return borderShape.getClientRect();
+        };
     }
 
     const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2 2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
@@ -1184,6 +1189,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
