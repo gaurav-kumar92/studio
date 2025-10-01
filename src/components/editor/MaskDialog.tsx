@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 
 type MaskDialogProps = {
     isOpen: boolean;
@@ -11,7 +11,7 @@ type MaskDialogProps = {
     editingNode: any;
 };
 
-const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateMask, editingNode }) => {
+const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateMask, editingNode }) => {
     const [activeMaskForAddition, setActiveMaskForAddition] = useState<string | null>(null);
     const [borderColor, setBorderColor] = useState('#3b82f6');
     const [borderThickness, setBorderThickness] = useState(0);
@@ -67,8 +67,8 @@ const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onU
     };
     
     const handleShapeSelection = (shapeType: string) => {
-        if (shapeType === 'polygon' || shapeType === 'diamond') {
-            setActiveMaskForAddition(shapeType);
+        if (['polygon', 'diamond'].includes(shapeType)) {
+             setActiveMaskForAddition(shapeType);
         } else {
             onAddMask({ type: shapeType, borderColor, borderThickness, sides: 6 });
             handleClose();
@@ -167,5 +167,3 @@ const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onU
 };
 
 export default MaskDialog;
-
-    
