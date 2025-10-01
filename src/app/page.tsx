@@ -144,11 +144,6 @@ export default function KonvaEditor() {
                           height: imgHeight * scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
-                            const newAbsPos = {
-                                x: this.getAbsolutePosition().x - this.getParent().getAbsolutePosition().x + pos.x,
-                                y: this.getAbsolutePosition().y - this.getParent().getAbsolutePosition().y + pos.y
-                            };
-                            
                             const imageRect = this.getClientRect({skipTransform: false});
 
                             let minX = maskWidth - imageRect.width;
@@ -591,6 +586,20 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         case 'alphabet':
+            // For alphabet, the 'group' needs to be adjusted after text creation
+            const textForClip = new window.Konva.Text({
+                text: config.letter || 'A',
+                fontSize: size,
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'bold',
+                align: 'center',
+                verticalAlign: 'middle',
+                // Temporarily add to layer to measure
+            });
+            
+            group.width(textForClip.width());
+            group.height(textForClip.height());
+
             borderShape = new window.Konva.Text({
                 x: 0,
                 y: 0,
@@ -600,8 +609,8 @@ const applyFill = (node: any, config: any) => {
                 fontStyle: 'bold',
                 align: 'center',
                 verticalAlign: 'middle',
-                width: size,
-                height: size,
+                width: textForClip.width(),
+                height: textForClip.height(),
                 fill: '#f0f0f0',
                 stroke: config.borderColor,
                 strokeWidth: config.borderThickness,
@@ -609,6 +618,11 @@ const applyFill = (node: any, config: any) => {
             break;
         default: // rect
             borderShape = new window.Konva.Rect({ x: 0, y: 0, width: size, height: size, fill: '#f0f0f0', stroke: config.borderColor, strokeWidth: config.borderThickness });
+            // For rect, position is already 0,0 and size is correct. No change to commonAttrs needed.
+            borderShape.x(size/2);
+            borderShape.y(size/2);
+            borderShape.offsetX(size/2);
+            borderShape.offsetY(size/2);
             break;
     }
 
@@ -622,8 +636,8 @@ const applyFill = (node: any, config: any) => {
         fill: '#9ca3af',
         scale: { x: 2.5, y: 2.5 },
         name: 'placeholder-icon',
-        x: size / 2,
-        y: size / 2,
+        x: group.width() / 2,
+        y: group.height() / 2,
         offsetX: 12,
         offsetY: 12,
     });
@@ -1170,6 +1184,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
