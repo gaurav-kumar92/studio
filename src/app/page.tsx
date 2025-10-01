@@ -166,7 +166,7 @@ export default function KonvaEditor() {
                         
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
-                             borderShape.fill(null);
+                             borderShape.fill('transparent');
                         }
 
 
@@ -1188,4 +1188,5 @@ const applyFill = (node: any, config: any) => {
 
 
     
+
 
