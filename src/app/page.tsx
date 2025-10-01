@@ -448,7 +448,7 @@ const applyFill = (node: any, config: any) => {
     if (attrs.thickness) {
         editingShapeNode.strokeWidth(attrs.thickness);
     }
-    if (attrs.sides && editingShapeNode.getAttr('data-type') === 'polygon') {
+    if (attrs.sides && editingShapeNode.getClassName() === 'RegularPolygon') {
         editingShapeNode.sides(attrs.sides);
     }
     if (attrs.tension !== undefined) {
@@ -628,7 +628,7 @@ const applyFill = (node: any, config: any) => {
       if (attrs.borderThickness) {
         border.strokeWidth(attrs.borderThickness);
       }
-      if (attrs.sides) {
+      if (attrs.sides && border.getClassName() === 'RegularPolygon') {
         border.sides(attrs.sides);
       }
     }
@@ -1188,5 +1188,6 @@ const applyFill = (node: any, config: any) => {
 
 
     
+
 
 
