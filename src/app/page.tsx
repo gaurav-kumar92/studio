@@ -88,6 +88,13 @@ export default function KonvaEditor() {
       const tr = new window.Konva.Transformer({
         nodes: [selectedNode],
         rotateEnabled: true,
+        boundBoxFunc: (oldBox: any, newBox: any) => {
+            // limit resize
+            if (newBox.width < 5 || newBox.height < 5) {
+                return oldBox;
+            }
+            return newBox;
+        },
       });
       layer.add(tr);
       transformerRef.current = tr;
@@ -145,21 +152,25 @@ export default function KonvaEditor() {
                           scaleY: scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
-                              const scaledWidth = imgWidth * scale;
-                              const scaledHeight = imgHeight * scale;
-                              const centeredX = maskWidth / 2;
-                              const centeredY = maskHeight / 2;
+                            // Get the size of the mask shape
+                            const maskShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
+                            if (!maskShape) return pos;
+                            
+                            const maskRect = maskShape.getClientRect({ relativeTo: maskGroup });
+                            const imgRect = img.getClientRect({ relativeTo: maskGroup });
 
-                              // Calculate boundaries based on the image being centered
-                              const minX = centeredX - (scaledWidth / 2) + maskWidth / 2;
-                              const maxX = centeredX + (scaledWidth / 2) - maskWidth / 2;
-                              const minY = centeredY - (scaledHeight / 2) + maskHeight / 2;
-                              const maxY = centeredY + (scaledHeight / 2) - maskHeight / 2;
-                              
-                              const newX = Math.max(minX, Math.min(pos.x, maxX));
-                              const newY = Math.max(minY, Math.min(pos.y, maxY));
-                              
-                              return { x: newX, y: newY };
+                            // Calculate the boundaries for the image center
+                            let minX = maskRect.x + maskRect.width - imgRect.width;
+                            let maxX = maskRect.x;
+                            let minY = maskRect.y + maskRect.height - imgRect.height;
+                            let maxY = maskRect.y;
+
+                            // Adjust position based on drag
+                            // The `pos` is the top-left of the image, not its center
+                            const newX = Math.max(minX, Math.min(pos.x, maxX));
+                            const newY = Math.max(minY, Math.min(pos.y, maxY));
+
+                            return { x: newX, y: newY };
                           }
                       });
                       
