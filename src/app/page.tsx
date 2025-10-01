@@ -327,8 +327,9 @@ export default function KonvaEditor() {
   }, [isCanvasReady, selectedNode]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    const newChildren = canvasRef.current.layer?.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray() || [];
+    if (!canvasRef.current?.layer) return;
+    const children = canvasRef.current.layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer');
+    const newChildren = children ? Array.from(children) : [];
     setKonvaObjects(newChildren);
   }, [selectedNode]);
 
@@ -945,24 +946,27 @@ const applyShapeFill = (shape: any, config: any) => {
   }
 
   const handleMoveNode = (action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
     const { layer } = canvasRef.current;
+    if (!layer) return;
+
     const node = layer.findOne(`#${nodeId}`);
-  
     if (!node) return;
-  
+
     if (action === 'up') {
-      node.moveUp();
+        node.moveUp();
     } else if (action === 'down') {
-      if (node.getZIndex() > 1) { // Prevent moving behind the background
-        node.moveDown();
-      }
+        // Prevent moving behind the background
+        if (node.getZIndex() > 1) { 
+            node.moveDown();
+        }
     }
-    
-    // Force a re-render by creating a new array from the updated children list
+
+    // Get the updated children list from Konva itself
     const newChildrenArray = layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer').toArray();
+
+    // Force a re-render by setting the new array
     setKonvaObjects(newChildrenArray);
-  
+
     layer.batchDraw();
   };
   
@@ -1150,6 +1154,7 @@ const applyShapeFill = (shape: any, config: any) => {
 
 
     
+
 
 
 
