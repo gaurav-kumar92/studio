@@ -106,6 +106,74 @@ export default function KonvaEditor() {
     setSelectedNode(null);
   }
 
+  const addImageToMask = (maskGroup: any) => {
+      if (!maskGroup || maskGroup.name() !== 'mask' || !canvasRef.current?.layer) return;
+      const layer = canvasRef.current.layer;
+
+      const imageFileInput = document.createElement('input');
+      imageFileInput.type = 'file';
+      imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
+      imageFileInput.style.display = 'none';
+      document.body.appendChild(imageFileInput);
+
+
+      imageFileInput.onchange = () => {
+          if (imageFileInput.files && imageFileInput.files.length > 0) {
+              const file = imageFileInput.files[0];
+              const reader = new FileReader();
+              reader.onloadstart = () => setIsLoading(true);
+              reader.onload = (e) => {
+                  window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                      // Clear existing content
+                      maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
+                      
+                      const maskWidth = maskGroup.width();
+                      const maskHeight = maskGroup.height();
+                      const imgWidth = img.width();
+                      const imgHeight = img.height();
+                      
+                      // Scale image to fill mask
+                      const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+                      const scaledWidth = imgWidth * scale;
+                      const scaledHeight = imgHeight * scale;
+
+                      img.setAttrs({
+                          name: 'mask-image',
+                          x: (maskWidth - scaledWidth) / 2,
+                          y: (maskHeight - scaledHeight) / 2,
+                          width: scaledWidth,
+                          height: scaledHeight,
+                      });
+                      
+                      const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
+                      if (borderShape) {
+                           borderShape.fill('transparent');
+                           borderShape.moveToBottom();
+                      }
+                      
+                      maskGroup.add(img);
+                      img.moveToTop(); // This is wrong, should move border to top
+                      borderShape.moveToTop();
+
+
+                      layer.draw();
+                      updateLayers();
+                      setIsLoading(false);
+                  });
+              };
+              reader.onerror = () => {
+                setIsLoading(false);
+                console.error("Failed to read file");
+              };
+              reader.readAsDataURL(file);
+          }
+          imageFileInput.value = '';
+          document.body.removeChild(imageFileInput);
+      };
+      imageFileInput.click();
+  };
+
+
   const selectNode = (node: any) => {
     if (!canvasRef.current?.layer) return;
     const { layer, stage } = canvasRef.current;
@@ -129,63 +197,6 @@ export default function KonvaEditor() {
     imageFileInput.style.display = 'none';
     document.body.appendChild(imageFileInput);
 
-    let addImageToMask: (maskGroup: any) => void;
-
-    addImageToMask = (maskGroup: any) => {
-        if (!maskGroup || maskGroup.name() !== 'mask') return;
-
-        imageFileInput.onchange = () => {
-            if (imageFileInput.files && imageFileInput.files.length > 0) {
-                const file = imageFileInput.files[0];
-                const reader = new FileReader();
-                reader.onloadstart = () => setIsLoading(true);
-                reader.onload = (e) => {
-                    window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        // Clear existing content
-                        maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
-                        
-                        const maskWidth = maskGroup.width();
-                        const maskHeight = maskGroup.height();
-                        const imgWidth = img.width();
-                        const imgHeight = img.height();
-                        
-                        // Scale image to fill mask
-                        const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-                        const scaledWidth = imgWidth * scale;
-                        const scaledHeight = imgHeight * scale;
-
-                        img.setAttrs({
-                            name: 'mask-image',
-                            x: (maskWidth - scaledWidth) / 2,
-                            y: (maskHeight - scaledHeight) / 2,
-                            width: scaledWidth,
-                            height: scaledHeight,
-                        });
-                        
-                        const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
-                        if (borderShape) {
-                             borderShape.fill('transparent');
-                             borderShape.moveToBottom();
-                        }
-                        
-                        maskGroup.add(img);
-                        img.moveToTop(); // Ensure image is on top to be clipped
-
-                        layer.draw();
-                        updateLayers();
-                        setIsLoading(false);
-                    });
-                };
-                reader.onerror = () => {
-                  setIsLoading(false);
-                  console.error("Failed to read file");
-                };
-                reader.readAsDataURL(file);
-            }
-            imageFileInput.value = '';
-        };
-        imageFileInput.click();
-    };
 
     // Remove previous listeners to avoid duplicates
     nodeToSelect.off('dblclick dbltap');
@@ -237,16 +248,10 @@ export default function KonvaEditor() {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-             if (nodeToSelect.findOne('.mask-image')) {
-                // If image exists, open edit dialog
-                setEditingMaskNode(nodeToSelect);
-                setMaskDialogOpen(true);
-            } else {
-                // If no image, prompt to add one
-                addImageToMask(nodeToSelect);
-            }
+             addImageToMask(nodeToSelect);
         }
     });
+    document.body.removeChild(imageFileInput);
 };
 
   const initializeKonva = () => {
@@ -588,7 +593,9 @@ const applyFill = (node: any, config: any) => {
             break;
     }
 
-    group.add(borderShape);
+    if (borderShape) {
+        group.add(borderShape);
+    }
 
     const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2 2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
     const placeholderIcon = new window.Konva.Path({
@@ -604,7 +611,9 @@ const applyFill = (node: any, config: any) => {
     group.add(placeholderIcon);
 
     group.clipFunc(function (ctx: any) {
-        borderShape.drawScene(ctx, group);
+        if (borderShape) {
+            borderShape.drawScene(ctx, group);
+        }
     });
 
     layer.add(group);
@@ -613,7 +622,7 @@ const applyFill = (node: any, config: any) => {
     setSelectedNode(group);
     setMaskDialogOpen(false);
     const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    group.setAttr('id', uniqueId); // <--- add this line
+    group.setAttr('id', uniqueId);
 
   };
 
@@ -1142,3 +1151,5 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
