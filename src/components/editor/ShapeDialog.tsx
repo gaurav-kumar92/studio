@@ -18,37 +18,24 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
     const [tension, setTension] = useState(0.5);
 
     useEffect(() => {
-        if (isOpen && editingNode) {
-            const shapeType = editingNode.getAttr('data-type');
-            
-            if (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve') {
-                setThickness(editingNode.strokeWidth());
+        if (isOpen) {
+            if (editingNode) {
+                const shapeType = editingNode.getAttr('data-type');
+                if (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve') {
+                    setThickness(editingNode.strokeWidth() || 5);
+                }
+                if (shapeType === 'polygon') {
+                    setSides(editingNode.sides() || 6);
+                }
+                if (shapeType === 'curve') {
+                    setTension(editingNode.getAttr('data-tension') || 0.5);
+                }
+            } else {
+                // Reset to defaults when opening to add a new shape
+                resetDialog();
             }
-            if (shapeType === 'polygon') {
-                setSides(editingNode.sides());
-            }
-            if (shapeType === 'curve') {
-                setTension(editingNode.getAttr('data-tension') || 0.5);
-            }
-        } else if (isOpen) {
-            resetDialog();
         }
     }, [editingNode, isOpen]);
-
-    useEffect(() => {
-        if (editingNode) {
-            const shapeType = editingNode.getAttr('data-type');
-            if (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve') {
-                 onUpdateShape({ thickness });
-            }
-            if (shapeType === 'polygon') {
-                 onUpdateShape({ sides });
-            }
-             if (shapeType === 'curve') {
-                 onUpdateShape({ tension });
-            }
-        }
-    }, [thickness, sides, tension, editingNode, onUpdateShape]);
 
     const resetDialog = () => {
         setActiveShapeForAddition(null);
@@ -93,13 +80,13 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
         return null;
     }
 
-    const showThicknessControl = activeShapeForAddition === 'line' || activeShapeForAddition === 'arrow' || activeShapeForAddition === 'curve' || (editingNode && (editingNode.getAttr('data-type') === 'line' || editingNode.getAttr('data-type') === 'arrow' || editingNode.getAttr('data-type') === 'curve'));
-    const showSidesControl = activeShapeForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon');
-    const showTensionControl = activeShapeForAddition === 'curve' || (editingNode && editingNode.getAttr('data-type') === 'curve');
+    const shapeType = editingNode?.getAttr('data-type');
+    const showThicknessControl = activeShapeForAddition === 'line' || activeShapeForAddition === 'arrow' || activeShapeForAddition === 'curve' || ['line', 'arrow', 'curve'].includes(shapeType);
+    const showSidesControl = activeShapeForAddition === 'polygon' || shapeType === 'polygon';
+    const showTensionControl = activeShapeForAddition === 'curve' || shapeType === 'curve';
     const showMainButtons = !activeShapeForAddition && !editingNode;
     const showAddButton = !!activeShapeForAddition;
     const isEditingLineLike = editingNode && (showThicknessControl || showSidesControl || showTensionControl);
-
 
     return (
         <div id="shape-dialog" className="dialog-overlay" style={{display: 'flex'}}>
@@ -108,30 +95,48 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                     {editingNode ? 'Edit Shape' : 'Add a Shape'}
                 </h3>
                 <div className="overflow-y-auto pr-4 flex-grow">
-                   {(showThicknessControl || (editingNode && (editingNode.getAttr('data-type') === 'line' || editingNode.getAttr('data-type') === 'arrow' || editingNode.getAttr('data-type') === 'curve'))) ) && (
+                   {showThicknessControl && (
                         <div id="shape-thickness-controls" className="shape-slider-container">
                             <label htmlFor="shape-thickness-slider" className="block text-sm font-medium text-gray-700">
-                                Thickness (<span id="shape-thickness-value">{thickness}</span>px)
+                                Thickness (<span>{thickness}</span>px)
                             </label>
-                            <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" value={thickness} onChange={(e) => { setThickness(Number(e.target.value)) }} className="w-full" />
+                            <input type="range" id="shape-thickness-slider" min="1" max="50" step="1" value={thickness} 
+                                   onChange={(e) => { 
+                                       const newThickness = Number(e.target.value);
+                                       setThickness(newThickness);
+                                       if(editingNode) onUpdateShape({ thickness: newThickness });
+                                   }} 
+                                   className="w-full" />
                         </div>
                     )}
 
-                    {(showSidesControl || (editingNode && editingNode.getAttr('data-type') === 'polygon')) && (
+                    {showSidesControl && (
                         <div id="shape-sides-controls" className="shape-slider-container">
                             <label htmlFor="shape-sides-slider" className="block text-sm font-medium text-gray-700">
-                                Sides (<span id="shape-sides-value">{sides}</span>)
+                                Sides (<span>{sides}</span>)
                             </label>
-                            <input type="range" id="shape-sides-slider" min="3" max="12" step="1" value={sides} onChange={(e) => { setSides(Number(e.target.value)) }} className="w-full" />
+                            <input type="range" id="shape-sides-slider" min="3" max="12" step="1" value={sides} 
+                                   onChange={(e) => { 
+                                       const newSides = Number(e.target.value);
+                                       setSides(newSides);
+                                       if(editingNode) onUpdateShape({ sides: newSides });
+                                   }} 
+                                   className="w-full" />
                         </div>
                     )}
                     
-                    {(showTensionControl || (editingNode && editingNode.getAttr('data-type') === 'curve')) && (
+                    {showTensionControl && (
                         <div id="shape-tension-controls" className="shape-slider-container">
                             <label htmlFor="shape-tension-slider" className="block text-sm font-medium text-gray-700">
-                                Tension (<span id="shape-tension-value">{tension.toFixed(2)}</span>)
+                                Tension (<span>{tension.toFixed(2)}</span>)
                             </label>
-                            <input type="range" id="shape-tension-slider" min="0" max="2" step="0.05" value={tension} onChange={(e) => { setTension(Number(e.target.value)) }} className="w-full" />
+                            <input type="range" id="shape-tension-slider" min="0" max="2" step="0.05" value={tension} 
+                                   onChange={(e) => { 
+                                       const newTension = Number(e.target.value);
+                                       setTension(newTension);
+                                       if(editingNode) onUpdateShape({ tension: newTension });
+                                   }} 
+                                   className="w-full" />
                         </div>
                     )}
 
@@ -187,3 +192,5 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
 };
 
 export default ShapeDialog;
+
+    
