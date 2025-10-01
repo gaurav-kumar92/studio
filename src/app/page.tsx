@@ -145,8 +145,8 @@ export default function KonvaEditor() {
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
                             const newAbsPos = {
-                                x: pos.x,
-                                y: pos.y,
+                                x: this.getAbsolutePosition().x - this.getParent().getAbsolutePosition().x + pos.x,
+                                y: this.getAbsolutePosition().y - this.getParent().getAbsolutePosition().y + pos.y
                             };
                             
                             const imageRect = this.getClientRect({skipTransform: false});
@@ -156,8 +156,8 @@ export default function KonvaEditor() {
                             let minY = maskHeight - imageRect.height;
                             let maxY = 0;
                             
-                            const boundedX = Math.max(minX, Math.min(newAbsPos.x, maxX));
-                            const boundedY = Math.max(minY, Math.min(newAbsPos.y, maxY));
+                            const boundedX = Math.max(minX, Math.min(pos.x, maxX));
+                            const boundedY = Math.max(minY, Math.min(pos.y, maxY));
                             
                             return {
                                 x: boundedX,
