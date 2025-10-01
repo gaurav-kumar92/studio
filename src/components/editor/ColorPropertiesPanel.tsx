@@ -2,6 +2,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, XCircle } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+
+type ColorStop = {
+    id: number;
+    stop: number;
+    color: string;
+};
 
 type ColorPropertiesPanelProps = {
     selectedNode: any;
@@ -9,22 +18,25 @@ type ColorPropertiesPanelProps = {
     isStroke?: boolean;
 };
 
+let nextId = 0;
+
 const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNode, onColorChange, isStroke = false }) => {
     const [isGradient, setIsGradient] = useState(false);
-    const [color, setColor] = useState('#3b82f6');
-    const [color1, setColor1] = useState('#3b82f6');
-    const [color2, setColor2] = useState('#a855f7');
+    const [solidColor, setSolidColor] = useState('#3b82f6');
     const [gradientDirection, setGradientDirection] = useState('top-to-bottom');
+    const [colorStops, setColorStops] = useState<ColorStop[]>([
+        { id: nextId++, stop: 0, color: '#3b82f6' },
+        { id: nextId++, stop: 1, color: '#a855f7' },
+    ]);
 
     const handleUpdate = useCallback(() => {
         onColorChange({
             isGradient,
-            color: isGradient ? '' : color,
-            color1,
-            color2,
+            solidColor,
+            colorStops,
             gradientDirection,
         });
-    }, [isGradient, color, color1, color2, gradientDirection, onColorChange]);
+    }, [isGradient, solidColor, colorStops, gradientDirection, onColorChange]);
 
     useEffect(() => {
         if (selectedNode) {
@@ -32,23 +44,52 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
             setIsGradient(nodeIsGradient);
 
             if (nodeIsGradient) {
-                setColor1(selectedNode.getAttr('data-color1') || '#3b82f6');
-                setColor2(selectedNode.getAttr('data-color2') || '#a855f7');
+                const stops = selectedNode.getAttr('data-color-stops');
+                if (stops && stops.length > 0) {
+                    setColorStops(stops.map((s: any, i: number) => ({...s, id: s.id || i})));
+                } else {
+                     setColorStops([
+                        { id: nextId++, stop: 0, color: selectedNode.getAttr('data-color1') || '#3b82f6' },
+                        { id: nextId++, stop: 1, color: selectedNode.getAttr('data-color2') || '#a855f7' },
+                    ]);
+                }
                 setGradientDirection(selectedNode.getAttr('data-gradient-direction') || 'top-to-bottom');
             } else {
-                const nodeColor = selectedNode.getAttr('data-color1') || selectedNode.fill() || selectedNode.stroke() || '#3b82f6';
-                setColor(nodeColor);
-                setColor1(nodeColor);
+                const nodeColor = selectedNode.getAttr('data-solid-color') || selectedNode.fill() || selectedNode.stroke() || '#3b82f6';
+                setSolidColor(nodeColor);
             }
         }
     }, [selectedNode]);
 
     useEffect(() => {
-        // Trigger update whenever a color property changes
         handleUpdate();
-    }, [isGradient, color, color1, color2, gradientDirection, handleUpdate]);
+    }, [isGradient, solidColor, colorStops, gradientDirection, handleUpdate]);
     
     const label = isStroke ? 'Stroke' : 'Fill';
+
+    const handleAddColorStop = () => {
+        const newStop = (colorStops[colorStops.length - 1]?.stop || 0 + 1) / 2;
+        const newColor = colorStops[colorStops.length - 1]?.color || '#ffffff';
+        const newStops = [...colorStops, { id: nextId++, stop: newStop, color: newColor }];
+        newStops.sort((a, b) => a.stop - b.stop);
+        setColorStops(newStops);
+    };
+
+    const handleRemoveColorStop = (id: number) => {
+        if (colorStops.length <= 2) return;
+        setColorStops(colorStops.filter(stop => stop.id !== id));
+    };
+
+    const handleColorStopChange = (id: number, field: 'color' | 'stop', value: string | number) => {
+        const newStops = colorStops.map(stop => 
+            stop.id === id ? { ...stop, [field]: value } : stop
+        );
+        if (field === 'stop') {
+            newStops.sort((a, b) => a.stop - b.stop);
+        }
+        setColorStops(newStops);
+    };
+
 
     return (
         <div className="border-t border-b border-gray-200 py-4 my-4">
@@ -67,20 +108,36 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
 
             {isGradient ? (
                 <div id="universal-gradient-controls" className="flex flex-col gap-4">
-                    <div className="color-picker-container-inline justify-between">
-                        <label className="block text-sm font-medium text-gray-700">Start Color</label>
-                        <div className="relative">
-                            <div className="color-preview-circle" style={{backgroundColor: color1}}></div>
-                            <input type="color" value={color1} onChange={(e) => setColor1(e.target.value)} className="color-picker-input-hidden" />
+                    {colorStops.map((stop, index) => (
+                        <div key={stop.id} className="flex flex-col gap-2 p-2 border rounded-md">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium text-gray-600">Color Stop {index + 1}</label>
+                                 <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <div className="color-preview-circle w-6 h-6" style={{backgroundColor: stop.color}}></div>
+                                        <input type="color" value={stop.color} onChange={(e) => handleColorStopChange(stop.id, 'color', e.target.value)} className="color-picker-input-hidden" />
+                                    </div>
+                                    {colorStops.length > 2 && (
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveColorStop(stop.id)}>
+                                            <XCircle className="h-4 w-4 text-red-500" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                             <div>
+                                <Slider
+                                    value={[stop.stop]}
+                                    onValueChange={(val) => handleColorStopChange(stop.id, 'stop', val[0])}
+                                    max={1}
+                                    step={0.01}
+                                />
+                                 <div className="text-xs text-center mt-1">{stop.stop.toFixed(2)}</div>
+                            </div>
                         </div>
-                    </div>
-                     <div className="color-picker-container-inline justify-between">
-                        <label className="block text-sm font-medium text-gray-700">End Color</label>
-                         <div className="relative">
-                            <div className="color-preview-circle" style={{backgroundColor: color2}}></div>
-                            <input type="color" value={color2} onChange={(e) => setColor2(e.target.value)} className="color-picker-input-hidden" />
-                        </div>
-                    </div>
+                    ))}
+                     <Button variant="outline" size="sm" onClick={handleAddColorStop} className="w-full">
+                        <PlusCircle className="h-4 w-4 mr-2" /> Add Color
+                    </Button>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
                         <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
@@ -95,8 +152,8 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                  <div className="color-picker-container-inline justify-between">
                     <label className="block text-sm font-medium text-gray-700">Solid {label}</label>
                      <div className="relative">
-                        <div className="color-preview-circle" style={{backgroundColor: color}}></div>
-                        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="color-picker-input-hidden" />
+                        <div className="color-preview-circle" style={{backgroundColor: solidColor}}></div>
+                        <input type="color" value={solidColor} onChange={(e) => setSolidColor(e.target.value)} className="color-picker-input-hidden" />
                     </div>
                 </div>
             )}

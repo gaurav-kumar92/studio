@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -334,18 +333,11 @@ setFrameDialogOpen(true);
   }, [selectedNode]);
 
 const applyFill = (node: any, config: any) => {
-    const targetNode = (node.hasName('textGroup') || node.hasName('circularText')) 
-      ? (node.find('.mainChar, .text').toArray().length > 0 ? node.find('.mainChar, .text') : [node]) 
+    const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
+      ? node.find('.mainChar, .text, Text') 
       : [node];
 
-    targetNode.forEach((n: any) => {
-        n.setAttrs({
-            'data-is-gradient': config.isGradient,
-            'data-color1': config.isGradient ? config.color1 : config.color,
-            'data-color2': config.isGradient ? config.color2 : null,
-            'data-gradient-direction': config.isGradient ? config.gradientDirection : null
-        });
-
+    targetNodes.forEach((n: any) => {
         if (config.isGradient) {
             let start = { x: 0, y: 0 };
             let end = { x: 0, y: 0 };
@@ -360,10 +352,11 @@ const applyFill = (node: any, config: any) => {
             n.fill(null);
             n.fillLinearGradientStartPoint(start);
             n.fillLinearGradientEndPoint(end);
-            n.fillLinearGradientColorStops([0, config.color1, 1, config.color2]);
+            const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+            n.fillLinearGradientColorStops(colorStopsFlat);
         } else {
             n.fillLinearGradientColorStops([]);
-            n.fill(config.color);
+            n.fill(config.solidColor);
         }
     });
 };
@@ -424,7 +417,7 @@ const applyFill = (node: any, config: any) => {
     if(newShape) {
        newShape.setAttrs({
             'data-is-gradient': false,
-            'data-color1': '#3b82f6',
+            'data-solid-color': '#3b82f6',
         });
         if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
             newShape.stroke('#3b82f6');
@@ -638,6 +631,12 @@ const applyFill = (node: any, config: any) => {
     const { stage, layer } = canvasRef.current;
     
     if (editingTextNode) {
+        // Preserve color properties during update
+        config['data-is-gradient'] = editingTextNode.getAttr('data-is-gradient');
+        config['data-solid-color'] = editingTextNode.getAttr('data-solid-color');
+        config['data-color-stops'] = editingTextNode.getAttr('data-color-stops');
+        config['data-gradient-direction'] = editingTextNode.getAttr('data-gradient-direction');
+        
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
@@ -647,11 +646,10 @@ const applyFill = (node: any, config: any) => {
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
-        'data-fill': '#000000', // Default solid color
-        'data-is-gradient': false,
-        'data-color1': '#3b82f6',
-        'data-color2': '#a855f7',
-        'data-gradient-direction': 'top-to-bottom',
+        'data-is-gradient': config['data-is-gradient'] || false,
+        'data-solid-color': config['data-solid-color'] || '#000000',
+        'data-color-stops': config['data-color-stops'] || [],
+        'data-gradient-direction': config['data-gradient-direction'] || 'top-to-bottom',
         'data-letter-spacing': config.letterSpacing,
         'data-line-height': config.lineHeight,
         'data-align': config.align,
@@ -671,6 +669,7 @@ const applyFill = (node: any, config: any) => {
         'data-curvature': config.curvature,
     };
 
+    let newNode;
     if (config.curvature > 0) {
         const circularGroup = new window.Konva.Group({
           x: stage.width() / 2,
@@ -679,6 +678,7 @@ const applyFill = (node: any, config: any) => {
           name: 'circularText',
           ...dataAttrs
         });
+        newNode = circularGroup;
 
         const tempText = new window.Konva.Text({ text: config.text, fontSize: config.fontSize, fontFamily: config.fontFamily });
         const charHeight = tempText.height();
@@ -758,9 +758,6 @@ const applyFill = (node: any, config: any) => {
         const totalArcWidth = cumulativeAngle;
         circularGroup.rotation(-totalArcWidth * 180 / (2 * Math.PI));
 
-        layer.add(circularGroup);
-        setSelectedNode(circularGroup);
-
     } else {
          const textGroup = new window.Konva.Group({
             x: stage.width() / 4,
@@ -769,6 +766,7 @@ const applyFill = (node: any, config: any) => {
             name: 'textGroup',
             ...dataAttrs
         });
+        newNode = textGroup;
         
         const mainText = new window.Konva.Text({
             ...config,
@@ -808,17 +806,27 @@ const applyFill = (node: any, config: any) => {
         }
 
         textGroup.add(mainText);
-        layer.add(textGroup);
-        setSelectedNode(textGroup);
-        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        textGroup.setAttr('id', uniqueId);
-
     }
 
+    if (newNode) {
+        layer.add(newNode);
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        newNode.setAttr('id', uniqueId);
+        
+        const colorConfig = {
+            isGradient: newNode.getAttr('data-is-gradient'),
+            solidColor: newNode.getAttr('data-solid-color'),
+            colorStops: newNode.getAttr('data-color-stops'),
+            gradientDirection: newNode.getAttr('data-gradient-direction'),
+        };
+        applyFill(newNode, colorConfig);
+        
+        setSelectedNode(newNode);
+    }
+    
     updateLayers();
     layer.draw();
     setTextDialogOpen(false);
-    
   };
 
 
@@ -969,11 +977,8 @@ const applyFill = (node: any, config: any) => {
 
     if (direction === 'horizontal') {
         node.scaleX(-scaleX);
-        node.x(node.x() + width * scaleX);
-
     } else {
         node.scaleY(-scaleY);
-        node.y(node.y() + height * scaleY);
     }
   
     canvasRef.current?.layer.batchDraw();
@@ -985,29 +990,22 @@ const applyFill = (node: any, config: any) => {
         const nodeType = selectedNode.name();
         const shapeType = selectedNode.getAttr('data-type');
         const isLineOrArrow = shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve';
-
+        
         selectedNode.setAttrs({
             'data-is-gradient': config.isGradient,
-            'data-color1': config.isGradient ? config.color1 : config.color,
-            'data-color2': config.isGradient ? config.color2 : null,
-            'data-gradient-direction': config.isGradient ? config.gradientDirection : null,
+            'data-solid-color': config.solidColor,
+            'data-color-stops': config.colorStops,
+            'data-gradient-direction': config.gradientDirection,
         });
 
         if (nodeType === 'shape' && isLineOrArrow) {
             // Lines and arrows only use stroke
-            selectedNode.stroke(config.color);
+            selectedNode.stroke(config.solidColor);
             if (shapeType === 'arrow') {
-                selectedNode.fill(config.color); // Arrowhead fill
+                selectedNode.fill(config.solidColor); // Arrowhead fill
             }
-        } else if (nodeType.includes('text') || nodeType.includes('Text')) {
-            // This handles textGroup and circularText
-             const textNodes = selectedNode.find('Text');
-             textNodes.forEach((textNode: any) => {
-                applyFill(textNode, config);
-             });
-
         } else {
-            // All other shapes
+            // All other shapes and text
             applyFill(selectedNode, config);
         }
         
@@ -1138,6 +1136,7 @@ const applyFill = (node: any, config: any) => {
 
 
     
+
 
 
 
