@@ -563,7 +563,9 @@ const applyFill = (node: any, config: any) => {
 
     const commonAttrs = {
         x: size / 2, 
-        y: size / 2, 
+        y: size / 2,
+        offsetX: size / 2,
+        offsetY: size / 2,
         fill: '#f0f0f0', 
         stroke: config.borderColor,
         strokeWidth: config.borderThickness,
