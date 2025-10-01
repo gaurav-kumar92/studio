@@ -89,22 +89,6 @@ export default function KonvaEditor() {
         nodes: [selectedNode],
         rotateEnabled: true,
         boundBoxFunc: (oldBox: any, newBox: any) => {
-            // For circles, we need special handling to adjust the radius
-            if (selectedNode.getClassName() === 'Circle') {
-                const newRadius = Math.max(Math.abs(newBox.width), Math.abs(newBox.height)) / 2;
-                if (newRadius < 5) { // Prevent from becoming too small
-                    return oldBox;
-                }
-                // Instead of scaling, we update the radius directly
-                selectedNode.radius(newRadius / Math.max(selectedNode.scaleX(), selectedNode.scaleY()));
-                // We reset scale because radius is the source of truth for size
-                selectedNode.scaleX(1);
-                selectedNode.scaleY(1);
-                // Return the new client rect of the circle
-                return selectedNode.getClientRect();
-            }
-
-            // For other shapes, just prevent from becoming too small
             if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
                 return oldBox;
             }
@@ -161,42 +145,40 @@ export default function KonvaEditor() {
                           name: 'mask-image',
                           x: maskWidth / 2,
                           y: maskHeight / 2,
-                          offsetX: imgWidth / 2,
-                          offsetY: imgHeight / 2,
+                          offsetX: img.width() / 2,
+                          offsetY: img.height() / 2,
                           scaleX: scale,
                           scaleY: scale,
                           draggable: true,
                           dragBoundFunc: function(pos: { x: number, y: number }) {
-                            // Get the size of the mask shape
-                            const maskShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
-                            if (!maskShape) return pos;
+                            const imgRect = this.getClientRect({skipTransform: false});
+                            const maskRect = {x: 0, y: 0, width: maskWidth, height: maskHeight};
+
+                            const newAbsX = pos.x + maskGroup.x();
+                            const newAbsY = pos.y + maskGroup.y();
+
+                            let minX = maskGroup.x() + maskRect.width - imgRect.width;
+                            let maxX = maskGroup.x();
+                            let minY = maskGroup.y() + maskRect.height - imgRect.height;
+                            let maxY = maskGroup.y();
                             
-                            const maskRect = maskShape.getClientRect({ relativeTo: maskGroup });
-                            const imgRect = img.getClientRect({ relativeTo: maskGroup });
+                            const boundedX = Math.max(minX, Math.min(newAbsX, maxX));
+                            const boundedY = Math.max(minY, Math.min(newAbsY, maxY));
 
-                            // Calculate the boundaries for the image center
-                            let minX = maskRect.x + maskRect.width - imgRect.width;
-                            let maxX = maskRect.x;
-                            let minY = maskRect.y + maskRect.height - imgRect.height;
-                            let maxY = maskRect.y;
-
-                            // The `pos` is the top-left of the image
-                            const newX = Math.max(minX, Math.min(pos.x, maxX));
-                            const newY = Math.max(minY, Math.min(pos.y, maxY));
-
-                            return { x: newX, y: newY };
+                            return {
+                                x: boundedX - maskGroup.x(),
+                                y: boundedY - maskGroup.y(),
+                            };
                           }
                       });
                       
                       const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                       if (borderShape) {
                            borderShape.fill('transparent');
-                           borderShape.moveToBottom();
                       }
                       
                       maskGroup.add(img);
-                      img.moveToTop();
-                      borderShape.moveToTop();
+                      img.moveToBottom();
 
 
                       layer.draw();
