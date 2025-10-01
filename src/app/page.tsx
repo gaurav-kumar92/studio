@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +34,7 @@ export default function KonvaEditor() {
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Dialog states
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
@@ -137,6 +139,7 @@ export default function KonvaEditor() {
             if (imageFileInput.files && imageFileInput.files.length > 0) {
                 const file = imageFileInput.files[0];
                 const reader = new FileReader();
+                reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
@@ -163,14 +166,18 @@ export default function KonvaEditor() {
                         
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
-                             borderShape.fill(null); // Make the fill transparent
-                             // Do not change opacity or stroke
+                             borderShape.fill(null);
                         }
 
 
                         layer.draw();
                         updateLayers();
+                        setIsLoading(false);
                     });
+                };
+                reader.onerror = () => {
+                  setIsLoading(false);
+                  console.error("Failed to read file");
                 };
                 reader.readAsDataURL(file);
             }
@@ -194,6 +201,7 @@ export default function KonvaEditor() {
                 if (imageFileInput.files && imageFileInput.files.length > 0) {
                     const file = imageFileInput.files[0];
                     const reader = new FileReader();
+                    reader.onloadstart = () => setIsLoading(true);
                     reader.onload = (e) => {
                         window.Konva.Image.fromURL(e.target!.result, (img: any) => {
                             const MAX_WIDTH = stage.width() * 0.8;
@@ -215,8 +223,10 @@ export default function KonvaEditor() {
                             selectNode(img); // Reselect the new image
                             updateLayers();
                             layer.draw();
+                            setIsLoading(false);
                         });
                     };
+                    reader.onerror = () => setIsLoading(false);
                     reader.readAsDataURL(file);
                 }
                 imageFileInput.value = ''; // Reset input
@@ -868,6 +878,7 @@ const applyFill = (node: any, config: any) => {
         if (imageFileInput.files && imageFileInput.files.length > 0) {
             const file = imageFileInput.files[0];
             const reader = new FileReader();
+            reader.onloadstart = () => setIsLoading(true);
             reader.onload = (e) => {
                 window.Konva.Image.fromURL(e.target!.result, (img: any) => {
                     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
@@ -888,8 +899,10 @@ const applyFill = (node: any, config: any) => {
                     updateLayers();
                     setSelectedNode(img);
                     layer.draw();
+                    setIsLoading(false);
                 });
             };
+            reader.onerror = () => setIsLoading(false);
             reader.readAsDataURL(file);
         }
         imageFileInput.value = ''; // Reset for next time
@@ -1020,6 +1033,12 @@ const applyFill = (node: any, config: any) => {
             }
         }}
       />
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      )}
       <main>
         <div id="editor-ui">
             <div className="editor-main-column">
@@ -1169,3 +1188,4 @@ const applyFill = (node: any, config: any) => {
 
 
     
+
