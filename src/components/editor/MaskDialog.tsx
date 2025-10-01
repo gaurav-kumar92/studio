@@ -25,7 +25,7 @@ const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onU
                 setBorderThickness(border.strokeWidth() || 0);
             }
             const maskType = editingNode.getAttr('data-type');
-            if (maskType === 'polygon' || maskType === 'diamond') {
+            if (maskType === 'polygon') {
                 const polygon = editingNode.findOne('RegularPolygon');
                 if (polygon) {
                     setSides(polygon.sides() || 6);
@@ -84,7 +84,7 @@ const MaskDialog: React.FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onU
         return null;
     }
     
-    const showSidesControl = activeMaskForAddition === 'polygon' || (editingNode && (editingNode.getAttr('data-type') === 'polygon' || editingNode.getAttr('data-type') === 'diamond')) || activeMaskForAddition === 'diamond';
+    const showSidesControl = activeMaskForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon');
     const showMainButtons = !activeMaskForAddition && !editingNode;
     const showAddButton = !!activeMaskForAddition;
     const dialogTitle = editingNode ? 'Edit Mask' : 'Add a Mask';

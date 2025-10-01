@@ -74,7 +74,7 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
         return null;
     }
 
-    const showSidesControl = activeFrameForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon') || activeFrameForAddition === 'diamond';
+    const showSidesControl = activeFrameForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon');
     const showMainButtons = !activeFrameForAddition && !editingNode;
     const showAddButton = !!activeFrameForAddition;
     const dialogTitle = editingNode ? 'Edit Frame' : 'Add a Frame';
