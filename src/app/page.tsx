@@ -238,13 +238,7 @@ export default function KonvaEditor() {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-            const hasImage = nodeToSelect.findOne('.mask-image');
-            if (hasImage) {
-                setEditingMaskNode(nodeToSelect);
-                setMaskDialogOpen(true);
-            } else {
-                addImageToMask(nodeToSelect);
-            }
+            addImageToMask(nodeToSelect);
         }
     });
 };
@@ -1194,3 +1188,6 @@ const applyFill = (node: any, config: any) => {
 
 
 
+
+
+    
