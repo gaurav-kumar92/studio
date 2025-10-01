@@ -88,12 +88,7 @@ export default function KonvaEditor() {
       const tr = new window.Konva.Transformer({
         nodes: [selectedNode],
         rotateEnabled: true,
-        boundBoxFunc: (oldBox: any, newBox: any) => {
-            if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
-                return oldBox;
-            }
-            return newBox;
-        },
+        // No custom boundBoxFunc needed if group dimensions are correct
       });
       layer.add(tr);
       transformerRef.current = tr;
@@ -1176,3 +1171,5 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
