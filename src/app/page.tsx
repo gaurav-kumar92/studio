@@ -564,8 +564,6 @@ const applyFill = (node: any, config: any) => {
     const commonAttrs = {
         x: size / 2, 
         y: size / 2,
-        offsetX: size / 2,
-        offsetY: size / 2,
         fill: '#f0f0f0', 
         stroke: config.borderColor,
         strokeWidth: config.borderThickness,
@@ -601,8 +599,6 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.Text({
                 x: group.width() / 2,
                 y: group.height() / 2,
-                offsetX: group.width() / 2,
-                offsetY: group.height() / 2,
                 text: config.letter || 'A',
                 fontSize: size,
                 fontFamily: 'Arial, Helvetica, sans-serif',
@@ -614,10 +610,8 @@ const applyFill = (node: any, config: any) => {
             break;
         default: // rect
              borderShape = new window.Konva.Rect({ 
-                x: size / 2, 
-                y: size / 2,
-                offsetX: size / 2,
-                offsetY: size / 2,
+                x: 0, 
+                y: 0,
                 width: size, 
                 height: size, 
                 fill: '#f0f0f0', 
@@ -629,10 +623,6 @@ const applyFill = (node: any, config: any) => {
 
     if (borderShape) {
         group.add(borderShape);
-        // Override getClientRect for the group as per user's recommendation
-        group.getClientRect = function() {
-            return borderShape.getClientRect();
-        };
     }
 
     const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2 2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
@@ -650,7 +640,43 @@ const applyFill = (node: any, config: any) => {
 
     group.clipFunc(function (ctx: any) {
         if (borderShape) {
-             borderShape._sceneFunc(ctx);
+             const localPos = {x: 0, y: 0};
+             if(config.type !== 'rect') {
+                localPos.x = size/2;
+                localPos.y = size/2;
+             }
+             ctx.beginPath();
+             if (borderShape.getClassName() === 'Rect') {
+                ctx.rect(0,0, size, size);
+             } else if (borderShape.getClassName() === 'Circle') {
+                ctx.arc(localPos.x, localPos.y, borderShape.radius(), 0, Math.PI * 2, false);
+             } else if (borderShape.getClassName() === 'Star') {
+                let rotation = borderShape.rotation() || 0;
+                let points = borderShape.numPoints();
+                let innerRadius = borderShape.innerRadius();
+                let outerRadius = borderShape.outerRadius();
+                ctx.moveTo(localPos.x, localPos.y - outerRadius);
+
+                for (let n = 1; n < points * 2; n++) {
+                    let radius = n % 2 === 0 ? outerRadius : innerRadius;
+                    let angle = (n * Math.PI) / points + rotation;
+                    ctx.lineTo(localPos.x + radius * Math.sin(angle), localPos.y - radius * Math.cos(angle));
+                }
+             } else if (borderShape.getClassName() === 'RegularPolygon') {
+                let sides = borderShape.sides();
+                let radius = borderShape.radius();
+                ctx.moveTo(localPos.x + radius, localPos.y);
+                 for (let i = 1; i <= sides; i++) {
+                    ctx.lineTo(localPos.x + radius * Math.cos(i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(i * 2 * Math.PI / sides));
+                }
+             } else if (borderShape.getClassName() === 'Text') {
+                 //This is simplified. Real text clipping is much more complex
+                 ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
+                 ctx.textAlign = 'center';
+                 ctx.textBaseline = 'middle';
+                 ctx.fillText(borderShape.text(), localPos.x, localPos.y);
+             }
+             ctx.closePath();
         }
     });
 
@@ -1189,3 +1215,5 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
