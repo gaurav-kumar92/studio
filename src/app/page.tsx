@@ -89,8 +89,20 @@ export default function KonvaEditor() {
         nodes: [selectedNode],
         rotateEnabled: true,
         boundBoxFunc: (oldBox: any, newBox: any) => {
-            // limit resize
-            if (newBox.width < 5 || newBox.height < 5) {
+            const box = selectedNode.getClientRect();
+            const isCircle = selectedNode.getClassName() === 'Circle';
+
+            if (isCircle) {
+                const radius = selectedNode.radius() * selectedNode.scaleX();
+                const newRadius = Math.max(Math.abs(newBox.width), Math.abs(newBox.height)) / 2;
+                if (newRadius < 2.5) {
+                    return oldBox;
+                }
+                selectedNode.radius(newRadius / selectedNode.scaleX());
+                return selectedNode.getClientRect();
+            }
+
+            if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
                 return oldBox;
             }
             return newBox;
@@ -1180,6 +1192,8 @@ const applyFill = (node: any, config: any) => {
     </>
   );
 }
+
+    
 
     
 
