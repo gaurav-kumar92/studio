@@ -160,17 +160,15 @@ export default function KonvaEditor() {
                             width: scaledWidth,
                             height: scaledHeight,
                         });
-
-                        maskGroup.add(img);
                         
                         const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text,Path');
                         if (borderShape) {
                              borderShape.fill('transparent');
                              borderShape.moveToBottom();
-                             img.moveUp();
                         }
-
-                        img.moveToBottom();
+                        
+                        maskGroup.add(img);
+                        img.moveToTop();
 
                         layer.draw();
                         updateLayers();
@@ -238,7 +236,12 @@ export default function KonvaEditor() {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-            addImageToMask(nodeToSelect);
+            // If the mask already has an image, open the editor. Otherwise, add an image.
+            if (nodeToSelect.findOne('.mask-image')) {
+                addImageToMask(nodeToSelect); // Always allow replacing the image
+            } else {
+                addImageToMask(nodeToSelect);
+            }
         }
     });
 };
