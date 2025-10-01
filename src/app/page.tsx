@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -576,16 +577,16 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
             break;
         case 'star':
-            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
             break;
         case 'triangle':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
             break;
         case 'polygon':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
             break;
         case 'diamond':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         case 'alphabet':
             const textForClip = new window.Konva.Text({
@@ -643,43 +644,49 @@ const applyFill = (node: any, config: any) => {
     group.add(placeholderIcon);
 
     group.clipFunc(function (ctx: any) {
-        if (borderShape) {
-             const localPos = {x: size/2, y: size/2};
-             
-             ctx.beginPath();
-             if (borderShape.getClassName() === 'Rect') {
-                ctx.rect(0,0, size, size);
-             } else if (borderShape.getClassName() === 'Circle') {
-                ctx.arc(localPos.x, localPos.y, borderShape.radius(), 0, Math.PI * 2, false);
-             } else if (borderShape.getClassName() === 'Star') {
-                let rotation = borderShape.rotation() || 0;
-                let points = borderShape.numPoints();
-                let innerRadius = borderShape.innerRadius();
-                let outerRadius = borderShape.outerRadius();
-                ctx.moveTo(localPos.x, localPos.y - outerRadius);
-
-                for (let n = 1; n < points * 2; n++) {
-                    let radius = n % 2 === 0 ? outerRadius : innerRadius;
-                    let angle = (n * Math.PI) / points + rotation;
-                    ctx.lineTo(localPos.x + radius * Math.sin(angle), localPos.y - radius * Math.cos(angle));
-                }
-             } else if (borderShape.getClassName() === 'RegularPolygon') {
-                let sides = borderShape.sides();
-                let radius = borderShape.radius();
-                ctx.moveTo(localPos.x + radius, localPos.y);
-                 for (let i = 1; i <= sides; i++) {
-                    ctx.lineTo(localPos.x + radius * Math.cos(i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(i * 2 * Math.PI / sides));
-                }
-             } else if (borderShape.getClassName() === 'Text') {
-                 //This is simplified. Real text clipping is much more complex
-                 ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
-                 ctx.textAlign = 'center';
-                 ctx.textBaseline = 'middle';
-                 ctx.fillText(borderShape.text(), localPos.x, localPos.y);
-             }
-             ctx.closePath();
+        ctx.beginPath();
+        if (config.type === 'rect') {
+            ctx.rect(0, 0, size, size);
+        } else if (config.type === 'circle') {
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
+        } else if (config.type === 'star') {
+            const points = 5;
+            const outerRadius = size / 2;
+            const innerRadius = outerRadius / 2;
+            ctx.moveTo(size / 2, 0);
+            for (let i = 0; i < 2 * points + 1; i++) {
+                const r = (i % 2 === 0) ? outerRadius : innerRadius;
+                const a = i * Math.PI / points;
+                ctx.lineTo(size / 2 + r * Math.sin(a), size / 2 - r * Math.cos(a));
+            }
+        } else if (config.type === 'triangle') {
+            ctx.moveTo(size / 2, 0);
+            ctx.lineTo(size, size);
+            ctx.lineTo(0, size);
+        } else if (config.type === 'polygon') {
+            const sides = config.sides || 6;
+            const radius = size / 2;
+            ctx.moveTo(size / 2 + radius, size / 2);
+            for (let i = 1; i <= sides; i++) {
+                ctx.lineTo(size / 2 + radius * Math.cos(i * 2 * Math.PI / sides), size / 2 + radius * Math.sin(i * 2 * Math.PI / sides));
+            }
+        } else if (config.type === 'diamond') {
+            ctx.moveTo(size / 2, 0);
+            ctx.lineTo(size, size / 2);
+            ctx.lineTo(size / 2, size);
+            ctx.lineTo(0, size / 2);
+        } else if (config.type === 'alphabet') {
+            ctx.font = `bold ${size}px Arial, Helvetica, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(config.letter || 'A', size / 2, size / 2);
         }
+        ctx.closePath();
     });
+
+    group.getClientRect = function() {
+        return borderShape.getClientRect();
+    };
 
     layer.add(group);
     updateLayers();
@@ -712,26 +719,24 @@ const applyFill = (node: any, config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
     
+    let oldAttrs = {};
     if (editingTextNode) {
-        // Preserve color properties during update
-        config['data-is-gradient'] = editingTextNode.getAttr('data-is-gradient');
-        config['data-solid-color'] = editingTextNode.getAttr('data-solid-color');
-        config['data-color-stops'] = editingTextNode.getAttr('data-color-stops');
-        config['data-gradient-direction'] = editingTextNode.getAttr('data-gradient-direction');
-        
+        oldAttrs = {
+            'data-is-gradient': editingTextNode.getAttr('data-is-gradient'),
+            'data-solid-color': editingTextNode.getAttr('data-solid-color'),
+            'data-color-stops': editingTextNode.getAttr('data-color-stops'),
+            'data-gradient-direction': editingTextNode.getAttr('data-gradient-direction'),
+        };
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
     }
 
      const dataAttrs = {
+        ...oldAttrs,
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
-        'data-is-gradient': config['data-is-gradient'] || false,
-        'data-solid-color': config['data-solid-color'] || '#000000',
-        'data-color-stops': config['data-color-stops'] || [],
-        'data-gradient-direction': config['data-gradient-direction'] || 'top-to-bottom',
         'data-letter-spacing': config.letterSpacing,
         'data-line-height': config.lineHeight,
         'data-align': config.align,
@@ -896,10 +901,10 @@ const applyFill = (node: any, config: any) => {
         newNode.setAttr('id', uniqueId);
         
         const colorConfig = {
-            isGradient: newNode.getAttr('data-is-gradient'),
-            solidColor: newNode.getAttr('data-solid-color'),
-            colorStops: newNode.getAttr('data-color-stops'),
-            gradientDirection: newNode.getAttr('data-gradient-direction'),
+            isGradient: newNode.getAttr('data-is-gradient') || false,
+            solidColor: newNode.getAttr('data-solid-color') || '#000000',
+            colorStops: newNode.getAttr('data-color-stops') || [],
+            gradientDirection: newNode.getAttr('data-gradient-direction') || 'top-to-bottom',
         };
         applyFill(newNode, colorConfig);
         
