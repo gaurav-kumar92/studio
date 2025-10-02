@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -573,7 +574,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         }
 
         let targetNode = e.target;
-        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('textGroup') || e.target.parent?.hasName('mask')) {
+        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('mask') || e.target.parent?.hasName('textGroup')) {
             targetNode = e.target.parent;
         }
 
