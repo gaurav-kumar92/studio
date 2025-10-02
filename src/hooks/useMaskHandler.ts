@@ -121,23 +121,25 @@ export const useMaskHandler = ({
             fill: '#f0f0f0', 
             stroke: config.borderColor,
             strokeWidth: config.borderThickness,
+            x: size / 2,
+            y: size / 2,
         };
     
         switch (config.type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ ...commonAttrs, x: size / 2, y: size / 2, radius: size / 2 });
+                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                 break;
             case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: 3, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
                 break;
             case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: config.sides || 6, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
                 break;
             case 'diamond':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: 4, radius: size / (Math.sqrt(2)) });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
                 break;
             case 'alphabet':
                 const textForClip = new window.Konva.Text({
@@ -167,7 +169,7 @@ export const useMaskHandler = ({
             default: // rect
                  borderShape = new window.Konva.Rect({ 
                     ...commonAttrs,
-                    x: 0, 
+                    x: 0,
                     y: 0,
                     width: size, 
                     height: size, 
@@ -217,7 +219,7 @@ export const useMaskHandler = ({
           if (attrs.borderColor) {
             border.stroke(attrs.borderColor);
           }
-          if (attrs.borderThickness) {
+          if (attrs.borderThickness !== undefined) {
             border.strokeWidth(attrs.borderThickness);
           }
            if (attrs.sides && border.getClassName() === 'RegularPolygon') {

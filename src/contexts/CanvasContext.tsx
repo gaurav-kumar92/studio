@@ -258,7 +258,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             addImageToMask(nodeToSelect);
         }
     });
-}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading]);
+}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading, setEditingMaskNode, setMaskDialogOpen]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -583,8 +583,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingShapeNode,
     editingFrameNode,
     setEditingFrameNode,
-    editingMaskNode,
-    setEditingMaskNode,
+editingMaskNode,
+setEditingMaskNode,
     editingTextNode,
     setEditingTextNode,
     updateLayers,
@@ -621,3 +621,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
