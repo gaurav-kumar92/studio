@@ -205,8 +205,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!canvasRef.current?.layer) return;
   
     let nodeToSelect = node;
-    if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-        nodeToSelect = node.parent;
+    if (
+      node.parent?.hasName('circularText') ||
+      node.parent?.hasName('mask') ||
+      node.parent?.hasName('textGroup')
+    ) {
+      nodeToSelect = node.parent;
     }
   
     setSelectedNode(nodeToSelect);
