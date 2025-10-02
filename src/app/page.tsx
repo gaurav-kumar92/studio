@@ -139,20 +139,18 @@ export default function KonvaEditor() {
                       
                       img.setAttrs({
                           name: 'mask-image',
-                          x: maskWidth / 2,
-                          y: maskHeight / 2,
-                          offsetX: (imgWidth) / 2,
-                          offsetY: (imgHeight) / 2,
+                          x: 0,
+                          y: 0,
                           scaleX: scale,
                           scaleY: scale,
                           draggable: true,
-                          dragBoundFunc: function(pos: { x: number, y: number }) {
+                           dragBoundFunc: function(pos: { x: number, y: number }) {
                             const imageRect = this.getClientRect({skipTransform: false});
                             
-                            let minX = maskWidth - imageRect.width;
-                            let maxX = 0;
-                            let minY = maskHeight - imageRect.height;
-                            let maxY = 0;
+                            const minX = maskWidth - imageRect.width;
+                            const maxX = 0;
+                            const minY = maskHeight - imageRect.height;
+                            const maxY = 0;
                             
                             const boundedX = Math.max(minX, Math.min(pos.x, maxX));
                             const boundedY = Math.max(minY, Math.min(pos.y, maxY));
@@ -170,7 +168,7 @@ export default function KonvaEditor() {
                       }
                       
                       maskGroup.add(img);
-img.moveToBottom();
+                      img.moveToBottom();
 
 
                       layer.draw();
@@ -683,6 +681,10 @@ const applyFill = (node: any, config: any) => {
         }
         ctx.closePath();
     });
+    
+    group.getClientRect = function() {
+      return borderShape.getClientRect();
+    };
 
     layer.add(group);
     updateLayers();
@@ -727,9 +729,11 @@ const applyFill = (node: any, config: any) => {
         deselectNode();
         setEditingTextNode(null);
     }
-
+    
+    // Create the final data attributes by merging old and new.
+    // New values from the dialog (config) take precedence.
     const dataAttrs = {
-        ...oldAttrs, // Carry over old attributes
+        ...oldAttrs,
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
@@ -896,7 +900,7 @@ const applyFill = (node: any, config: any) => {
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         newNode.setAttr('id', uniqueId);
 
-        // Re-apply color/gradient settings from preserved data attributes
+        // Re-apply color/gradient settings from the final data attributes
         const colorConfig = {
             isGradient: dataAttrs['data-is-gradient'] || false,
             solidColor: dataAttrs['data-solid-color'] || '#000000',
