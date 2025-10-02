@@ -99,8 +99,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const deselectNode = useCallback(() => {
+    if (selectedNode) {
+      selectedNode.off('dblclick.select dbltap.select');
+    }
     setSelectedNode(null);
-  }, []);
+  }, [selectedNode]);
 
   const applyFill = useCallback((node: any, config: any) => {
     const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
@@ -203,13 +206,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
+    if (selectedNode) {
+      selectedNode.off('dblclick.select dbltap.select');
+    }
+
     setSelectedNode(nodeToSelect);
 
-    // Remove previous listeners to avoid duplicates
-    nodeToSelect.off('dblclick dbltap');
-
-    // Attach new double-click listener
-    nodeToSelect.on('dblclick dbltap', () => {
+    // Attach new double-click listener with a namespace
+    nodeToSelect.on('dblclick.select dbltap.select', () => {
         if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
             setEditingTextNode(nodeToSelect);
             setTextDialogOpen(true);
@@ -261,7 +265,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             addImageToMask(nodeToSelect);
         }
     });
-  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading, setEditingMaskNode, setMaskDialogOpen]);
+  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -410,15 +414,27 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     
     const rect = node.getClientRect({ skipTransform: true });
     const absPos = node.getAbsolutePosition();
-  
-    const oldOffset = node.offset();
-    const newOffset = {
-        x: absPos.x - rect.x - oldOffset.x,
-        y: absPos.y - rect.y - oldOffset.y
+
+    // The center of the untransformed shape
+    const center = {
+        x: rect.x + rect.width / 2,
+        y: rect.y + rect.height / 2,
     };
-  
+
+    // Current position of the node
+    const nodePos = node.position();
+
+    // Calculate the new offset
+    const newOffset = {
+        x: (absPos.x - rect.x) + (center.x - nodePos.x),
+        y: (absPos.y - rect.y) + (center.y - nodePos.y),
+    };
     node.offset(newOffset);
-  
+    
+    // Set the position to the absolute center, which is now the new origin
+    node.position(center);
+
+    // Apply the flip
     if (direction === 'horizontal') {
       node.scaleX(-node.scaleX());
     } else {

@@ -236,9 +236,11 @@ export const useMaskHandler = ({
                  } else if (borderShape.getClassName() === 'RegularPolygon') {
                     let sides = borderShape.sides();
                     let radius = borderShape.radius();
-                    ctx.moveTo(localPos.x + radius, localPos.y);
+                    // Start from the top point for triangles to match visual
+                    const startAngle = sides === 3 ? -Math.PI / 2 : 0;
+                    ctx.moveTo(localPos.x + radius * Math.cos(startAngle), localPos.y + radius * Math.sin(startAngle));
                      for (let i = 1; i <= sides; i++) {
-                        ctx.lineTo(localPos.x + radius * Math.cos(i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(i * 2 * Math.PI / sides));
+                        ctx.lineTo(localPos.x + radius * Math.cos(startAngle + i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(startAngle + i * 2 * Math.PI / sides));
                     }
                  } else if (borderShape.getClassName() === 'Text') {
                      ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
@@ -288,3 +290,4 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
+
