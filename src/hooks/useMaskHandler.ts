@@ -106,80 +106,87 @@ export const useMaskHandler = ({
         const { stage, layer } = canvasRef.current;
     
         const size = 150;
-        
-        let borderShape: any;
-
         const group = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
+            width: size,
+            height: size,
             draggable: true,
             name: 'mask',
             'data-type': config.type,
             'data-letter': config.letter,
         });
     
+        let borderShape: any;
+    
         const commonAttrs = {
+            x: size / 2, 
+            y: size / 2,
+            fill: '#f0f0f0', 
             stroke: config.borderColor,
             strokeWidth: config.borderThickness,
-            name: 'border-shape', 
-            fill: '#f0f0f0', 
+            name: 'border-shape',
         };
     
         switch (config.type) {
             case 'circle':
-                 borderShape = new window.Konva.Circle({ 
-                    ...commonAttrs, 
-                    radius: size / 2,
-                    // Position at radius,radius so top-left is (0,0) for the bounding box
-                    x: size / 2, 
-                    y: size / 2
-                });
+                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, x: size / 2, y: size / 2 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
                 break;
             case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, x: size / 2, y: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
                 break;
             case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, x: size / 2, y: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
                 break;
             case 'diamond':
-                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.sqrt(2), x: size / 2, y: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
                 break;
             case 'alphabet':
-                borderShape = new window.Konva.Text({
-                    ...commonAttrs,
-                    x: 0,
-                    y: 0,
+                const textForClip = new window.Konva.Text({
                     text: config.letter || 'A',
                     fontSize: size,
                     fontFamily: 'Arial, Helvetica, sans-serif',
                     fontStyle: 'bold',
                 });
+                
+                group.width(textForClip.width());
+                group.height(textForClip.height());
+    
+                borderShape = new window.Konva.Text({
+                    x: group.width() / 2,
+                    y: group.height() / 2,
+                    text: config.letter || 'A',
+                    fontSize: size,
+                    fontFamily: 'Arial, Helvetica, sans-serif',
+                    fontStyle: 'bold',
+                    fill: '#f0f0f0',
+                    stroke: config.borderColor,
+                    strokeWidth: config.borderThickness,
+                    name: 'border-shape',
+                    offsetX: textForClip.width() / 2,
+                    offsetY: textForClip.height() / 2,
+                });
                 break;
             default: // rect
                  borderShape = new window.Konva.Rect({ 
-                    ...commonAttrs,
-                    x: 0,
+                    x: 0, 
                     y: 0,
                     width: size, 
-                    height: size,
-                 });
+                    height: size, 
+                    fill: '#f0f0f0', 
+                    stroke: config.borderColor, 
+                    strokeWidth: config.borderThickness,
+                    name: 'border-shape',
+                });
                 break;
         }
-
-        group.add(borderShape);
-
-        // -- THE CRITICAL FIX: Set group dimensions based on shape's actual bounding box --
-        const bbox = borderShape.getClientRect({ relativeTo: group });
-        group.width(bbox.width);
-        group.height(bbox.height);
-
-        // Create a separate, non-visible shape for clipping.
-        const clipShape = borderShape.clone();
-        clipShape.x(clipShape.x() - bbox.x);
-        clipShape.y(clipShape.y() - bbox.y);
+    
+        if (borderShape) {
+            group.add(borderShape);
+        }
     
         const placeholderSvgPath = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2 2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z';
         const placeholderIcon = new window.Konva.Path({
@@ -187,7 +194,6 @@ export const useMaskHandler = ({
             fill: '#9ca3af',
             scale: { x: 2.5, y: 2.5 },
             name: 'placeholder-icon',
-            // Center the icon in the now correctly-sized group
             x: group.width() / 2,
             y: group.height() / 2,
             offsetX: 12,
@@ -196,11 +202,48 @@ export const useMaskHandler = ({
         group.add(placeholderIcon);
     
         group.clipFunc(function (ctx: any) {
-            // Use the isolated clipShape for the clipping function.
-            clipShape.fill('black'); // Clipping requires a black fill
-            clipShape.stroke(null);
-            clipShape.strokeWidth(0);
-            clipShape._sceneFunc(ctx);
+            if (borderShape) {
+                 const localPos = {x: 0, y: 0};
+                 if(config.type !== 'rect') {
+                    localPos.x = size/2;
+                    localPos.y = size/2;
+                 }
+                 if(config.type === 'alphabet') {
+                    localPos.x = group.width() / 2;
+                    localPos.y = group.height() / 2;
+                 }
+                 ctx.beginPath();
+                 if (borderShape.getClassName() === 'Rect') {
+                    ctx.rect(0,0, size, size);
+                 } else if (borderShape.getClassName() === 'Circle') {
+                    ctx.arc(localPos.x, localPos.y, borderShape.radius(), 0, Math.PI * 2, false);
+                 } else if (borderShape.getClassName() === 'Star') {
+                    let rotation = borderShape.rotation() || 0;
+                    let points = borderShape.numPoints();
+                    let innerRadius = borderShape.innerRadius();
+                    let outerRadius = borderShape.outerRadius();
+                    ctx.moveTo(localPos.x, localPos.y - outerRadius);
+    
+                    for (let n = 1; n < points * 2; n++) {
+                        let radius = n % 2 === 0 ? outerRadius : innerRadius;
+                        let angle = (n * Math.PI) / points + rotation;
+                        ctx.lineTo(localPos.x + radius * Math.sin(angle), localPos.y - radius * Math.cos(angle));
+                    }
+                 } else if (borderShape.getClassName() === 'RegularPolygon') {
+                    let sides = borderShape.sides();
+                    let radius = borderShape.radius();
+                    ctx.moveTo(localPos.x + radius, localPos.y);
+                     for (let i = 1; i <= sides; i++) {
+                        ctx.lineTo(localPos.x + radius * Math.cos(i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(i * 2 * Math.PI / sides));
+                    }
+                 } else if (borderShape.getClassName() === 'Text') {
+                     ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
+                     ctx.textAlign = 'center';
+                     ctx.textBaseline = 'middle';
+                     ctx.fillText(borderShape.text(), localPos.x, localPos.y);
+                 }
+                 ctx.closePath();
+            }
         });
     
         layer.add(group);
@@ -211,9 +254,9 @@ export const useMaskHandler = ({
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         group.setAttr('id', uniqueId);
     
-    }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen]);
+      }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen]);
 
-    const handleUpdateMask = useCallback((attrs: any) => {
+      const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
         const border = editingMaskNode.findOne('.border-shape');
         if (border) {
@@ -227,23 +270,6 @@ export const useMaskHandler = ({
             border.sides(attrs.sides);
           }
         }
-        
-        // After updating the shape, we must re-calculate the bounding box and update the clip function
-        const bbox = border.getClientRect({ relativeTo: editingMaskNode });
-        editingMaskNode.width(bbox.width);
-        editingMaskNode.height(bbox.height);
-
-        const clipShape = border.clone();
-        clipShape.x(clipShape.x() - bbox.x);
-        clipShape.y(clipShape.y() - bbox.y);
-
-        editingMaskNode.clipFunc(function (ctx: any) {
-            clipShape.fill('black');
-            clipShape.stroke(null);
-            clipShape.strokeWidth(0);
-            clipShape._sceneFunc(ctx);
-        });
-
         canvasRef.current?.layer.draw();
     }, [editingMaskNode, canvasRef]);
 
