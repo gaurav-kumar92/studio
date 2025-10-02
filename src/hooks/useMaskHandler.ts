@@ -79,7 +79,9 @@ export const useMaskHandler = ({
                         
                         const borderShape = maskGroup.findOne('.border-shape');
                         if (borderShape) {
-                             borderShape.fill('transparent'); 
+                             borderShape.fill('transparent');
+                             borderShape.offsetX(0);
+                             borderShape.offsetY(0);
                         }
                         
                         maskGroup.add(img);
