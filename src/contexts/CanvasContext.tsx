@@ -258,7 +258,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             addImageToMask(nodeToSelect);
         }
     });
-}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading, setEditingMaskNode, setMaskDialogOpen]);
+  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading, setEditingMaskNode, setMaskDialogOpen]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -280,7 +280,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
                     img.setAttrs({
                         x: (stage.width() - img.width() * scale) / 2,
-                        y: (stage.height() - img.height() * scale) / 2,
+                        y: (height() - img.height() * scale) / 2,
                         scaleX: scale,
                         scaleY: scale,
                         name: 'image',
@@ -288,7 +288,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                     });
                     layer.add(img);
                     updateLayers();
-                    setSelectedNode(img);
+                    selectNode(img);
                     layer.draw();
                     setIsLoading(false);
                 });
@@ -299,7 +299,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         imageFileInput.value = ''; // Reset for next time
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, setSelectedNode]);
+  }, [updateLayers, setIsLoading, selectNode]);
   
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
@@ -621,5 +621,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    

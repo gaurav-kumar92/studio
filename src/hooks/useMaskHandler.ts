@@ -22,13 +22,18 @@ export const useMaskHandler = ({
     const addImageToMask = useCallback((maskGroup: any) => {
         if (!maskGroup || maskGroup.name() !== 'mask' || !canvasRef.current?.layer) return;
         const layer = canvasRef.current.layer;
+
+        // Prevent adding multiple listeners if one is already active
+        if (document.querySelector('#mask-image-file-input')) {
+            return;
+        }
   
         const imageFileInput = document.createElement('input');
+        imageFileInput.id = 'mask-image-file-input';
         imageFileInput.type = 'file';
         imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
         imageFileInput.style.display = 'none';
         document.body.appendChild(imageFileInput);
-  
   
         imageFileInput.onchange = () => {
             if (imageFileInput.files && imageFileInput.files.length > 0) {
@@ -37,7 +42,7 @@ export const useMaskHandler = ({
                 reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        // Clear existing content
+                        // Clear existing content (image, icon)
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
                         const maskWidth = maskGroup.width();
@@ -73,14 +78,13 @@ export const useMaskHandler = ({
                             }
                         });
                         
-                        const borderShape = maskGroup.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+                        const borderShape = maskGroup.findOne('.border-shape');
                         if (borderShape) {
-                             borderShape.fill('transparent');
+                             borderShape.fill('transparent'); // Make placeholder background transparent
                         }
                         
                         maskGroup.add(img);
                         img.moveToBottom();
-  
   
                         layer.draw();
                         updateLayers();
@@ -93,8 +97,9 @@ export const useMaskHandler = ({
                 };
                 reader.readAsDataURL(file);
             }
-            imageFileInput.value = '';
-            document.body.removeChild(imageFileInput);
+            if (imageFileInput.parentNode) {
+                imageFileInput.parentNode.removeChild(imageFileInput);
+            }
         };
         imageFileInput.click();
     }, [updateLayers, setIsLoading]);
@@ -104,57 +109,66 @@ export const useMaskHandler = ({
         const { stage, layer } = canvasRef.current;
     
         const size = 150;
+        let groupWidth = size;
+        let groupHeight = size;
+
+        let clipShape: any;
+        let borderShape: any;
+
+        // For alphabet, we need to determine the size first
+        if (config.type === 'alphabet') {
+             const tempText = new window.Konva.Text({
+                text: config.letter || 'A',
+                fontSize: size,
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'bold',
+            });
+            groupWidth = tempText.width();
+            groupHeight = tempText.height();
+        }
+
         const group = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
-            width: size,
-            height: size,
+            width: groupWidth,
+            height: groupHeight,
             draggable: true,
             name: 'mask',
             'data-type': config.type,
             'data-letter': config.letter,
         });
     
-        let borderShape: any;
-    
         const commonAttrs = {
-            fill: '#f0f0f0', 
+            x: group.width() / 2,
+            y: group.height() / 2,
             stroke: config.borderColor,
             strokeWidth: config.borderThickness,
-            x: size / 2,
-            y: size / 2,
+            name: 'border-shape', // Add a name to identify the visible shape
+            fill: '#f0f0f0', // Placeholder fill color
         };
     
         switch (config.type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, offsetX: size/2, offsetY: size/2, x: size/2, y: size/2 });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: 0, offsetY: 0 });
                 break;
             case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: 0, offsetY: 0 });
                 break;
             case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: 0, offsetY: 0 });
                 break;
             case 'diamond':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.sqrt(2), offsetX: 0, offsetY: 0 });
                 break;
             case 'alphabet':
-                const textForClip = new window.Konva.Text({
-                    text: config.letter || 'A',
-                    fontSize: size,
-                    fontFamily: 'Arial, Helvetica, sans-serif',
-                    fontStyle: 'bold',
-                });
-                
-                group.width(textForClip.width());
-                group.height(textForClip.height());
-    
                 borderShape = new window.Konva.Text({
-                    x: group.width() / 2,
-                    y: group.height() / 2,
+                    x: 0,
+                    y: 0,
+                    width: groupWidth,
+                    height: groupHeight,
                     text: config.letter || 'A',
                     fontSize: size,
                     fontFamily: 'Arial, Helvetica, sans-serif',
@@ -162,8 +176,9 @@ export const useMaskHandler = ({
                     fill: '#f0f0f0',
                     stroke: config.borderColor,
                     strokeWidth: config.borderThickness,
-                    offsetX: textForClip.width() / 2,
-                    offsetY: textForClip.height() / 2,
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    name: 'border-shape'
                 });
                 break;
             default: // rect
@@ -172,10 +187,14 @@ export const useMaskHandler = ({
                     x: 0,
                     y: 0,
                     width: size, 
-                    height: size, 
-                });
+                    height: size,
+                 });
                 break;
         }
+
+        // The clipShape is a clone used only for the clipping function
+        clipShape = borderShape.clone();
+        // The clip shape itself is not added to the group
     
         if (borderShape) {
             group.add(borderShape);
@@ -195,11 +214,13 @@ export const useMaskHandler = ({
         group.add(placeholderIcon);
     
         group.clipFunc(function (ctx: any) {
-            const clipShapeForCtx = borderShape.clone();
-            clipShapeForCtx.fill('black'); // clip must be black
-            clipShapeForCtx.stroke(null);
-            clipShapeForCtx.strokeWidth(0);
-            clipShapeForCtx._sceneFunc(ctx);
+            // This function is called with a temporary canvas context.
+            // We draw the clipping shape onto this context.
+            // It MUST be black, but because it's a clone, it doesn't affect the visible shape.
+            clipShape.fill('black');
+            clipShape.stroke(null);
+            clipShape.strokeWidth(0);
+            clipShape._sceneFunc(ctx);
         });
     
         layer.add(group);
@@ -214,7 +235,7 @@ export const useMaskHandler = ({
 
     const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
-        const border = editingMaskNode.findOne('Shape,Circle,Rect,Star,RegularPolygon,Text');
+        const border = editingMaskNode.findOne('.border-shape');
         if (border) {
           if (attrs.borderColor) {
             border.stroke(attrs.borderColor);
@@ -226,6 +247,16 @@ export const useMaskHandler = ({
             border.sides(attrs.sides);
           }
         }
+        
+        // We need to re-generate the clip function if the shape changes
+        const clipShape = border.clone();
+        editingMaskNode.clipFunc(function (ctx: any) {
+            clipShape.fill('black');
+            clipShape.stroke(null);
+            clipShape.strokeWidth(0);
+            clipShape._sceneFunc(ctx);
+        });
+
         canvasRef.current?.layer.draw();
     }, [editingMaskNode, canvasRef]);
 
