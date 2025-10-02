@@ -6,6 +6,7 @@ import { useTextHandler } from '@/hooks/useTextHandler';
 import { useShapeHandler } from '@/hooks/useShapeHandler';
 import { useFrameHandler } from '@/hooks/useFrameHandler';
 import { useMaskHandler } from '@/hooks/useMaskHandler';
+import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 
 // This is a global declaration for the Konva object.
 declare global {
@@ -188,54 +189,38 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNode,
     setIsLoading,
   });
+
+  const { handleDoubleClick } = useNodeHandlers({
+    setEditingTextNode,
+    setTextDialogOpen,
+    setEditingShapeNode,
+    setShapeDialogOpen,
+    setEditingFrameNode,
+    setFrameDialogOpen,
+    addImageToMask,
+    setIsLoading
+  });
   
   const selectNode = useCallback((node: any) => {
     if (!canvasRef.current?.layer) return;
-
+  
     // If it's a child of a group, select the group.
     let nodeToSelect = node;
     if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
         nodeToSelect = node.parent;
     }
-
-    if (nodeToSelect === selectedNode) {
-        return; // Already selected, do nothing on single click
-    }
-
+  
     if (selectedNode) {
       selectedNode.off('dblclick.select dbltap.select');
     }
-
+  
     setSelectedNode(nodeToSelect);
-
+  
     // Attach new double-click listener with a namespace
     nodeToSelect.on('dblclick.select dbltap.select', () => {
-        if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
-            setEditingTextNode(nodeToSelect);
-            setTextDialogOpen(true);
-        } else if (nodeToSelect.hasName('shape')) {
-            setEditingShapeNode(nodeToSelect);
-            setShapeDialogOpen(true);
-        } else if (nodeToSelect.hasName('image')) {
-            // This is for standalone images. Mask image replacement is handled below.
-            const imageFileInput = document.createElement('input');
-            imageFileInput.type = 'file';
-            imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
-            imageFileInput.onchange = () => {
-                if (imageFileInput.files && imageFileInput.files.length > 0) {
-                    // ... (image replacement logic is complex, keeping it as is for now)
-                }
-                imageFileInput.value = '';
-            };
-            imageFileInput.click();
-        } else if (nodeToSelect.hasName('frame')) {
-            setEditingFrameNode(nodeToSelect);
-            setFrameDialogOpen(true);
-        } else if (nodeToSelect.hasName('mask')) {
-            addImageToMask(nodeToSelect);
-        }
+        handleDoubleClick(nodeToSelect);
     });
-  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading]);
+  }, [selectedNode, setSelectedNode, handleDoubleClick]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -381,10 +366,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
     if (!selectedNode) return;
     const node = selectedNode;
-    
+    const layer = canvasRef.current?.layer;
+    if (!layer) return;
+
+    // Use getClientRect to get dimensions, which works for all node types
     const rect = node.getClientRect({ skipTransform: true });
-    
-    const absPos = node.getAbsolutePosition();
     
     // The center of the untransformed shape
     const center = {
@@ -392,20 +378,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         y: rect.y + rect.height / 2,
     };
     
-    // Current position of the node
-    const nodePos = node.position();
+    // Set the offset to the node's center
+    node.offset({
+        x: center.x,
+        y: center.y,
+    });
     
-    // Calculate the new offset based on the shape's untransformed center
-    const newOffset = {
-        x: (absPos.x - nodePos.x) + (center.x - rect.x),
-        y: (absPos.y - nodePos.y) + (center.y - rect.y),
-    };
+    // Move the node to its absolute center position
+    node.position({
+        x: center.x,
+        y: center.y,
+    });
 
-    node.offset(newOffset);
-    
-    // Set the position to the absolute center, which is now the new origin
-    node.position(center);
-    
     // Apply the flip
     if (direction === 'horizontal') {
       node.scaleX(-node.scaleX());
@@ -413,7 +397,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       node.scaleY(-node.scaleY());
     }
   
-    canvasRef.current?.layer.batchDraw();
+    layer.batchDraw();
   }, [selectedNode]);
   
     const handleColorUpdate = useCallback((config: any) => {
