@@ -280,7 +280,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
                     img.setAttrs({
                         x: (stage.width() - img.width() * scale) / 2,
-                        y: (height() - img.height() * scale) / 2,
+                        y: (stage.height() - img.height() * scale) / 2,
                         scaleX: scale,
                         scaleY: scale,
                         name: 'image',
