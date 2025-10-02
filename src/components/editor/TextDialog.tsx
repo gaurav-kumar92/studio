@@ -36,7 +36,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
     useEffect(() => {
         if (isOpen && editingNode) {
              const data = editingNode.attrs;
-            setText(data['data-text'] || '');
+            setText(data['data-text'] || 'New Text');
             setFontSize(data['data-font-size'] || 24);
             setFontFamily(data['data-font-family'] || 'Inter');
             setLetterSpacing(data['data-letter-spacing'] || 0);

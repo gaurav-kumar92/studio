@@ -170,7 +170,7 @@ export default function KonvaEditor() {
                       }
                       
                       maskGroup.add(img);
-                      img.moveToBottom();
+img.moveToBottom();
 
 
                       layer.draw();
@@ -577,16 +577,16 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
             break;
         case 'star':
-            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
             break;
         case 'triangle':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
             break;
         case 'polygon':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
             break;
         case 'diamond':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), offsetX: size/2, offsetY: size/2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         case 'alphabet':
             const textForClip = new window.Konva.Text({
@@ -714,7 +714,7 @@ const applyFill = (node: any, config: any) => {
   const handleAddOrUpdateText = (config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
-    
+
     let oldAttrs: { [key: string]: any } = {};
     if (editingTextNode) {
         // Preserve all data attributes from the old node
@@ -728,7 +728,7 @@ const applyFill = (node: any, config: any) => {
         setEditingTextNode(null);
     }
 
-     const dataAttrs = {
+    const dataAttrs = {
         ...oldAttrs, // Carry over old attributes
         'data-text': config.text,
         'data-font-size': config.fontSize,
@@ -755,11 +755,11 @@ const applyFill = (node: any, config: any) => {
     let newNode;
     if (config.curvature > 0) {
         const circularGroup = new window.Konva.Group({
-          x: stage.width() / 2,
-          y: stage.height() / 2,
-          draggable: true,
-          name: 'circularText',
-          ...dataAttrs
+            x: stage.width() / 2,
+            y: stage.height() / 2,
+            draggable: true,
+            name: 'circularText',
+            ...dataAttrs
         });
         newNode = circularGroup;
 
@@ -769,8 +769,8 @@ const applyFill = (node: any, config: any) => {
 
         let totalFlatWidth = 0;
         for (const char of config.text) {
-          tempText.text(char);
-          totalFlatWidth += tempText.width();
+            tempText.text(char);
+            totalFlatWidth += tempText.width();
         }
         const totalFlatAngle = totalFlatWidth / config.radius;
         const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
@@ -783,66 +783,66 @@ const applyFill = (node: any, config: any) => {
 
 
         for (let i = 0; i < config.text.length; i++) {
-          const char = config.text[i];
-          tempText.text(char);
-          let charWidth = tempText.width();
-          const charAngularWidth = charWidth / config.radius;
-          const scaledAngularWidth = charAngularWidth * scaleFactor;
-          const centerAngle = cumulativeAngle + (scaledAngularWidth / 2);
+            const char = config.text[i];
+            tempText.text(char);
+            let charWidth = tempText.width();
+            const charAngularWidth = charWidth / config.radius;
+            const scaledAngularWidth = charAngularWidth * scaleFactor;
+            const centerAngle = cumulativeAngle + (scaledAngularWidth / 2);
 
-          const placementAngle = centerAngle - (Math.PI / 2); 
-          const x = config.radius * Math.cos(placementAngle);
-          const y = config.radius * Math.sin(placementAngle);
-          const rotationDegrees = centerAngle * 180 / Math.PI;
+            const placementAngle = centerAngle - (Math.PI / 2);
+            const x = config.radius * Math.cos(placementAngle);
+            const y = config.radius * Math.sin(placementAngle);
+            const rotationDegrees = centerAngle * 180 / Math.PI;
 
-          const charNode = new window.Konva.Text({
-            text: char,
-            x: x,
-            y: y,
-            fontSize: config.fontSize,
-            fontFamily: config.fontFamily,
-            fontStyle: fontStyle,
-            textDecoration: decorations.join(' '),
-            rotation: rotationDegrees,
-            offsetX: charWidth / 2,
-            offsetY: charHeight / 2,
-            name: 'mainChar',
-            fill: '#000000'
-          });
-          
-           if (config.isGlow) {
-              const glowNode = charNode.clone({
-                fill: config.glowColor,
-                stroke: config.glowColor,
-                strokeWidth: config.glowBlur,
-                name: 'glowEffect'
-              });
-              glowNode.cache();
-              glowNode.filters([window.Konva.Filters.Blur]);
-              glowNode.blurRadius(config.glowBlur);
-              glowNode.opacity(config.glowOpacity);
-              circularGroup.add(glowNode);
-          }
+            const charNode = new window.Konva.Text({
+                text: char,
+                x: x,
+                y: y,
+                fontSize: config.fontSize,
+                fontFamily: config.fontFamily,
+                fontStyle: fontStyle,
+                textDecoration: decorations.join(' '),
+                rotation: rotationDegrees,
+                offsetX: charWidth / 2,
+                offsetY: charHeight / 2,
+                name: 'mainChar',
+                fill: '#000000'
+            });
 
-          if (config.isShadow) {
-              charNode.shadowEnabled(true);
-              charNode.shadowColor('#000000');
-              charNode.shadowBlur(config.shadowBlur);
-              charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
-              charNode.shadowOpacity(config.shadowOpacity);
-          } else {
-              charNode.shadowEnabled(false);
-          }
+            if (config.isGlow) {
+                const glowNode = charNode.clone({
+                    fill: config.glowColor,
+                    stroke: config.glowColor,
+                    strokeWidth: config.glowBlur,
+                    name: 'glowEffect'
+                });
+                glowNode.cache();
+                glowNode.filters([window.Konva.Filters.Blur]);
+                glowNode.blurRadius(config.glowBlur);
+                glowNode.opacity(config.glowOpacity);
+                circularGroup.add(glowNode);
+            }
 
-          circularGroup.add(charNode);
-          cumulativeAngle += scaledAngularWidth;
+            if (config.isShadow) {
+                charNode.shadowEnabled(true);
+                charNode.shadowColor('#000000');
+                charNode.shadowBlur(config.shadowBlur);
+                charNode.shadowOffset({ x: config.shadowDistance, y: config.shadowDistance });
+                charNode.shadowOpacity(config.shadowOpacity);
+            } else {
+                charNode.shadowEnabled(false);
+            }
+
+            circularGroup.add(charNode);
+            cumulativeAngle += scaledAngularWidth;
         }
 
         const totalArcWidth = cumulativeAngle;
         circularGroup.rotation(-totalArcWidth * 180 / (2 * Math.PI));
 
     } else {
-         const textGroup = new window.Konva.Group({
+        const textGroup = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
             draggable: true,
@@ -850,20 +850,20 @@ const applyFill = (node: any, config: any) => {
             ...dataAttrs
         });
         newNode = textGroup;
-        
+
         const mainText = new window.Konva.Text({
             ...config,
             fill: '#000000',
             name: 'text',
         });
-        
+
         let decorations = [];
         if (config.isUnderline) decorations.push('underline');
         if (config.isStrikethrough) decorations.push('line-through');
         mainText.textDecoration(decorations.join(' '));
 
         mainText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
-        
+
         if (config.isGlow) {
             const glowText = mainText.clone({
                 fill: config.glowColor,
@@ -895,7 +895,7 @@ const applyFill = (node: any, config: any) => {
         layer.add(newNode);
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         newNode.setAttr('id', uniqueId);
-        
+
         // Re-apply color/gradient settings from preserved data attributes
         const colorConfig = {
             isGradient: dataAttrs['data-is-gradient'] || false,
@@ -904,14 +904,14 @@ const applyFill = (node: any, config: any) => {
             gradientDirection: dataAttrs['data-gradient-direction'] || 'top-to-bottom',
         };
         applyFill(newNode, colorConfig);
-        
+
         setSelectedNode(newNode);
     }
-    
+
     updateLayers();
     layer.draw();
     setTextDialogOpen(false);
-  };
+};
 
 
   const handleSelectItem = (itemType: string) => {
