@@ -139,8 +139,6 @@ export const useMaskHandler = ({
         });
     
         const commonAttrs = {
-            x: group.width() / 2,
-            y: group.height() / 2,
             stroke: config.borderColor,
             strokeWidth: config.borderThickness,
             name: 'border-shape', // Add a name to identify the visible shape
@@ -149,19 +147,24 @@ export const useMaskHandler = ({
     
         switch (config.type) {
             case 'circle':
-                borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, offsetX: size/2, offsetY: size/2, x: size/2, y: size/2 });
+                 borderShape = new window.Konva.Circle({ 
+                    ...commonAttrs, 
+                    x: size / 2,
+                    y: size / 2,
+                    radius: size / 2,
+                });
                 break;
             case 'star':
-                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: 0, offsetY: 0 });
+                borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, x: size / 2, y: size / 2 });
                 break;
             case 'triangle':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: 0, offsetY: 0 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, x: size / 2, y: size / 2 });
                 break;
             case 'polygon':
-                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: 0, offsetY: 0 });
+                borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, x: size / 2, y: size / 2 });
                 break;
             case 'diamond':
-                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.sqrt(2), offsetX: 0, offsetY: 0 });
+                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.sqrt(2), x: size / 2, y: size / 2 });
                 break;
             case 'alphabet':
                 borderShape = new window.Konva.Text({
