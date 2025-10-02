@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -105,7 +106,9 @@ export const useMaskHandler = ({
         };
 
         window.addEventListener('focus', () => {
-          window.isOpeningFileDialog = false;
+          setTimeout(() => {
+            window.isOpeningFileDialog = false;
+          }, 200);
         }, { once: true });
         
         window.isOpeningFileDialog = true;
@@ -294,3 +297,5 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
+
+    
