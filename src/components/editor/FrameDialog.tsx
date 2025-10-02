@@ -16,25 +16,34 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
     const [color, setColor] = useState('#3b82f6');
     const [thickness, setThickness] = useState(10);
     const [sides, setSides] = useState(6);
+    const isPolygon = editingNode && editingNode.getAttr('data-type') === 'polygon';
 
     useEffect(() => {
-        if (editingNode) {
-            setColor(editingNode.stroke() || '#3b82f6');
-            setThickness(editingNode.strokeWidth() || 10);
-            const frameType = editingNode.getAttr('data-type');
-            if (frameType === 'polygon') {
-                setSides(editingNode.sides() || 6);
+        if (isOpen) {
+            if (editingNode) {
+                setColor(editingNode.stroke() || '#3b82f6');
+                setThickness(editingNode.strokeWidth() || 10);
+                const frameType = editingNode.getAttr('data-type');
+                if (frameType === 'polygon') {
+                    setSides(editingNode.sides() || 6);
+                }
+            } else {
+                resetDialog();
             }
-        } else {
-            resetDialog();
         }
     }, [editingNode, isOpen]);
 
-    useEffect(() => {
+     useEffect(() => {
         if (editingNode) {
-            onUpdateFrame({ color, thickness, sides });
+            onUpdateFrame({ color, thickness });
         }
-    }, [color, thickness, sides, editingNode, onUpdateFrame]);
+    }, [color, thickness, editingNode, onUpdateFrame]);
+
+    useEffect(() => {
+        if (editingNode && isPolygon) {
+            onUpdateFrame({ sides });
+        }
+    }, [sides, editingNode, isPolygon, onUpdateFrame]);
 
 
     const resetDialog = () => {

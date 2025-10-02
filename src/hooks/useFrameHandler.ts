@@ -77,7 +77,7 @@ export const useFrameHandler = ({
         if (attrs.thickness) {
           editingFrameNode.strokeWidth(attrs.thickness);
         }
-        if (attrs.sides) {
+        if (attrs.sides && editingFrameNode.getClassName() === 'RegularPolygon') {
           editingFrameNode.sides(attrs.sides);
         }
         canvasRef.current?.layer.draw();
