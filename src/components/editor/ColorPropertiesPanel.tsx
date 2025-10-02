@@ -56,8 +56,8 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 setGradientDirection(selectedNode.getAttr('data-gradient-direction') || 'top-to-bottom');
             } else {
                 const nodeColor = selectedNode.getAttr('data-solid-color') || 
-                                  (typeof selectedNode.fill === 'function' && selectedNode.fill()) || 
-                                  (typeof selectedNode.stroke === 'function' && selectedNode.stroke()) || 
+                                  (typeof selectedNode.fill === 'function' ? selectedNode.fill() : null) || 
+                                  (typeof selectedNode.stroke === 'function' ? selectedNode.stroke() : null) || 
                                   '#3b82f6';
                 setSolidColor(nodeColor);
             }
