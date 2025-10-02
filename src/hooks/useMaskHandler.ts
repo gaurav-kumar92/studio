@@ -23,7 +23,6 @@ export const useMaskHandler = ({
         if (!maskGroup || maskGroup.name() !== 'mask' || !canvasRef.current?.layer) return;
         const layer = canvasRef.current.layer;
 
-        // Prevent adding multiple listeners if one is already active
         if (document.querySelector('#mask-image-file-input')) {
             return;
         }
@@ -42,7 +41,6 @@ export const useMaskHandler = ({
                 reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        // Clear existing content (image, icon)
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
                         const maskWidth = maskGroup.width();
@@ -50,7 +48,6 @@ export const useMaskHandler = ({
                         const imgWidth = img.width();
                         const imgHeight = img.height();
                         
-                        // Scale image to fill mask
                         const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
                         
                         img.setAttrs({
@@ -80,7 +77,7 @@ export const useMaskHandler = ({
                         
                         const borderShape = maskGroup.findOne('.border-shape');
                         if (borderShape) {
-                             borderShape.fill('transparent'); // Make placeholder background transparent
+                             borderShape.fill('transparent'); 
                         }
                         
                         maskGroup.add(img);
@@ -185,13 +182,11 @@ export const useMaskHandler = ({
 
         group.add(borderShape);
 
-        // Set group dimensions based on the shape's actual bounding box
         const bbox = borderShape.getClientRect({ relativeTo: group });
         group.width(bbox.width);
         group.height(bbox.height);
-        // The clip shape is a clone used only for the clipping function
+
         clipShape = borderShape.clone();
-        // Adjust clip shape position to be relative to the group's origin
         clipShape.x(clipShape.x() - bbox.x);
         clipShape.y(clipShape.y() - bbox.y);
     
@@ -240,7 +235,6 @@ export const useMaskHandler = ({
           }
         }
         
-        // We need to re-generate the clip function if the shape changes
         const clipShape = border.clone();
         const bbox = border.getClientRect({ relativeTo: editingMaskNode });
         clipShape.x(clipShape.x() - bbox.x);
