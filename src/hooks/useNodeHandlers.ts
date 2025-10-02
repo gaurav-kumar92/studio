@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCallback } from 'react';
@@ -102,3 +103,6 @@ export const useNodeHandlers = ({
 
     return { handleDoubleClick, attachDoubleClick };
 };
+
+
+    
