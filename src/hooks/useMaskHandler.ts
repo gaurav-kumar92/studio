@@ -158,14 +158,12 @@ export const useMaskHandler = ({
                     fontStyle: 'bold',
                 });
                 const textWidth = tempText.width();
-                const textHeight = tempText.height();
                 
                 borderShape = new window.Konva.Text({
                     ...commonAttrs,
                     x: 0,
                     y: 0,
                     width: textWidth,
-                    height: textHeight,
                     text: config.letter || 'A',
                     fontSize: size,
                     fontFamily: 'Arial, Helvetica, sans-serif',
@@ -191,7 +189,6 @@ export const useMaskHandler = ({
         const bbox = borderShape.getClientRect({ relativeTo: group });
         group.width(bbox.width);
         group.height(bbox.height);
-
         // The clip shape is a clone used only for the clipping function
         clipShape = borderShape.clone();
         // Adjust clip shape position to be relative to the group's origin
@@ -270,6 +267,3 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
-
-
-    
