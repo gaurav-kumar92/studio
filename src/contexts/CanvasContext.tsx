@@ -186,42 +186,37 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const selectNode = useCallback((node: any) => {
     if (!canvasRef.current?.layer) return;
     const { layer, stage } = canvasRef.current;
-    
+
     // If it's a child of a group, select the group.
     let nodeToSelect = node;
     if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-      nodeToSelect = node.parent;
+        nodeToSelect = node.parent;
     }
 
     if (nodeToSelect === selectedNode) {
-        // If a mask group is already selected, allow re-triggering image add
-        if(nodeToSelect.hasName('mask')) {
-             addImageToMask(nodeToSelect);
+        if (nodeToSelect.hasName('mask')) {
+            addImageToMask(nodeToSelect);
         }
         return;
     }
-    
-    setSelectedNode(nodeToSelect);
-    
-    // Image Specific
-    const imageFileInput = document.createElement('input');
-    imageFileInput.type = 'file';
-    imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
-    imageFileInput.style.display = 'none';
-    document.body.appendChild(imageFileInput);
 
+    setSelectedNode(nodeToSelect);
 
     // Remove previous listeners to avoid duplicates
     nodeToSelect.off('dblclick dbltap');
+
+    // Attach new double-click listener
     nodeToSelect.on('dblclick dbltap', () => {
-         if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
+        if (nodeToSelect.hasName('text') || nodeToSelect.hasName('circularText') || nodeToSelect.hasName('textGroup')) {
             setEditingTextNode(nodeToSelect);
             setTextDialogOpen(true);
         } else if (nodeToSelect.hasName('shape')) {
-          setEditingShapeNode(nodeToSelect);
-          setShapeDialogOpen(true);
+            setEditingShapeNode(nodeToSelect);
+            setShapeDialogOpen(true);
         } else if (nodeToSelect.hasName('image')) {
-            // This logic is for replacing an existing image.
+            const imageFileInput = document.createElement('input');
+            imageFileInput.type = 'file';
+            imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
             imageFileInput.onchange = () => {
                 if (imageFileInput.files && imageFileInput.files.length > 0) {
                     const file = imageFileInput.files[0];
@@ -232,10 +227,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                             const MAX_WIDTH = stage.width() * 0.8;
                             const MAX_HEIGHT = stage.height() * 0.8;
                             const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-                            
-                            // Replace the old image with the new one
+
                             nodeToSelect.destroy();
-                            
+
                             img.setAttrs({
                                 x: (stage.width() - img.width() * scale) / 2,
                                 y: (stage.height() - img.height() * scale) / 2,
@@ -245,7 +239,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                                 draggable: true,
                             });
                             layer.add(img);
-                            selectNode(img); // Reselect the new image
+                            selectNode(img);
                             updateLayers();
                             layer.draw();
                             setIsLoading(false);
@@ -254,18 +248,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                     reader.onerror = () => setIsLoading(false);
                     reader.readAsDataURL(file);
                 }
-                imageFileInput.value = ''; // Reset input
+                imageFileInput.value = '';
             };
             imageFileInput.click();
         } else if (nodeToSelect.hasName('frame')) {
             setEditingFrameNode(nodeToSelect);
             setFrameDialogOpen(true);
         } else if (nodeToSelect.hasName('mask')) {
-             addImageToMask(nodeToSelect);
+            addImageToMask(nodeToSelect);
         }
     });
-    document.body.removeChild(imageFileInput);
-  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen]);
+}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setSelectedNode, setIsLoading]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -306,7 +299,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         imageFileInput.value = ''; // Reset for next time
     };
     imageFileInput.click();
-  }, [updateLayers]);
+  }, [updateLayers, setIsLoading, setSelectedNode]);
   
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
