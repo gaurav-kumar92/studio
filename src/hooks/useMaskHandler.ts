@@ -35,6 +35,7 @@ export const useMaskHandler = ({
         document.body.appendChild(imageFileInput);
   
         imageFileInput.onchange = () => {
+            window.isOpeningFileDialog = false;
             if (imageFileInput.files && imageFileInput.files.length > 0) {
                 const file = imageFileInput.files[0];
                 const reader = new FileReader();
@@ -102,6 +103,12 @@ export const useMaskHandler = ({
                 imageFileInput.parentNode.removeChild(imageFileInput);
             }
         };
+
+        window.addEventListener('focus', () => {
+          window.isOpeningFileDialog = false;
+        }, { once: true });
+        
+        window.isOpeningFileDialog = true;
         imageFileInput.click();
     }, [updateLayers, setIsLoading]);
 

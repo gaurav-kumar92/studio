@@ -8,10 +8,12 @@ import { useFrameHandler } from '@/hooks/useFrameHandler';
 import { useMaskHandler } from '@/hooks/useMaskHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 
+
 // This is a global declaration for the Konva object.
 declare global {
   interface Window {
     Konva: any;
+    isOpeningFileDialog?: boolean;
   }
 }
 
@@ -561,6 +563,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       });
 
       stage.on('click tap', (e: any) => {
+        if (window.isOpeningFileDialog) {
+          return;
+        }
+
         if (e.target === stage || e.target.hasName('background')) {
           deselectNode();
           return;
