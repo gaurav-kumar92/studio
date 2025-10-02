@@ -408,22 +408,21 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
     if (!selectedNode) return;
     const node = selectedNode;
+
     const scaleX = direction === 'horizontal' ? -node.scaleX() : node.scaleX();
     const scaleY = direction === 'vertical' ? -node.scaleY() : node.scaleY();
-    const clientRect = node.getClientRect();
     
-    // Calculate the center of the node
-    const centerX = clientRect.x + clientRect.width / 2;
-    const centerY = clientRect.y + clientRect.height / 2;
+    // Use width()/height() which are relative to the node itself, not getClientRect()
+    const nodeWidth = node.width();
+    const nodeHeight = node.height();
 
-    // To flip around the center, we need to adjust position based on the new scale
-    // This requires setting the offset and then adjusting the position
-    node.offsetX(clientRect.width / 2);
-    node.offsetY(clientRect.height / 2);
+    // Set offset to the center of the node
+    node.offsetX(nodeWidth / 2);
+    node.offsetY(nodeHeight / 2);
 
-    // Position the node at its center
-    node.x(centerX);
-    node.y(centerY);
+    // Adjust position to counteract the offset
+    node.x(node.x() + nodeWidth / 2);
+    node.y(node.y() + nodeHeight / 2);
 
     // Apply the flip
     node.scaleX(scaleX);
