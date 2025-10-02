@@ -186,7 +186,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   } = useMaskHandler({
     canvasRef,
     updateLayers,
-    setSelectedNode,
+setSelectedNode,
     setIsLoading,
   });
 
@@ -555,6 +555,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
       stage.on('click tap', (e: any) => {
         if (window.isOpeningFileDialog) {
+          window.isOpeningFileDialog = false;
           return;
         }
 
@@ -685,3 +686,6 @@ export const useCanvas = (): CanvasContextType => {
     
 
     
+
+
+      
