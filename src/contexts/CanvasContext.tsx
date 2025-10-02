@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
 import { useTextHandler } from '@/hooks/useTextHandler';
 import { useShapeHandler } from '@/hooks/useShapeHandler';
+import { useFrameHandler } from '@/hooks/useFrameHandler';
 
 // This is a global declaration for the Konva object.
 declare global {
@@ -79,10 +80,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Dialog states
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
-  const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   
-  const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
 
   const updateLayers = useCallback(() => {
@@ -153,6 +152,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleAddShape,
     handleUpdateShape,
   } = useShapeHandler({
+    canvasRef,
+    updateLayers,
+    setSelectedNode,
+  });
+
+  const {
+    isFrameDialogOpen,
+    setFrameDialogOpen,
+    editingFrameNode,
+    setEditingFrameNode,
+    handleAddFrame,
+    handleUpdateFrame,
+  } = useFrameHandler({
     canvasRef,
     updateLayers,
     setSelectedNode,
@@ -320,73 +332,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         }
     });
     document.body.removeChild(imageFileInput);
-}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setEditingShapeNode, setShapeDialogOpen]);
-  
-  const handleAddFrame = useCallback((config: any) => {
-    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
-    const { stage, layer } = canvasRef.current;
-    
-    let newFrame;
-    const size = 100;
-    const x = stage.width() / 4;
-    const y = stage.height() / 4;
-    
-
-    const commonAttrs = {
-        x: x, 
-        y: y,
-        stroke: config.color,
-        strokeWidth: config.thickness,
-        draggable: true,
-        name: 'frame',
-        'data-type': config.type
-    };
-
-    switch (config.type) {
-      case 'rect':
-        newFrame = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
-        break;
-      case 'circle':
-        newFrame = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, x: x + size/2, y: y + size/2 });
-        break;
-      case 'triangle':
-        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, x: x + size/2, y: y + size/2 });
-        break;
-      case 'star':
-        newFrame = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40, x: x + size/2, y: y + size/2 });
-        break;
-      case 'polygon':
-        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2, x: x + size/2, y: y + size/2 });
-        break;
-      case 'diamond':
-        newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), x: x + size/2, y: y + size/2 });
-        break;
-    }
-
-    if(newFrame) {
-        layer.add(newFrame);
-        updateLayers();
-        layer.draw();
-        setSelectedNode(newFrame);
-        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        newFrame.setAttr('id', uniqueId);
-    }
-    setFrameDialogOpen(false);
-  }, [updateLayers]);
-
-  const handleUpdateFrame = useCallback((attrs: any) => {
-    if (!editingFrameNode) return;
-    if (attrs.color) {
-      editingFrameNode.stroke(attrs.color);
-    }
-    if (attrs.thickness) {
-      editingFrameNode.strokeWidth(attrs.thickness);
-    }
-    if (attrs.sides) {
-      editingFrameNode.sides(attrs.sides);
-    }
-    canvasRef.current?.layer.draw();
-  }, [editingFrameNode]);
+  }, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen]);
 
   const handleAddMask = useCallback((config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
@@ -586,7 +532,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       default:
         break;
     }
-  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode]);
+  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
@@ -841,7 +787,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingFrameNode,
     editingMaskNode,
     setEditingMaskNode,
-    editingTextNode,
+editingTextNode,
     setEditingTextNode,
     updateLayers,
     selectNode,
@@ -877,3 +823,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
