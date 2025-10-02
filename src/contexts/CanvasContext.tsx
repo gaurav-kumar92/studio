@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -408,12 +407,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
     if (!selectedNode) return;
     const node = selectedNode;
+    
+    const rect = node.getClientRect({ skipTransform: true });
+    const absPos = node.getAbsolutePosition();
   
-    // Set offset to the center of the node
-    node.offsetX(node.width() / 2);
-    node.offsetY(node.height() / 2);
+    const oldOffset = node.offset();
+    const newOffset = {
+        x: absPos.x - rect.x - oldOffset.x,
+        y: absPos.y - rect.y - oldOffset.y
+    };
   
-    // Flip around the center
+    node.offset(newOffset);
+  
     if (direction === 'horizontal') {
       node.scaleX(-node.scaleX());
     } else {
@@ -690,3 +695,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
