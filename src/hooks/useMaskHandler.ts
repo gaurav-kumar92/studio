@@ -57,6 +57,8 @@ export const useMaskHandler = ({
                             scaleX: scale,
                             scaleY: scale,
                             draggable: true,
+                            'data-original-width': imgWidth,
+                            'data-original-height': imgHeight,
                              dragBoundFunc: function(pos: { x: number, y: number }) {
                               const imageRect = this.getClientRect({skipTransform: false});
                               

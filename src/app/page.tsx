@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -70,7 +71,9 @@ function Editor() {
     handleUpdateFrame,
     handleAddMask,
     handleUpdateMask,
-    updateLayers
+    updateLayers,
+    handleMaskImageZoom,
+    handleMaskImageReset,
   } = useCanvas();
 
   const isCircular = canvasSize.endsWith('-circle');
@@ -125,6 +128,8 @@ function Editor() {
                             onOpacityChange={handleOpacityChange}
                             onFlip={handleFlip}
                             onColorChange={handleColorUpdate}
+                            onMaskImageZoom={handleMaskImageZoom}
+                            onMaskImageReset={handleMaskImageReset}
                         />
                     )}
 

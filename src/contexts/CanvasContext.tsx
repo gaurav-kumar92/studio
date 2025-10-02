@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -65,6 +66,8 @@ type CanvasContextType = {
   handleAddMask: (config: any) => void;
   handleUpdateMask: (attrs: any) => void;
   addImageToMask: (maskGroup: any) => void;
+  handleMaskImageZoom: (direction: 'in' | 'out') => void;
+  handleMaskImageReset: () => void;
 };
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -444,6 +447,39 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         canvasRef.current?.layer.draw();
     }, [selectedNode, applyFill]);
 
+    const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
+      if (!selectedNode || !selectedNode.hasName('mask')) return;
+      const image = selectedNode.findOne('.mask-image');
+      if (!image) return;
+  
+      const scaleBy = 1.1;
+      const oldScale = image.scaleX();
+      const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+  
+      image.scale({ x: newScale, y: newScale });
+      canvasRef.current?.layer.batchDraw();
+    }, [selectedNode]);
+  
+    const handleMaskImageReset = useCallback(() => {
+      if (!selectedNode || !selectedNode.hasName('mask')) return;
+      const image = selectedNode.findOne('.mask-image');
+      if (!image) return;
+
+      const maskWidth = selectedNode.width();
+      const maskHeight = selectedNode.height();
+      const imgWidth = image.getAttr('data-original-width');
+      const imgHeight = image.getAttr('data-original-height');
+
+      if (!imgWidth || !imgHeight) return; // Cannot reset if original dimensions are unknown
+
+      const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+      
+      image.position({ x: 0, y: 0 });
+      image.scale({ x: scale, y: scale });
+
+      canvasRef.current?.layer.batchDraw();
+    }, [selectedNode]);
+
     useEffect(() => {
         if (canvasRef.current?.background && isCanvasReady) {
           canvasRef.current.background.fill(backgroundColor);
@@ -605,6 +641,8 @@ setEditingMaskNode,
     handleAddMask,
     handleUpdateMask,
     addImageToMask,
+    handleMaskImageZoom,
+    handleMaskImageReset,
   };
 
   return (

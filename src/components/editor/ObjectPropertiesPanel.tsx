@@ -4,6 +4,7 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
+import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
 type ObjectPropertiesPanelProps = {
   selectedNode: any;
@@ -11,6 +12,8 @@ type ObjectPropertiesPanelProps = {
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
   onColorChange: (config: any) => void;
+  onMaskImageZoom: (direction: 'in' | 'out') => void;
+  onMaskImageReset: () => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -19,6 +22,8 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onOpacityChange,
   onFlip,
   onColorChange,
+  onMaskImageZoom,
+  onMaskImageReset,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -42,6 +47,8 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   
   const canHaveColor = selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText');
   const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow';
+  const isMask = selectedNode.hasName('mask');
+  const maskHasImage = isMask && selectedNode.findOne('.mask-image');
 
   return (
     <div id="object-properties">
@@ -55,6 +62,26 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
             onColorChange={onColorChange}
             isStroke={isLineOrCurve}
         />
+      )}
+      
+      {isMask && maskHasImage && (
+        <div id="mask-properties" className="border-t border-b border-gray-200 py-4 my-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              Mask Properties
+            </h4>
+            <p className="text-xs text-gray-500 mb-2">Adjust the image inside the mask. You can also drag the image to reposition it.</p>
+            <div className="flex gap-2">
+                <button onClick={() => onMaskImageZoom('in')} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
+                    <ZoomIn size={16}/> Zoom In
+                </button>
+                <button onClick={() => onMaskImageZoom('out')} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
+                    <ZoomOut size={16}/> Zoom Out
+                </button>
+                <button onClick={onMaskImageReset} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
+                    <RefreshCw size={16}/> Reset
+                </button>
+            </div>
+        </div>
       )}
 
       <div className="alignment-controls">
