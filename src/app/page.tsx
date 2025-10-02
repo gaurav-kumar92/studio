@@ -74,6 +74,7 @@ function Editor() {
     updateLayers,
     handleMaskImageZoom,
     handleMaskImageReset,
+    handleMaskImagePan,
   } = useCanvas();
 
   const isCircular = canvasSize.endsWith('-circle');
@@ -130,6 +131,7 @@ function Editor() {
                             onColorChange={handleColorUpdate}
                             onMaskImageZoom={handleMaskImageZoom}
                             onMaskImageReset={handleMaskImageReset}
+                            onMaskImagePan={handleMaskImagePan}
                         />
                     )}
 

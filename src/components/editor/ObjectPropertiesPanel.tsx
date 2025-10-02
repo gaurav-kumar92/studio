@@ -4,7 +4,7 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 type ObjectPropertiesPanelProps = {
   selectedNode: any;
@@ -14,6 +14,7 @@ type ObjectPropertiesPanelProps = {
   onColorChange: (config: any) => void;
   onMaskImageZoom: (direction: 'in' | 'out') => void;
   onMaskImageReset: () => void;
+  onMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -24,6 +25,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onColorChange,
   onMaskImageZoom,
   onMaskImageReset,
+  onMaskImagePan,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -70,15 +72,27 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
               Mask Properties
             </h4>
             <p className="text-xs text-gray-500 mb-2">Adjust the image inside the mask. You can also drag the image to reposition it.</p>
-            <div className="flex gap-2">
-                <button onClick={() => onMaskImageZoom('in')} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
-                    <ZoomIn size={16}/> Zoom In
+            <div className="flex items-center justify-center gap-2">
+                <button onClick={() => onMaskImageZoom('in')} className="align-btn" title="Zoom In">
+                    <ZoomIn size={16}/>
                 </button>
-                <button onClick={() => onMaskImageZoom('out')} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
-                    <ZoomOut size={16}/> Zoom Out
+                <button onClick={() => onMaskImageZoom('out')} className="align-btn" title="Zoom Out">
+                    <ZoomOut size={16}/>
                 </button>
-                <button onClick={onMaskImageReset} className="button button-secondary flex-grow text-xs px-2 py-1 flex items-center justify-center gap-1">
-                    <RefreshCw size={16}/> Reset
+                <button onClick={onMaskImageReset} className="align-btn" title="Reset Image">
+                    <RefreshCw size={16}/>
+                </button>
+                <button onClick={() => onMaskImagePan('up')} className="align-btn" title="Move Up">
+                    <ArrowUp size={16}/>
+                </button>
+                <button onClick={() => onMaskImagePan('down')} className="align-btn" title="Move Down">
+                    <ArrowDown size={16}/>
+                </button>
+                <button onClick={() => onMaskImagePan('left')} className="align-btn" title="Move Left">
+                    <ArrowLeft size={16}/>
+                </button>
+                <button onClick={() => onMaskImagePan('right')} className="align-btn" title="Move Right">
+                    <ArrowRight size={16}/>
                 </button>
             </div>
         </div>

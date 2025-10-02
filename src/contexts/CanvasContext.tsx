@@ -68,6 +68,7 @@ type CanvasContextType = {
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
+  handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
 };
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -448,37 +449,63 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }, [selectedNode, applyFill]);
 
     const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
-      if (!selectedNode || !selectedNode.hasName('mask')) return;
-      const image = selectedNode.findOne('.mask-image');
-      if (!image) return;
+        if (!selectedNode || !selectedNode.hasName('mask')) return;
+        const image = selectedNode.findOne('.mask-image');
+        if (!image) return;
+    
+        const scaleBy = 1.1;
+        const oldScale = image.scaleX();
+        const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+    
+        image.scale({ x: newScale, y: newScale });
+        canvasRef.current?.layer.batchDraw();
+      }, [selectedNode]);
+    
+      const handleMaskImageReset = useCallback(() => {
+        if (!selectedNode || !selectedNode.hasName('mask')) return;
+        const image = selectedNode.findOne('.mask-image');
+        if (!image) return;
   
-      const scaleBy = 1.1;
-      const oldScale = image.scaleX();
-      const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+        const maskWidth = selectedNode.width();
+        const maskHeight = selectedNode.height();
+        const imgWidth = image.getAttr('data-original-width');
+        const imgHeight = image.getAttr('data-original-height');
   
-      image.scale({ x: newScale, y: newScale });
-      canvasRef.current?.layer.batchDraw();
-    }, [selectedNode]);
+        if (!imgWidth || !imgHeight) return; // Cannot reset if original dimensions are unknown
   
-    const handleMaskImageReset = useCallback(() => {
-      if (!selectedNode || !selectedNode.hasName('mask')) return;
-      const image = selectedNode.findOne('.mask-image');
-      if (!image) return;
-
-      const maskWidth = selectedNode.width();
-      const maskHeight = selectedNode.height();
-      const imgWidth = image.getAttr('data-original-width');
-      const imgHeight = image.getAttr('data-original-height');
-
-      if (!imgWidth || !imgHeight) return; // Cannot reset if original dimensions are unknown
-
-      const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-      
-      image.position({ x: 0, y: 0 });
-      image.scale({ x: scale, y: scale });
-
-      canvasRef.current?.layer.batchDraw();
-    }, [selectedNode]);
+        const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+        
+        image.position({ x: 0, y: 0 });
+        image.scale({ x: scale, y: scale });
+  
+        canvasRef.current?.layer.batchDraw();
+      }, [selectedNode]);
+  
+      const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+        if (!selectedNode || !selectedNode.hasName('mask')) return;
+        const image = selectedNode.findOne('.mask-image');
+        if (!image) return;
+    
+        const panAmount = 10;
+        const currentPos = image.position();
+        let newPos = { ...currentPos };
+    
+        switch (direction) {
+          case 'up': newPos.y -= panAmount; break;
+          case 'down': newPos.y += panAmount; break;
+          case 'left': newPos.x -= panAmount; break;
+          case 'right': newPos.x += panAmount; break;
+        }
+    
+        // Use the dragBoundFunc to constrain the new position
+        const boundFunc = image.getAttr('dragBoundFunc');
+        if (boundFunc) {
+            newPos = boundFunc.call(image, newPos);
+        }
+    
+        image.position(newPos);
+        canvasRef.current?.layer.batchDraw();
+      }, [selectedNode]);
 
     useEffect(() => {
         if (canvasRef.current?.background && isCanvasReady) {
@@ -643,6 +670,7 @@ setEditingMaskNode,
     addImageToMask,
     handleMaskImageZoom,
     handleMaskImageReset,
+    handleMaskImagePan,
   };
 
   return (
