@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
 import { useTextHandler } from '@/hooks/useTextHandler';
+import { useShapeHandler } from '@/hooks/useShapeHandler';
 
 // This is a global declaration for the Konva object.
 declare global {
@@ -78,11 +79,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Dialog states
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
-  const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
   const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   
-  const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
 
@@ -144,6 +143,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     deselectNode,
     setSelectedNode,
     applyFill,
+  });
+
+  const {
+    isShapeDialogOpen,
+    setShapeDialogOpen,
+    editingShapeNode,
+    setEditingShapeNode,
+    handleAddShape,
+    handleUpdateShape,
+  } = useShapeHandler({
+    canvasRef,
+    updateLayers,
+    setSelectedNode,
   });
   
   const addImageToMask = useCallback((maskGroup: any) => {
@@ -237,6 +249,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (nodeToSelect === selectedNode) {
+        // If a mask group is already selected, allow re-triggering image add
+        if(nodeToSelect.hasName('mask')) {
+             addImageToMask(nodeToSelect);
+        }
         return;
     }
     
@@ -304,97 +320,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         }
     });
     document.body.removeChild(imageFileInput);
-}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode]);
+}, [selectedNode, updateLayers, addImageToMask, setTextDialogOpen, setEditingTextNode, setEditingShapeNode, setShapeDialogOpen]);
   
-    
-    const handleAddShape = useCallback((config: any) => {
-    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
-    const { stage, layer } = canvasRef.current;
-    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    let newShape;
-    const x = stage.width() / 4;
-    const y = stage.height() / 4;
-    const size = 100;
-    
-    const commonAttrs = {
-        x,
-        y,
-        draggable: true,
-        name: 'shape',
-        'data-type': config.type,
-    };
-
-    switch (config.type) {
-      case 'rect':
-        newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
-        break;
-      case 'circle':
-        newShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
-        break;
-      case 'triangle':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
-        break;
-      case 'line':
-        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size, 0], strokeWidth: config.thickness, x: x, y: y });
-        newShape.x(x); 
-        newShape.y(y);
-        break;
-      case 'curve':
-        newShape = new window.Konva.Line({ ...commonAttrs, points: [0, 0, size / 2, size / 2, size, 0], strokeWidth: config.thickness, tension: config.tension, x: x, y: y, 'data-tension': config.tension, });
-        newShape.x(x);
-        newShape.y(y);
-        break;
-      case 'star':
-        newShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40 });
-        break;
-      case 'pentagon':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 5, radius: size / 2 });
-        break;
-      case 'polygon':
-        newShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2 });
-        break;
-      case 'arrow':
-        newShape = new window.Konva.Arrow({ ...commonAttrs, points: [0, 0, size, 0], pointerLength: 10, pointerWidth: 10, strokeWidth: config.thickness, x: x, y: y });
-        newShape.x(x);
-        newShape.y(y);
-        break;
-    }
-    if(newShape) {
-       newShape.setAttrs({
-            'data-is-gradient': false,
-            'data-solid-color': '#3b82f6',
-        });
-        if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
-            newShape.stroke('#3b82f6');
-            if (config.type === 'arrow') newShape.fill('#3b82f6');
-        } else {
-            newShape.fill('#3b82f6');
-        }
-      layer.add(newShape);
-      updateLayers();
-      layer.draw();
-      setSelectedNode(newShape);
-      newShape.setAttr('id', uniqueId);
-    }
-    setShapeDialogOpen(false);
-  }, [updateLayers]);
-
-  const handleUpdateShape = useCallback((attrs: any) => {
-    if (!editingShapeNode) return;
-    if (attrs.thickness) {
-        editingShapeNode.strokeWidth(attrs.thickness);
-    }
-    if (attrs.sides && editingShapeNode.getClassName() === 'RegularPolygon') {
-        editingShapeNode.sides(attrs.sides);
-    }
-    if (attrs.tension !== undefined) {
-        editingShapeNode.tension(attrs.tension);
-        editingShapeNode.setAttr('data-tension', attrs.tension);
-    }
-    canvasRef.current?.layer.draw();
-  }, [editingShapeNode]);
-
   const handleAddFrame = useCallback((config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
@@ -480,8 +407,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     let borderShape: any;
 
     const commonAttrs = {
-        x: size / 2, 
-        y: size / 2,
         fill: '#f0f0f0', 
         stroke: config.borderColor,
         strokeWidth: config.borderThickness,
@@ -489,19 +414,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     switch (config.type) {
         case 'circle':
-            borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+            borderShape = new window.Konva.Circle({ ...commonAttrs, x: size / 2, y: size / 2, radius: size / 2 });
             break;
         case 'star':
-            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+            borderShape = new window.Konva.Star({ ...commonAttrs, x: size / 2, y: size / 2, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
             break;
         case 'triangle':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: 3, radius: size / 2 });
             break;
         case 'polygon':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: config.sides || 6, radius: size / 2 });
             break;
         case 'diamond':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, x: size / 2, y: size / 2, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         case 'alphabet':
             const textForClip = new window.Konva.Text({
@@ -530,13 +455,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             break;
         default: // rect
              borderShape = new window.Konva.Rect({ 
+                ...commonAttrs,
                 x: 0, 
                 y: 0,
                 width: size, 
                 height: size, 
-                fill: '#f0f0f0', 
-                stroke: config.borderColor, 
-                strokeWidth: config.borderThickness 
             });
             break;
     }
@@ -559,49 +482,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     group.add(placeholderIcon);
 
     group.clipFunc(function (ctx: any) {
-        ctx.beginPath();
-        if (config.type === 'rect') {
-            ctx.rect(0, 0, size, size);
-        } else if (config.type === 'circle') {
-            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, false);
-        } else if (config.type === 'star') {
-            const points = 5;
-            const outerRadius = size / 2;
-            const innerRadius = outerRadius / 2;
-            ctx.moveTo(size / 2, 0);
-            for (let i = 0; i < 2 * points + 1; i++) {
-                const r = (i % 2 === 0) ? outerRadius : innerRadius;
-                const a = i * Math.PI / points;
-                ctx.lineTo(size / 2 + r * Math.sin(a), size / 2 - r * Math.cos(a));
-            }
-        } else if (config.type === 'triangle') {
-            ctx.moveTo(size / 2, 0);
-            ctx.lineTo(size, size);
-            ctx.lineTo(0, size);
-        } else if (config.type === 'polygon') {
-            const sides = config.sides || 6;
-            const radius = size / 2;
-            ctx.moveTo(size / 2 + radius, size / 2);
-            for (let i = 1; i <= sides; i++) {
-                ctx.lineTo(size / 2 + radius * Math.cos(i * 2 * Math.PI / sides), size / 2 + radius * Math.sin(i * 2 * Math.PI / sides));
-            }
-        } else if (config.type === 'diamond') {
-            ctx.moveTo(size / 2, 0);
-            ctx.lineTo(size, size / 2);
-            ctx.lineTo(size / 2, size);
-            ctx.lineTo(0, size / 2);
-        } else if (config.type === 'alphabet') {
-            ctx.font = `bold ${size}px Arial, Helvetica, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(config.letter || 'A', size / 2, size / 2);
-        }
-        ctx.closePath();
+        const clipShapeForCtx = borderShape.clone();
+        clipShapeForCtx.fill('black'); // clip must be black
+        clipShapeForCtx.stroke(null);
+        clipShapeForCtx.strokeWidth(0);
+        clipShapeForCtx._sceneFunc(ctx);
     });
-    
-    group.getClientRect = function() {
-      return borderShape.getClientRect();
-    };
 
     layer.add(group);
     updateLayers();
@@ -700,7 +586,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       default:
         break;
     }
-  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode]);
+  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
