@@ -103,11 +103,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const deselectNode = useCallback(() => {
-    if (selectedNode) {
-      selectedNode.off('dblclick.select dbltap.select');
-    }
     setSelectedNode(null);
-  }, [selectedNode]);
+  }, []);
 
   const applyFill = useCallback((node: any, config: any) => {
     const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
@@ -207,23 +204,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const selectNode = useCallback((node: any) => {
     if (!canvasRef.current?.layer) return;
   
-    // If it's a child of a group, select the group.
     let nodeToSelect = node;
     if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
         nodeToSelect = node.parent;
     }
   
-    if (selectedNode) {
-      selectedNode.off('dblclick.select dbltap.select');
-    }
-  
     setSelectedNode(nodeToSelect);
-  
-    // Attach new double-click listener with a namespace
-    nodeToSelect.on('dblclick.select dbltap.select', () => {
-        handleDoubleClick(nodeToSelect);
-    });
-  }, [selectedNode, setSelectedNode, handleDoubleClick]);
+  }, []);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -534,8 +521,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const { stage, layer } = canvasRef.current;
-
+    const { stage } = canvasRef.current;
 
     const saveBtn = document.getElementById('save-btn');
     
@@ -580,6 +566,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
         selectNode(targetNode);
       });
+
+      stage.on('dblclick dbltap', (e: any) => {
+        if (e.target === stage || e.target.hasName('background')) return;
+      
+        let targetNode = e.target;
+        if (e.target.parent?.hasName('circularText') 
+         || e.target.parent?.hasName('mask') 
+         || e.target.parent?.hasName('textGroup')) {
+            targetNode = e.target.parent;
+        }
+      
+        handleDoubleClick(targetNode);
+      });
       
       stage.on('dragend', () => {
         updateLayers();
@@ -588,7 +587,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
-  }, [updateLayers, deselectNode, selectNode]);
+  }, [updateLayers, deselectNode, selectNode, handleDoubleClick]);
   
   useEffect(() => {
     if ((window as any).Konva && isCanvasReady) {
