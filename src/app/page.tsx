@@ -721,12 +721,15 @@ const applyFill = (node: any, config: any) => {
     
     let oldAttrs = {};
     if (editingTextNode) {
-        oldAttrs = {
-            'data-is-gradient': editingTextNode.getAttr('data-is-gradient'),
-            'data-solid-color': editingTextNode.getAttr('data-solid-color'),
-            'data-color-stops': editingTextNode.getAttr('data-color-stops'),
-            'data-gradient-direction': editingTextNode.getAttr('data-gradient-direction'),
-        };
+        const preservedAttrs: { [key: string]: any } = {};
+        // Iterate over all attributes of the editingNode
+        for (const key in editingTextNode.attrs) {
+            // We only care about our custom data attributes
+            if (key.startsWith('data-')) {
+                preservedAttrs[key] = editingTextNode.attrs[key];
+            }
+        }
+        oldAttrs = preservedAttrs;
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
