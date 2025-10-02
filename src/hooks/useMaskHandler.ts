@@ -160,8 +160,10 @@ export const useMaskHandler = ({
                 group.height(textForClip.height());
     
                 borderShape = new window.Konva.Text({
-                    x: group.width() / 2,
-                    y: group.height() / 2,
+                    x: 0,
+                    y: 0,
+                    width: group.width(),
+                    height: group.height(),
                     text: config.letter || 'A',
                     fontSize: size,
                     fontFamily: 'Arial, Helvetica, sans-serif',
@@ -170,8 +172,6 @@ export const useMaskHandler = ({
                     stroke: config.borderColor,
                     strokeWidth: config.borderThickness,
                     name: 'border-shape',
-                    offsetX: textForClip.width() / 2,
-                    offsetY: textForClip.height() / 2,
                 });
                 break;
             default: // rect
@@ -207,18 +207,21 @@ export const useMaskHandler = ({
     
         group.clipFunc(function (ctx: any) {
             if (borderShape) {
-                 const localPos = {x: 0, y: 0};
-                 if(config.type !== 'rect') {
+                const isRect = borderShape.getClassName() === 'Rect';
+                const isText = borderShape.getClassName() === 'Text';
+
+                let localPos = {x: 0, y: 0};
+                if (!isRect && !isText) {
                     localPos.x = size/2;
                     localPos.y = size/2;
-                 }
-                 if(config.type === 'alphabet') {
-                    localPos.x = group.width() / 2;
-                    localPos.y = group.height() / 2;
-                 }
+                }
+                
                  ctx.beginPath();
-                 if (borderShape.getClassName() === 'Rect') {
-                    ctx.rect(0,0, size, size);
+                 if (isRect) {
+                    ctx.rect(localPos.x, localPos.y, borderShape.width(), borderShape.height());
+                 } else if (isText) {
+                    ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
+                    ctx.fillText(borderShape.text(), localPos.x, localPos.y);
                  } else if (borderShape.getClassName() === 'Circle') {
                     ctx.arc(localPos.x, localPos.y, borderShape.radius(), 0, Math.PI * 2, false);
                  } else if (borderShape.getClassName() === 'Star') {
@@ -236,17 +239,11 @@ export const useMaskHandler = ({
                  } else if (borderShape.getClassName() === 'RegularPolygon') {
                     let sides = borderShape.sides();
                     let radius = borderShape.radius();
-                    // Start from the top point for triangles to match visual
                     const startAngle = sides === 3 ? -Math.PI / 2 : 0;
                     ctx.moveTo(localPos.x + radius * Math.cos(startAngle), localPos.y + radius * Math.sin(startAngle));
                      for (let i = 1; i <= sides; i++) {
                         ctx.lineTo(localPos.x + radius * Math.cos(startAngle + i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(startAngle + i * 2 * Math.PI / sides));
                     }
-                 } else if (borderShape.getClassName() === 'Text') {
-                     ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
-                     ctx.textAlign = 'center';
-                     ctx.textBaseline = 'middle';
-                     ctx.fillText(borderShape.text(), localPos.x, localPos.y);
                  }
                  ctx.closePath();
             }
@@ -290,4 +287,3 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
-
