@@ -577,16 +577,16 @@ const applyFill = (node: any, config: any) => {
             borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
             break;
         case 'star':
-            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+            borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'triangle':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'polygon':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2, offsetX: size/2, offsetY: size/2 });
             break;
         case 'diamond':
-            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+            borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), offsetX: size/2, offsetY: size/2 });
             break;
         case 'alphabet':
             const textForClip = new window.Konva.Text({
@@ -684,10 +684,6 @@ const applyFill = (node: any, config: any) => {
         ctx.closePath();
     });
 
-    group.getClientRect = function() {
-        return borderShape.getClientRect();
-    };
-
     layer.add(group);
     updateLayers();
     layer.draw();
@@ -719,24 +715,21 @@ const applyFill = (node: any, config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
     
-    let oldAttrs = {};
+    let oldAttrs: { [key: string]: any } = {};
     if (editingTextNode) {
-        const preservedAttrs: { [key: string]: any } = {};
-        // Iterate over all attributes of the editingNode
-        for (const key in editingTextNode.attrs) {
-            // We only care about our custom data attributes
+        // Preserve all data attributes from the old node
+        Object.keys(editingTextNode.attrs).forEach(key => {
             if (key.startsWith('data-')) {
-                preservedAttrs[key] = editingTextNode.attrs[key];
+                oldAttrs[key] = editingTextNode.attrs[key];
             }
-        }
-        oldAttrs = preservedAttrs;
+        });
         editingTextNode.destroy();
         deselectNode();
         setEditingTextNode(null);
     }
 
      const dataAttrs = {
-        ...oldAttrs,
+        ...oldAttrs, // Carry over old attributes
         'data-text': config.text,
         'data-font-size': config.fontSize,
         'data-font-family': config.fontFamily,
@@ -903,11 +896,12 @@ const applyFill = (node: any, config: any) => {
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         newNode.setAttr('id', uniqueId);
         
+        // Re-apply color/gradient settings from preserved data attributes
         const colorConfig = {
-            isGradient: newNode.getAttr('data-is-gradient') || false,
-            solidColor: newNode.getAttr('data-solid-color') || '#000000',
-            colorStops: newNode.getAttr('data-color-stops') || [],
-            gradientDirection: newNode.getAttr('data-gradient-direction') || 'top-to-bottom',
+            isGradient: dataAttrs['data-is-gradient'] || false,
+            solidColor: dataAttrs['data-solid-color'] || '#000000',
+            colorStops: dataAttrs['data-color-stops'] || [],
+            gradientDirection: dataAttrs['data-gradient-direction'] || 'top-to-bottom',
         };
         applyFill(newNode, colorConfig);
         

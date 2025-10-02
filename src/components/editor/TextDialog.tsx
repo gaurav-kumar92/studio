@@ -34,7 +34,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
     const [curvature, setCurvature] = useState(0);
 
     useEffect(() => {
-        if (editingNode) {
+        if (isOpen && editingNode) {
              const data = editingNode.attrs;
             setText(data['data-text'] || '');
             setFontSize(data['data-font-size'] || 24);
@@ -56,7 +56,7 @@ const TextDialog: React.FC<TextDialogProps> = ({ isOpen, onClose, onAddOrUpdateT
             setGlowOpacity(data['data-glow-opacity'] || 0.7);
             setRadius(data['data-radius'] || 150);
             setCurvature(data['data-curvature'] || 0);
-        } else {
+        } else if (isOpen && !editingNode) {
             resetDialog();
         }
     }, [editingNode, isOpen]);
