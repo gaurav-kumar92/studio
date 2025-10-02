@@ -108,7 +108,6 @@ export const useMaskHandler = ({
         const size = 150;
         
         let borderShape: any;
-        let clipShape: any;
 
         const group = new window.Konva.Group({
             x: stage.width() / 4,
@@ -130,9 +129,10 @@ export const useMaskHandler = ({
             case 'circle':
                  borderShape = new window.Konva.Circle({ 
                     ...commonAttrs, 
-                    x: size / 2,
-                    y: size / 2,
                     radius: size / 2,
+                    // Position at radius,radius so top-left is (0,0) for the bounding box
+                    x: size / 2, 
+                    y: size / 2
                 });
                 break;
             case 'star':
@@ -148,25 +148,14 @@ export const useMaskHandler = ({
                  borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / Math.sqrt(2), x: size / 2, y: size / 2 });
                 break;
             case 'alphabet':
-                const tempText = new window.Konva.Text({
-                    text: config.letter || 'A',
-                    fontSize: size,
-                    fontFamily: 'Arial, Helvetica, sans-serif',
-                    fontStyle: 'bold',
-                });
-                const textWidth = tempText.width();
-                
                 borderShape = new window.Konva.Text({
                     ...commonAttrs,
                     x: 0,
                     y: 0,
-                    width: textWidth,
                     text: config.letter || 'A',
                     fontSize: size,
                     fontFamily: 'Arial, Helvetica, sans-serif',
                     fontStyle: 'bold',
-                    align: 'center',
-                    verticalAlign: 'middle',
                 });
                 break;
             default: // rect
@@ -182,11 +171,13 @@ export const useMaskHandler = ({
 
         group.add(borderShape);
 
+        // -- THE CRITICAL FIX: Set group dimensions based on shape's actual bounding box --
         const bbox = borderShape.getClientRect({ relativeTo: group });
         group.width(bbox.width);
         group.height(bbox.height);
 
-        clipShape = borderShape.clone();
+        // Create a separate, non-visible shape for clipping.
+        const clipShape = borderShape.clone();
         clipShape.x(clipShape.x() - bbox.x);
         clipShape.y(clipShape.y() - bbox.y);
     
@@ -196,6 +187,7 @@ export const useMaskHandler = ({
             fill: '#9ca3af',
             scale: { x: 2.5, y: 2.5 },
             name: 'placeholder-icon',
+            // Center the icon in the now correctly-sized group
             x: group.width() / 2,
             y: group.height() / 2,
             offsetX: 12,
@@ -204,7 +196,8 @@ export const useMaskHandler = ({
         group.add(placeholderIcon);
     
         group.clipFunc(function (ctx: any) {
-            clipShape.fill('black');
+            // Use the isolated clipShape for the clipping function.
+            clipShape.fill('black'); // Clipping requires a black fill
             clipShape.stroke(null);
             clipShape.strokeWidth(0);
             clipShape._sceneFunc(ctx);
@@ -235,8 +228,12 @@ export const useMaskHandler = ({
           }
         }
         
-        const clipShape = border.clone();
+        // After updating the shape, we must re-calculate the bounding box and update the clip function
         const bbox = border.getClientRect({ relativeTo: editingMaskNode });
+        editingMaskNode.width(bbox.width);
+        editingMaskNode.height(bbox.height);
+
+        const clipShape = border.clone();
         clipShape.x(clipShape.x() - bbox.x);
         clipShape.y(clipShape.y() - bbox.y);
 
