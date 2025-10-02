@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -9,6 +10,7 @@ type UseTextHandlerProps = {
     deselectNode: () => void;
     setSelectedNode: (node: any) => void;
     applyFill: (node: any, config: any) => void;
+    attachDoubleClick: (node: any) => void;
 };
 
 export const useTextHandler = ({
@@ -17,6 +19,7 @@ export const useTextHandler = ({
     deselectNode,
     setSelectedNode,
     applyFill,
+    attachDoubleClick,
 }: UseTextHandlerProps) => {
     const [isTextDialogOpen, setTextDialogOpen] = useState(false);
     const [editingTextNode, setEditingTextNode] = useState<any>(null);
@@ -204,6 +207,7 @@ export const useTextHandler = ({
         }
 
         if (newNode) {
+            attachDoubleClick(newNode);
             layer.add(newNode);
             const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             newNode.setAttr('id', uniqueId);
@@ -223,7 +227,7 @@ export const useTextHandler = ({
         updateLayers();
         layer.draw();
         setTextDialogOpen(false);
-    }, [canvasRef, editingTextNode, deselectNode, setSelectedNode, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen]);
+    }, [canvasRef, editingTextNode, deselectNode, setSelectedNode, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick]);
 
     return {
         isTextDialogOpen,
@@ -233,3 +237,5 @@ export const useTextHandler = ({
         handleAddOrUpdateText,
     };
 };
+
+      

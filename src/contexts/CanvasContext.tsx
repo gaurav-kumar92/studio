@@ -147,6 +147,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     deselectNode,
     setSelectedNode,
     applyFill,
+    attachDoubleClick: (node) => attachDoubleClick(node), 
   });
 
   const {
@@ -160,6 +161,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef,
     updateLayers,
     setSelectedNode,
+    attachDoubleClick: (node) => attachDoubleClick(node),
   });
 
   const {
@@ -173,6 +175,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef,
     updateLayers,
     setSelectedNode,
+    attachDoubleClick: (node) => attachDoubleClick(node),
   });
 
   const {
@@ -186,11 +189,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   } = useMaskHandler({
     canvasRef,
     updateLayers,
-setSelectedNode,
+    setSelectedNode,
     setIsLoading,
+    attachDoubleClick: (node) => attachDoubleClick(node),
   });
 
-  const { handleDoubleClick } = useNodeHandlers({
+  const { handleDoubleClick, attachDoubleClick } = useNodeHandlers({
     setEditingTextNode,
     setTextDialogOpen,
     setEditingShapeNode,
@@ -198,9 +202,9 @@ setSelectedNode,
     setEditingFrameNode,
     setFrameDialogOpen,
     addImageToMask,
-    setIsLoading
+    setIsLoading,
   });
-  
+
   const selectNode = useCallback((node: any) => {
     if (!canvasRef.current?.layer) return;
   
@@ -242,6 +246,7 @@ setSelectedNode,
                         name: 'image',
                         draggable: true,
                     });
+                    attachDoubleClick(img);
                     layer.add(img);
                     updateLayers();
                     selectNode(img);
@@ -255,7 +260,7 @@ setSelectedNode,
         imageFileInput.value = ''; // Reset for next time
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, selectNode]);
+  }, [updateLayers, setIsLoading, selectNode, attachDoubleClick]);
   
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
@@ -571,19 +576,6 @@ setSelectedNode,
 
         selectNode(targetNode);
       });
-
-      stage.on('dblclick dbltap', (e: any) => {
-        if (e.target === stage || e.target.hasName('background')) return;
-      
-        let targetNode = e.target;
-        if (e.target.parent?.hasName('circularText') 
-         || e.target.parent?.hasName('mask') 
-         || e.target.parent?.hasName('textGroup')) {
-            targetNode = e.target.parent;
-        }
-      
-        handleDoubleClick(targetNode);
-      });
       
       stage.on('dragend', () => {
         updateLayers();
@@ -687,5 +679,7 @@ export const useCanvas = (): CanvasContextType => {
 
     
 
+
+      
 
       

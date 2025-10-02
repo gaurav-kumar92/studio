@@ -9,6 +9,7 @@ type UseMaskHandlerProps = {
     updateLayers: () => void;
     setSelectedNode: (node: any) => void;
     setIsLoading: (isLoading: boolean) => void;
+    attachDoubleClick: (node: any) => void;
 };
 
 export const useMaskHandler = ({
@@ -16,6 +17,7 @@ export const useMaskHandler = ({
     updateLayers,
     setSelectedNode,
     setIsLoading,
+    attachDoubleClick,
 }: UseMaskHandlerProps) => {
     const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
     const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
@@ -259,6 +261,7 @@ export const useMaskHandler = ({
             }
         });
     
+        attachDoubleClick(group);
         layer.add(group);
         updateLayers();
         layer.draw();
@@ -267,7 +270,7 @@ export const useMaskHandler = ({
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         group.setAttr('id', uniqueId);
     
-      }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen]);
+      }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen, attachDoubleClick]);
 
       const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
@@ -298,4 +301,4 @@ export const useMaskHandler = ({
     };
 };
 
-    
+      

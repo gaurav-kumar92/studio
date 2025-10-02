@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -7,12 +8,14 @@ type UseShapeHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
     setSelectedNode: (node: any) => void;
+    attachDoubleClick: (node: any) => void;
 };
 
 export const useShapeHandler = ({
     canvasRef,
     updateLayers,
     setSelectedNode,
+    attachDoubleClick,
 }: UseShapeHandlerProps) => {
     const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
     const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
@@ -81,6 +84,7 @@ export const useShapeHandler = ({
             } else {
                 newShape.fill('#3b82f6');
             }
+          attachDoubleClick(newShape);
           layer.add(newShape);
           updateLayers();
           layer.draw();
@@ -88,7 +92,7 @@ export const useShapeHandler = ({
           newShape.setAttr('id', uniqueId);
         }
         setShapeDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode]);
+      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick]);
     
       const handleUpdateShape = useCallback((attrs: any) => {
         if (!editingShapeNode || !canvasRef.current) return;
@@ -114,3 +118,5 @@ export const useShapeHandler = ({
         handleUpdateShape,
     };
 };
+
+      

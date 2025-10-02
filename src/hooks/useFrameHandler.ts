@@ -7,12 +7,14 @@ type UseFrameHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
     setSelectedNode: (node: any) => void;
+    attachDoubleClick: (node: any) => void;
 };
 
 export const useFrameHandler = ({
     canvasRef,
     updateLayers,
     setSelectedNode,
+    attachDoubleClick,
 }: UseFrameHandlerProps) => {
     const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
     const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
@@ -59,6 +61,7 @@ export const useFrameHandler = ({
         }
     
         if(newFrame) {
+            attachDoubleClick(newFrame);
             layer.add(newFrame);
             updateLayers();
             layer.draw();
@@ -67,7 +70,7 @@ export const useFrameHandler = ({
             newFrame.setAttr('id', uniqueId);
         }
         setFrameDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode]);
+      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick]);
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
@@ -93,4 +96,4 @@ export const useFrameHandler = ({
     };
 };
 
-    
+      

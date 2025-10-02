@@ -88,5 +88,17 @@ export const useNodeHandlers = ({
         setIsLoading
     ]);
 
-    return { handleDoubleClick };
+    const attachDoubleClick = useCallback((node: any) => {
+        node.on('dblclick dbltap', () => {
+            let targetNode = node;
+            // This logic is important for grouped objects like masks or text
+            if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+                targetNode = node.parent;
+            }
+            handleDoubleClick(targetNode);
+        });
+    }, [handleDoubleClick]);
+
+
+    return { handleDoubleClick, attachDoubleClick };
 };
