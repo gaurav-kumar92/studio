@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -367,25 +366,26 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const node = selectedNode;
     const layer = canvasRef.current?.layer;
     if (!layer) return;
-  
+
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    const width = Math.abs(node.width() * scaleX);
-    const height = Math.abs(node.height() * scaleY);
+    const width = node.width();
+    const height = node.height();
     
-    // Set the offset to the visual center of the node
+    // Set the offset to the object's local center
     node.offset({
       x: width / 2,
       y: height / 2,
     });
   
     // Adjust the position to compensate for the new offset
+    // This keeps the object's center point stationary during the flip.
     node.position({
       x: node.x() + (width / 2) * scaleX,
       y: node.y() + (height / 2) * scaleY,
     });
   
-    // Apply the flip
+    // Apply the flip by negating the appropriate scale
     if (direction === 'horizontal') {
       node.scaleX(-scaleX);
     } else {
@@ -666,22 +666,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
-
-    
-
-    
-
-    
-
-
-      
-
-      
-
-    
-
-    
 
     
