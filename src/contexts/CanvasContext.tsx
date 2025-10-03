@@ -366,20 +366,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const node = selectedNode;
     const layer = canvasRef.current?.layer;
     if (!layer) return;
-
+  
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     const width = node.width();
     const height = node.height();
-    
+  
     // Set the offset to the object's local center
     node.offset({
       x: width / 2,
       y: height / 2,
     });
   
-    // Adjust the position to compensate for the new offset
-    // This keeps the object's center point stationary during the flip.
+    // Adjust the position to compensate for the new offset.
+    // This keeps the object's visual center stationary during the flip.
     node.position({
       x: node.x() + (width / 2) * scaleX,
       y: node.y() + (height / 2) * scaleY,
@@ -666,5 +666,7 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
 
     
