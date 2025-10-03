@@ -55,11 +55,19 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 }
                 setGradientDirection(selectedNode.getAttr('data-gradient-direction') || 'top-to-bottom');
             } else {
-                const nodeColor = selectedNode.getAttr('data-solid-color') || 
-                                  (typeof selectedNode.fill === 'function' ? selectedNode.fill() : null) || 
-                                  (typeof selectedNode.stroke === 'function' ? selectedNode.stroke() : null) || 
-                                  '#3b82f6';
-                setSolidColor(nodeColor);
+                let nodeColor = selectedNode.getAttr('data-solid-color');
+                if (!nodeColor) {
+                    if (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')) {
+                        const textChild = selectedNode.findOne('Text, .mainChar');
+                        if (textChild) {
+                            nodeColor = textChild.fill();
+                        }
+                    } else {
+                        nodeColor = (typeof selectedNode.fill === 'function' ? selectedNode.fill() : null) || 
+                                    (typeof selectedNode.stroke === 'function' ? selectedNode.stroke() : null);
+                    }
+                }
+                setSolidColor(nodeColor || '#3b82f6');
             }
         }
     }, [selectedNode]);

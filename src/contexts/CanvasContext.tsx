@@ -367,33 +367,40 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const layer = canvasRef.current?.layer;
     if (!layer) return;
   
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
     const width = node.width();
     const height = node.height();
   
-    // Set the offset to the object's local center
-    node.offset({
-      x: width / 2,
-      y: height / 2,
-    });
+    // Get current center position in absolute coordinates
+    const centerX = node.x();
+    const centerY = node.y();
   
-    // Adjust the position to compensate for the new offset.
-    // This keeps the object's visual center stationary during the flip.
-    node.position({
-      x: node.x() + (width / 2) * scaleX,
-      y: node.y() + (height / 2) * scaleY,
-    });
+    // If offset is not already centered, set it and adjust position
+    if (node.offsetX() !== width / 2 || node.offsetY() !== height / 2) {
+      const oldCenterX = node.x() + (width / 2 - node.offsetX()) * node.scaleX();
+      const oldCenterY = node.y() + (height / 2 - node.offsetY()) * node.scaleY();
+      
+      node.offset({
+        x: width / 2,
+        y: height / 2,
+      });
+      
+      // Update position to maintain the same visual center
+      node.position({
+        x: oldCenterX,
+        y: oldCenterY,
+      });
+    }
   
-    // Apply the flip by negating the appropriate scale
+    // Toggle scale to flip
     if (direction === 'horizontal') {
-      node.scaleX(-scaleX);
+      node.scaleX(node.scaleX() * -1);
     } else {
-      node.scaleY(-scaleY);
+      node.scaleY(node.scaleY() * -1);
     }
   
     layer.batchDraw();
   }, [selectedNode]);
+
   
     const handleColorUpdate = useCallback((config: any) => {
         if (!selectedNode) return;
@@ -494,20 +501,67 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   // Handle transformer attachment
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.layer) return;
-
+  
     const { layer } = canvasRef.current;
-
+  
     // Destroy previous transformer if it exists
     if (transformerRef.current) {
       transformerRef.current.destroy();
     }
-
+  
     if (selectedNode) {
+      const isMaskGroup = selectedNode.name() === 'mask';
+      
       const tr = new window.Konva.Transformer({
         nodes: [selectedNode],
         rotateEnabled: true,
         keepRatio: true,
+        // Set boundary function for mask groups
+        ...(isMaskGroup && {
+          boundBoxFunc: (oldBox: any, newBox: any) => {
+            // For mask groups, use the mask dimensions, not the image
+            return newBox;
+          },
+          // Use the mask group's actual size for transformer bounds
+          ignoreStroke: true,
+        }),
       });
+  
+      // For mask groups, manually set the transformer to use mask dimensions
+      if (isMaskGroup) {
+        const maskWidth = selectedNode.width();
+        const maskHeight = selectedNode.height();
+        
+        // Override the client rect calculation for transformer
+        selectedNode.getClientRect = function(config: any) {
+          const skipTransform = config?.skipTransform || false;
+          const relativeTo = config?.relativeTo;
+          
+          const x = this.x();
+          const y = this.y();
+          const rotation = this.rotation();
+          const scaleX = this.scaleX();
+          const scaleY = this.scaleY();
+          
+          if (skipTransform) {
+            return {
+              x: 0,
+              y: 0,
+              width: maskWidth,
+              height: maskHeight,
+            };
+          }
+          
+          return {
+            x: x,
+            y: y,
+            width: maskWidth * Math.abs(scaleX),
+            height: maskHeight * Math.abs(scaleY),
+            rotation: rotation,
+          };
+        };
+      }
+  
       layer.add(tr);
       transformerRef.current = tr;
     } 

@@ -25,20 +25,24 @@ export const useMaskHandler = ({
     const addImageToMask = useCallback((maskGroup: any) => {
         if (!maskGroup || maskGroup.name() !== 'mask' || !canvasRef.current?.layer) return;
         const layer = canvasRef.current.layer;
-
+    
         if (document.querySelector('#mask-image-file-input')) {
             return;
         }
-  
+    
         const imageFileInput = document.createElement('input');
         imageFileInput.id = 'mask-image-file-input';
         imageFileInput.type = 'file';
         imageFileInput.accept = "image/png, image/jpeg, image/jpg, image/gif, image/svg+xml";
         imageFileInput.style.display = 'none';
         document.body.appendChild(imageFileInput);
-  
+    
+        let isFileSelected = false;
+    
         imageFileInput.onchange = () => {
+            isFileSelected = true;
             window.isOpeningFileDialog = false;
+            
             if (imageFileInput.files && imageFileInput.files.length > 0) {
                 const file = imageFileInput.files[0];
                 const reader = new FileReader();
@@ -63,7 +67,7 @@ export const useMaskHandler = ({
                             draggable: true,
                             'data-original-width': imgWidth,
                             'data-original-height': imgHeight,
-                             dragBoundFunc: function(pos: { x: number, y: number }) {
+                             dragBoundFunc: function(pos: { x: number, y: number}) {
                               const imageRect = this.getClientRect({skipTransform: false});
                               
                               const minX = maskWidth - imageRect.width;
@@ -90,7 +94,7 @@ export const useMaskHandler = ({
                         
                         maskGroup.add(img);
                         img.moveToBottom();
-  
+    
                         layer.draw();
                         updateLayers();
                         setIsLoading(false);
@@ -102,16 +106,47 @@ export const useMaskHandler = ({
                 };
                 reader.readAsDataURL(file);
             }
+            
+            // Cleanup
             if (imageFileInput.parentNode) {
                 imageFileInput.parentNode.removeChild(imageFileInput);
             }
         };
-
-        window.addEventListener('focus', () => {
-          setTimeout(() => {
-            window.isOpeningFileDialog = false;
-          }, 200);
-        }, { once: true });
+    
+        // Handle cancellation - detect when dialog closes without file selection
+        const handleDialogClose = () => {
+            setTimeout(() => {
+                if (!isFileSelected && window.isOpeningFileDialog) {
+                    // User cancelled or clicked outside
+                    window.isOpeningFileDialog = false;
+                    
+                    // Cleanup the input element
+                    if (imageFileInput.parentNode) {
+                        imageFileInput.parentNode.removeChild(imageFileInput);
+                    }
+                }
+            }, 300); // Increased timeout for better detection
+        };
+    
+        // Listen for focus return (dialog closed)
+        window.addEventListener('focus', handleDialogClose, { once: true });
+        
+        // Fallback: listen for click events (user clicked elsewhere)
+        const handleClick = () => {
+            setTimeout(() => {
+                if (!isFileSelected && window.isOpeningFileDialog) {
+                    window.isOpeningFileDialog = false;
+                    if (imageFileInput.parentNode) {
+                        imageFileInput.parentNode.removeChild(imageFileInput);
+                    }
+                }
+            }, 100);
+        };
+        
+        // Add click listener as backup
+        setTimeout(() => {
+            document.addEventListener('click', handleClick, { once: true });
+        }, 500);
         
         window.isOpeningFileDialog = true;
         imageFileInput.click();
