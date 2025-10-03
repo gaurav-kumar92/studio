@@ -368,26 +368,28 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const layer = canvasRef.current?.layer;
     if (!layer) return;
   
-    // Use the node's own width and height for the offset
-    const offsetX = node.width() / 2;
-    const offsetY = node.height() / 2;
-  
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const width = Math.abs(node.width() * scaleX);
+    const height = Math.abs(node.height() * scaleY);
+    
+    // Set the offset to the visual center of the node
     node.offset({
-      x: offsetX,
-      y: offsetY,
+      x: width / 2,
+      y: height / 2,
     });
   
-    // Adjust the position to keep the node in the same place
+    // Adjust the position to compensate for the new offset
     node.position({
-      x: node.x() + offsetX,
-      y: node.y() + offsetY,
+      x: node.x() + (width / 2) * scaleX,
+      y: node.y() + (height / 2) * scaleY,
     });
   
     // Apply the flip
     if (direction === 'horizontal') {
-      node.scaleX(-node.scaleX());
+      node.scaleX(-scaleX);
     } else {
-      node.scaleY(-node.scaleY());
+      node.scaleY(-scaleY);
     }
   
     layer.batchDraw();
@@ -677,6 +679,8 @@ export const useCanvas = (): CanvasContextType => {
       
 
       
+
+    
 
     
 
