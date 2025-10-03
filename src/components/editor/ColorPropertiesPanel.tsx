@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, XCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -28,8 +27,13 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
         { id: nextId++, stop: 0, color: '#3b82f6' },
         { id: nextId++, stop: 1, color: '#a855f7' },
     ]);
+    
+    const isInitializing = useRef(false);
 
     const handleUpdate = useCallback(() => {
+        // Don't update during initialization
+        if (isInitializing.current) return;
+        
         onColorChange({
             isGradient,
             solidColor,
@@ -40,35 +44,83 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
 
     useEffect(() => {
         if (selectedNode) {
-            const nodeIsGradient = selectedNode.getAttr('data-is-gradient') || false;
+            // Set flag to prevent handleUpdate from firing during initialization
+            isInitializing.current = true;
+            
+            let nodeIsGradient = selectedNode.getAttr('data-is-gradient') || false;
+            
+            // For text groups, check the child text element for gradient data
+            if (!nodeIsGradient && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
+                const textChild = selectedNode.findOne('Text, .mainChar');
+                if (textChild) {
+                    nodeIsGradient = textChild.getAttr('data-is-gradient') || false;
+                }
+            }
+            
             setIsGradient(nodeIsGradient);
-
+    
             if (nodeIsGradient) {
-                const stops = selectedNode.getAttr('data-color-stops');
+                // Get gradient data from either parent or child
+                let stops = selectedNode.getAttr('data-color-stops');
+                let direction = selectedNode.getAttr('data-gradient-direction');
+                
+                // Check child if parent doesn't have gradient data
+                if ((!stops || stops.length === 0) && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
+                    const textChild = selectedNode.findOne('Text, .mainChar');
+                    if (textChild) {
+                        stops = textChild.getAttr('data-color-stops');
+                        direction = textChild.getAttr('data-gradient-direction');
+                    }
+                }
+                
                 if (stops && stops.length > 0) {
                     setColorStops(stops.map((s: any, i: number) => ({...s, id: s.id || i})));
                 } else {
-                     setColorStops([
-                        { id: nextId++, stop: 0, color: selectedNode.getAttr('data-color1') || '#3b82f6' },
-                        { id: nextId++, stop: 1, color: selectedNode.getAttr('data-color2') || '#a855f7' },
-                    ]);
-                }
-                setGradientDirection(selectedNode.getAttr('data-gradient-direction') || 'top-to-bottom');
-            } else {
-                let nodeColor = selectedNode.getAttr('data-solid-color');
-                if (!nodeColor) {
+                    // Fallback to old color1/color2 format
+                    let color1 = selectedNode.getAttr('data-color1');
+                    let color2 = selectedNode.getAttr('data-color2');
+                    
                     if (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')) {
                         const textChild = selectedNode.findOne('Text, .mainChar');
                         if (textChild) {
-                            nodeColor = textChild.fill();
+                            color1 = color1 || textChild.getAttr('data-color1');
+                            color2 = color2 || textChild.getAttr('data-color2');
                         }
-                    } else {
-                        nodeColor = (typeof selectedNode.fill === 'function' ? selectedNode.fill() : null) || 
-                                    (typeof selectedNode.stroke === 'function' ? selectedNode.stroke() : null);
+                    }
+                    
+                    setColorStops([
+                        { id: nextId++, stop: 0, color: color1 || '#3b82f6' },
+                        { id: nextId++, stop: 1, color: color2 || '#a855f7' },
+                    ]);
+                }
+                setGradientDirection(direction || 'top-to-bottom');
+            } else {
+                // Only get solid color if NOT a gradient
+                let nodeColor = selectedNode.getAttr('data-solid-color');
+                
+                if (!nodeColor && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
+                    const textChild = selectedNode.findOne('Text, .mainChar');
+                    if (textChild) {
+                        nodeColor = textChild.getAttr('data-solid-color') || textChild.fill();
+                    }
+                } else if (!nodeColor) {
+                    const fillValue = typeof selectedNode.fill === 'function' ? selectedNode.fill() : null;
+                    const strokeValue = typeof selectedNode.stroke === 'function' ? selectedNode.stroke() : null;
+                    
+                    if (fillValue && typeof fillValue === 'string') {
+                        nodeColor = fillValue;
+                    } else if (strokeValue && typeof strokeValue === 'string') {
+                        nodeColor = strokeValue;
                     }
                 }
+                
                 setSolidColor(nodeColor || '#3b82f6');
             }
+            
+            // Allow updates after initialization is complete
+            setTimeout(() => {
+                isInitializing.current = false;
+            }, 0);
         }
     }, [selectedNode]);
 
