@@ -367,28 +367,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const node = selectedNode;
     const layer = canvasRef.current?.layer;
     if (!layer) return;
-
-    // Use getClientRect to get dimensions, which works for all node types
-    const rect = node.getClientRect({ skipTransform: true });
-    
-    // The center of the untransformed shape
-    const center = {
-        x: rect.x + rect.width / 2,
-        y: rect.y + rect.height / 2,
-    };
-    
-    // Set the offset to the node's center
+  
+    // Use the node's own width and height for the offset
+    const offsetX = node.width() / 2;
+    const offsetY = node.height() / 2;
+  
     node.offset({
-        x: center.x,
-        y: center.y,
+      x: offsetX,
+      y: offsetY,
     });
-    
-    // Move the node to its absolute center position
+  
+    // Adjust the position to keep the node in the same place
     node.position({
-        x: center.x,
-        y: center.y,
+      x: node.x() + offsetX,
+      y: node.y() + offsetY,
     });
-
+  
     // Apply the flip
     if (direction === 'horizontal') {
       node.scaleX(-node.scaleX());
@@ -683,5 +677,7 @@ export const useCanvas = (): CanvasContextType => {
       
 
       
+
+    
 
     
