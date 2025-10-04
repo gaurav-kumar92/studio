@@ -111,29 +111,45 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       : [node];
 
     targetNodes.forEach((n: any) => {
+      // Always clear previous fills to prevent conflicts
+      n.fill(null);
+      n.fillLinearGradientColorStops([]);
+      n.fillRadialGradientColorStops([]);
         if (config.isGradient) {
-            let start = { x: 0, y: 0 };
-            let end = { x: 0, y: 0 };
             const { width, height } = n.getClientRect({ relativeTo: n.getParent() });
-
-            switch (config.gradientDirection) {
-                case 'top-to-bottom': end = { x: 0, y: height }; break;
-                case 'left-to-right': end = { x: width, y: 0 }; break;
-                case 'diagonal-tl-br': end = { x: width, y: height }; break;
-                case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-            }
-            n.fill(null);
-            n.fillLinearGradientStartPoint(start);
-            n.fillLinearGradientEndPoint(end);
             const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-            n.fillLinearGradientColorStops(colorStopsFlat);
-        } else {
-            n.fillLinearGradientColorStops([]);
-            n.fill(config.solidColor);
-        }
-    });
-  }, []);
 
+            if (config.gradientDirection === 'radial') {
+              // Apply Radial Gradient
+              n.fillPriority('radial-gradient'); // Prioritize radial gradient rendering
+              n.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
+              n.fillRadialGradientStartRadius(0);
+              n.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
+              n.fillRadialGradientEndRadius(Math.max(width, height) / 2);
+              n.fillRadialGradientColorStops(colorStopsFlat);
+          } else {
+              // Apply Linear Gradient (existing logic)
+              n.fillPriority('linear-gradient'); // Prioritize linear gradient rendering
+              let start = { x: 0, y: 0 };
+              let end = { x: 0, y: 0 };
+
+              switch (config.gradientDirection) {
+                  case 'top-to-bottom': end = { x: 0, y: height }; break;
+                  case 'left-to-right': end = { x: width, y: 0 }; break;
+                  case 'diagonal-tl-br': end = { x: width, y: height }; break;
+                  case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
+              }
+              n.fillLinearGradientStartPoint(start);
+              n.fillLinearGradientEndPoint(end);
+              n.fillLinearGradientColorStops(colorStopsFlat);
+          }
+      } else {
+          // Apply Solid Color
+          n.fillPriority('color');
+          n.fill(config.solidColor);
+      }
+  });
+}, []);
   const {
     isTextDialogOpen,
     setTextDialogOpen,

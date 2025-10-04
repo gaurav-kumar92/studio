@@ -208,6 +208,7 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                             <option value="left-to-right">Left to Right</option>
                             <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
                             <option value="diagonal-tr-bl">Diagonal (TR to BL)</option>
+                            <option value="radial">Radial</option>
                         </select>
                     </div>
                 </div>
