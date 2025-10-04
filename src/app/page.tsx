@@ -15,7 +15,7 @@ import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
 import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
 import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
-
+import Toolbar from '@/components/editor/Toolbar'; 
 
 // This is a global declaration for the Konva object.
 // It's a way to tell TypeScript that 'Konva' will be available on the window object
@@ -109,7 +109,7 @@ function Editor() {
         <div id="editor-ui">
             <div className="editor-main-column">
                 <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
-                
+                <Toolbar />
                 <Canvas 
                     ref={canvasRef} 
                     canvasSize={sizeString}
@@ -136,22 +136,8 @@ function Editor() {
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-2 flex-wrap mt-4">
-                        <button id="add-item-btn" className="button button-primary flex-grow" onClick={() => { setAddItemDialogOpen(true); deselectNode(); }}>Add Item</button>
-                        {selectedNode && (
-                             <button 
-                                id="delete-btn" 
-                                className="button button-danger flex-grow"
-                                onClick={() => {
-                                    if(selectedNode) {
-                                        selectedNode.destroy();
-                                        deselectNode();
-                                        updateLayers();
-                                    }
-                                }}
-                             >
-                                Delete
-                            </button>
-                        )}
+                        
+                        
                         <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
                     </div>
                 </div>
