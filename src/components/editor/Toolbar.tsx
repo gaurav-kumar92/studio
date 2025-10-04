@@ -32,27 +32,25 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Delete button section - will only show when an item is selected */}
-      {selectedNode && (
-        <>
-          <div className="toolbar-section">
-            <Button
-              variant="destructive"
-              size="icon"
-              onClick={() => {
-                if (selectedNode) {
-                  selectedNode.destroy();
-                  deselectNode();
-                  updateLayers();
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" />
-        </>
-      )}
+      {/* Delete button section */}
+      <div className="toolbar-section">
+        <Button
+          variant={selectedNode ? "destructive" : "outline"}
+          size="icon"
+          disabled={!selectedNode}
+          onClick={() => {
+            if (selectedNode) {
+              selectedNode.destroy();
+              deselectNode();
+              updateLayers();
+            }
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      <Separator orientation="vertical" />
+        
 
       {/* Existing Undo/Redo buttons */}
       <div className="toolbar-section">
