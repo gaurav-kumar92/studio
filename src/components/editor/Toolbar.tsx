@@ -35,7 +35,7 @@ const Toolbar = () => {
       {/* Delete button section */}
       <div className="toolbar-section">
         <Button
-          variant={selectedNode ? "destructive" : "outline"}
+          variant={selectedNode ? "destructive" : "ghost"}
           size="icon"
           disabled={!selectedNode}
           onClick={() => {
