@@ -1,3 +1,4 @@
+// src/components/editor/FrameDialog.tsx
 
 'use client';
 
@@ -33,19 +34,6 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
         }
     }, [editingNode, isOpen]);
 
-     useEffect(() => {
-        if (editingNode) {
-            onUpdateFrame({ color, thickness });
-        }
-    }, [color, thickness, editingNode, onUpdateFrame]);
-
-    useEffect(() => {
-        if (editingNode && isPolygon) {
-            onUpdateFrame({ sides });
-        }
-    }, [sides, editingNode, isPolygon, onUpdateFrame]);
-
-
     const resetDialog = () => {
         setActiveFrameForAddition(null);
         setColor('#3b82f6');
@@ -54,6 +42,9 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
     };
 
     const handleClose = () => {
+        if (editingNode) {
+            onUpdateFrame({ color, thickness, sides });
+        }
         resetDialog();
         onClose();
     };
@@ -86,7 +77,7 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
     const showSidesControl = activeFrameForAddition === 'polygon' || (editingNode && editingNode.getAttr('data-type') === 'polygon');
     const showMainButtons = !activeFrameForAddition && !editingNode;
     const showAddButton = !!activeFrameForAddition;
-    const dialogTitle = editingNode ? 'Edit Frame' : 'Add a Frame';
+    const dialogTitle = editingNode ? 'Edit Frame' : 'Add Frame';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -153,4 +144,3 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
 }
 
 export default FrameDialog;
-    

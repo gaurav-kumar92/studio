@@ -32,7 +32,7 @@ export const useFrameHandler = ({
         const commonAttrs = {
             x: x, 
             y: y,
-            stroke: config.color,
+           // stroke: config.color,
             strokeWidth: config.thickness,
             draggable: true,
             name: 'frame',
@@ -61,6 +61,13 @@ export const useFrameHandler = ({
         }
     
         if(newFrame) {
+          // ADD these data attributes for color
+          newFrame.setAttrs({
+            'data-is-gradient': false,
+            'data-solid-color': config.color || '#3b82f6',
+        });
+        newFrame.stroke(config.color || '#3b82f6');
+        
             attachDoubleClick(newFrame);
             layer.add(newFrame);
             updateLayers();
@@ -74,9 +81,9 @@ export const useFrameHandler = ({
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
-        if (attrs.color) {
+       /* if (attrs.color) {
           editingFrameNode.stroke(attrs.color);
-        }
+        }*/
         if (attrs.thickness) {
           editingFrameNode.strokeWidth(attrs.thickness);
         }

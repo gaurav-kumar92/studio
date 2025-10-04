@@ -416,6 +416,44 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
     layer.batchDraw();
   }, [selectedNode]);
+  const applyStroke = useCallback((node: any, config: any) => {
+    // Clear previous stroke properties
+    node.stroke(null);
+    node.strokeLinearGradientColorStops([]);
+   // node.strokeRadialGradientColorStops([]);
+
+    if (config.isGradient) {
+        const { width, height } = node.getClientRect({ relativeTo: node.getParent() });
+        const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+        let start = { x: 0, y: 0 };
+        let end = { x: 0, y: 0 };
+// This switch block now handles radial as a fallback to linear
+switch (config.gradientDirection) {
+  case 'left-to-right': 
+      end = { x: width, y: 0 }; 
+      break;
+  case 'diagonal-tl-br': 
+      end = { x: width, y: height }; 
+      break;
+  case 'diagonal-tr-bl': 
+      start = { x: width, y: 0 }; 
+      end = { x: 0, y: height }; 
+      break;
+  case 'radial': // Fallback for radial
+  case 'top-to-bottom': // Default case
+  default:
+      end = { x: 0, y: height }; 
+      break;
+}
+
+node.strokeLinearGradientStartPoint(start);
+node.strokeLinearGradientEndPoint(end);
+node.strokeLinearGradientColorStops(colorStopsFlat);
+} else {
+node.stroke(config.solidColor);
+}
+}, []);
+
 
   
     const handleColorUpdate = useCallback((config: any) => {
@@ -423,7 +461,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
         const nodeType = selectedNode.name();
         const shapeType = selectedNode.getAttr('data-type');
-        const isLineOrArrow = shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve';
+        const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
         
         selectedNode.setAttrs({
             'data-is-gradient': config.isGradient,
@@ -431,20 +469,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             'data-color-stops': config.colorStops,
             'data-gradient-direction': config.gradientDirection,
         });
-
-        if (nodeType === 'shape' && isLineOrArrow) {
-            // Lines and arrows only use stroke
-            selectedNode.stroke(config.solidColor);
-            if (shapeType === 'arrow') {
-                selectedNode.fill(config.solidColor); // Arrowhead fill
-            }
-        } else {
-            // All other shapes and text
-            applyFill(selectedNode, config);
-        }
-        
-        canvasRef.current?.layer.draw();
-    }, [selectedNode, applyFill]);
+        if (usesStroke) {
+          applyStroke(selectedNode, config);
+      } else {
+          // All other shapes and text use fill
+          applyFill(selectedNode, config);
+      }
+      
+      canvasRef.current?.layer.draw();
+  }, [selectedNode, applyFill, applyStroke, canvasRef]);
 
     const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
         if (!selectedNode || !selectedNode.hasName('mask')) return;
@@ -665,6 +698,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setKonvaObjects(newChildren);
   }, [selectedNode]);
 
+  
 
   const value: CanvasContextType = {
     canvasRef,

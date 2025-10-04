@@ -202,13 +202,14 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                         <PlusCircle className="h-4 w-4 mr-2" /> Add Color
                     </Button>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
                         <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
                             <option value="top-to-bottom">Top to Bottom</option>
                             <option value="left-to-right">Left to Right</option>
                             <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
                             <option value="diagonal-tr-bl">Diagonal (TR to BL)</option>
-                            <option value="radial">Radial</option>
+                            {/* This option will now only show if isStroke is false */}
+                            {!isStroke && <option value="radial">Radial</option>}
                         </select>
                     </div>
                 </div>

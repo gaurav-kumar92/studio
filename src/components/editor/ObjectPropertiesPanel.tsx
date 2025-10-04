@@ -47,8 +47,8 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
-  const canHaveColor = selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText');
-  const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow';
+  const canHaveColor = selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame');
+  const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame');
   const isMask = selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
 
