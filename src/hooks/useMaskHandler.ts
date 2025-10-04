@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -106,24 +107,31 @@ export const useMaskHandler = ({
                 reader.readAsDataURL(file);
             }
             
+            // Cleanup
             if (imageFileInput.parentNode) {
                 imageFileInput.parentNode.removeChild(imageFileInput);
             }
         };
     
+        // Handle cancellation - detect when dialog closes without file selection
         const handleDialogClose = () => {
             setTimeout(() => {
                 if (!isFileSelected && window.isOpeningFileDialog) {
+                    // User cancelled or clicked outside
                     window.isOpeningFileDialog = false;
+                    
+                    // Cleanup the input element
                     if (imageFileInput.parentNode) {
                         imageFileInput.parentNode.removeChild(imageFileInput);
                     }
                 }
-            }, 300);
+            }, 300); // Increased timeout for better detection
         };
     
+        // Listen for focus return (dialog closed)
         window.addEventListener('focus', handleDialogClose, { once: true });
         
+        // Fallback: listen for click events (user clicked elsewhere)
         const handleClick = () => {
             setTimeout(() => {
                 if (!isFileSelected && window.isOpeningFileDialog) {
@@ -135,6 +143,7 @@ export const useMaskHandler = ({
             }, 100);
         };
         
+        // Add click listener as backup
         setTimeout(() => {
             document.addEventListener('click', handleClick, { once: true });
         }, 500);
@@ -188,18 +197,18 @@ export const useMaskHandler = ({
                 break;
             case 'heart':
                 borderShape = new window.Konva.Path({
-                    x: 0,
-                    y: 0,
-                    data: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
-                    fill: '#f0f0f0', 
-                    stroke: config.borderColor,
-                    strokeWidth: config.borderThickness,
-                    name: 'border-shape',
-                    scale: { x: size / 24, y: size / 24 }
+                x: 0,
+                y: 0,
+                data: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+                fill: '#f0f0f0', 
+                stroke: config.borderColor,
+                strokeWidth: config.borderThickness,
+                name: 'border-shape',
+                scale: { x: size / 24, y: size / 24 } // Scale path to fit the size
                 });
                 group.width(size);
                 group.height(size);
-                break;
+            break;
             case 'alphabet':
                 const textForClip = new window.Konva.Text({
                     text: config.letter || 'A',
@@ -207,6 +216,7 @@ export const useMaskHandler = ({
                     fontFamily: 'Arial, Helvetica, sans-serif',
                     fontStyle: 'bold',
                 });
+                
                 group.width(textForClip.width());
                 group.height(textForClip.height());
     
@@ -256,33 +266,71 @@ export const useMaskHandler = ({
         });
         group.add(placeholderIcon);
     
-        // === START OF CORRECTED CLIP FUNCTION ===
         group.clipFunc(function (ctx: any) {
-             if (!borderShape) {
-                return;
-             }
-            const className = borderShape.getClassName();
-            
-            // Shapes with a centered origin need to be drawn at the center of the group
-            const centeredOrigin = className === 'Circle' || className === 'Star' || className === 'RegularPolygon';
-            
-            ctx.beginPath();
-
-            if (centeredOrigin) {
-                ctx.save();
-                // Move the context origin to the center of the group for these shapes
-                ctx.translate(size / 2, size / 2);
-                borderShape._sceneFunc(ctx);
-                ctx.restore();
-            } else {
-                // All other shapes (Rect, Text, Path) are drawn from the top-left (0,0)
-                borderShape._sceneFunc(ctx);
+            if (borderShape) {
+                const isRect = borderShape.getClassName() === 'Rect';
+                const isText = borderShape.getClassName() === 'Text';
+                const isPath = borderShape.getClassName() === 'Path';
+        
+                let localPos = {x: 0, y: 0};
+                if (!isRect && !isText) {
+                    localPos.x = size/2;
+                    localPos.y = size/2;
+                }
+                
+                ctx.beginPath();
+                if (isRect) {
+                    ctx.rect(localPos.x, localPos.y, borderShape.width(), borderShape.height());
+                } else if (isText) {
+                    ctx.font = `${borderShape.fontStyle()} ${borderShape.fontSize()}px ${borderShape.fontFamily()}`;
+                    ctx.fillText(borderShape.text(), localPos.x, localPos.y);
+                } else if (isPath) {
+                    // Manual heart path drawing
+                    const scale = borderShape.scaleX();
+                    ctx.save();
+                    ctx.scale(scale, scale);
+                    
+                    // Heart path data translated to canvas commands
+                    ctx.moveTo(20.84, 4.61);
+                    ctx.bezierCurveTo(18.27, 2.04, 14.39, 2.04, 11.82, 4.61);
+                    ctx.lineTo(12, 5.67);
+                    ctx.lineTo(10.94, 4.61);
+                    ctx.bezierCurveTo(8.37, 2.04, 4.49, 2.04, 1.92, 4.61);
+                    ctx.bezierCurveTo(-0.65, 7.18, -0.65, 11.06, 1.92, 13.63);
+                    ctx.lineTo(2.98, 14.69);
+                    ctx.lineTo(12, 21.23);
+                    ctx.lineTo(19.78, 13.45);
+                    ctx.lineTo(20.84, 12.39);
+                    ctx.bezierCurveTo(23.41, 9.82, 23.41, 5.94, 20.84, 3.37);
+                    ctx.closePath();
+                    
+                    ctx.restore();
+                } else if (borderShape.getClassName() === 'Circle') {
+                    ctx.arc(localPos.x, localPos.y, borderShape.radius(), 0, Math.PI * 2, false);
+                } else if (borderShape.getClassName() === 'Star') {
+                    let rotation = borderShape.rotation() || 0;
+                    let points = borderShape.numPoints();
+                    let innerRadius = borderShape.innerRadius();
+                    let outerRadius = borderShape.outerRadius();
+                    ctx.moveTo(localPos.x, localPos.y - outerRadius);
+        
+                    for (let n = 1; n < points * 2; n++) {
+                        let radius = n % 2 === 0 ? outerRadius : innerRadius;
+                        let angle = (n * Math.PI) / points + rotation;
+                        ctx.lineTo(localPos.x + radius * Math.sin(angle), localPos.y - radius * Math.cos(angle));
+                    }
+                } else if (borderShape.getClassName() === 'RegularPolygon') {
+                    let sides = borderShape.sides();
+                    let radius = borderShape.radius();
+                    const startAngle = sides === 3 ? -Math.PI / 2 : 0;
+                    ctx.moveTo(localPos.x + radius * Math.cos(startAngle), localPos.y + radius * Math.sin(startAngle));
+                    for (let i = 1; i <= sides; i++) {
+                        ctx.lineTo(localPos.x + radius * Math.cos(startAngle + i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(startAngle + i * 2 * Math.PI / sides));
+                    }
+                }
+                ctx.closePath();
             }
-            
-            ctx.closePath();
-            ctx.clip();
         });
-        // === END OF CORRECTED CLIP FUNCTION ===
     
         attachDoubleClick(group);
         layer.add(group);
@@ -323,3 +371,7 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
+
+      
+
+    
