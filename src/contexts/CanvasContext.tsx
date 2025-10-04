@@ -445,9 +445,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (direction === 'out' && newScale < initialScale) {
       newScale = initialScale;
     }
+    // Get the original, unscaled dimensions from the canvas size prop
+    const [originalWidth, originalHeight] = canvasSize.split('x').map(Number);
+    const PIXELS_PER_POINT = 0.35;
+    const unscaledWidth = originalWidth * PIXELS_PER_POINT;
+    const unscaledHeight = originalHeight * PIXELS_PER_POINT;
+    
+    // Set the new, larger pixel dimensions of the stage
+    stage.width(unscaledWidth * newScale);
+    stage.height(unscaledHeight * newScale);
+    
     stage.scale({ x: newScale, y: newScale });
+
+    
+    
     stage.draw();
-}, [initialScale]);
+}, [initialScale, canvasSize]);
 
   const applyStroke = useCallback((node: any, config: any) => {
     if (config.isGradient) {

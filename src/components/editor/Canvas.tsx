@@ -116,6 +116,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     canvasContainer.style.width = `${newWidth}px`;
     canvasContainer.style.height = `${newHeight}px`;
 
+    
+
     // Apply or remove circular clipping
     if (isCircular) {
       canvasContainer.style.borderRadius = '50%';
@@ -134,8 +136,10 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
 
 
   return (
-    <div className="relative-canvas">
-      <div id="canvas-container" style={{overflow: 'hidden'}}></div>
+    <div className="relative-canvas" style={{ display: 'grid' }}>
+      <div id="canvas-container"style={{
+      margin: '0 auto', // Center horizontally when smaller
+    }}></div>
     </div>
   );
 });
