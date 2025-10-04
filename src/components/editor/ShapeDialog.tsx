@@ -146,6 +146,9 @@ const ShapeDialog: React.FC<ShapeDialogProps> = ({ isOpen, onClose, onAddShape, 
                             <button className="shape-btn" data-shape="rect" title="Rectangle" onClick={() => handleShapeSelection('rect')}>
                                 <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
                             </button>
+                            <button className="shape-btn" data-shape="roundedRect" title="Rounded Rectangle" onClick={() => handleShapeSelection('roundedRect')}>
+                                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="4" ry="4"/></svg>
+                            </button>
                             <button className="shape-btn" data-shape="circle" title="Circle" onClick={() => handleShapeSelection('circle')}>
                                 <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>
                             </button>

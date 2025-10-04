@@ -72,6 +72,10 @@ export const useShapeHandler = ({
             newShape.x(x);
             newShape.y(y);
             break;
+            case 'roundedRect':
+              newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, cornerRadius: 10 });
+              break;
+  
         }
         if(newShape) {
            newShape.setAttrs({

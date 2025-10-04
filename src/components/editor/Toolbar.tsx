@@ -39,12 +39,14 @@ const Toolbar = () => {
           variant={selectedNode ? "destructive" : "ghost"}
           size="icon"
           disabled={!selectedNode}
-          onClick={() => {
+          onClick={async(e) => {
             if (selectedNode) {
               selectedNode.destroy();
               deselectNode();
               updateLayers();
             }
+            await new Promise(resolve => setTimeout(resolve, 0));
+            e.currentTarget.blur();
           }}
         >
           <Trash2 className="h-4 w-4" />
@@ -79,7 +81,7 @@ const Toolbar = () => {
       <div className="toolbar-section">
         <Button variant="default" size="sm" onClick={handleSave}>
             <Save className="h-4 w-4" />
-            <span>Save</span>
+            
         </Button>
       </div>
     </div>
