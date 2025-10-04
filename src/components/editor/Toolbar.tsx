@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2 } from 'lucide-react';
+import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
@@ -11,7 +11,8 @@ const Toolbar = () => {
     setAddItemDialogOpen, 
     deselectNode, 
     selectedNode, 
-    updateLayers 
+    updateLayers,
+    handleSave,
   } = useCanvas();
 
   return (
@@ -70,6 +71,15 @@ const Toolbar = () => {
         </Button>
         <Button variant="ghost" size="icon" disabled>
           <ZoomOut className="h-4 w-4" />
+        </Button>
+      </div>
+      <Separator orientation="vertical" />
+
+      {/* Save button section */}
+      <div className="toolbar-section">
+        <Button variant="default" size="sm" onClick={handleSave}>
+            <Save className="h-4 w-4" />
+            <span>Save</span>
         </Button>
       </div>
     </div>

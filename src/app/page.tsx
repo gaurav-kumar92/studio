@@ -134,12 +134,6 @@ function Editor() {
                             onMaskImagePan={handleMaskImagePan}
                         />
                     )}
-
-                    <div className="flex flex-col sm:flex-row gap-2 flex-wrap mt-4">
-                        
-                        
-                        <button id="save-btn" className="button button-primary flex-grow">Save as Image</button>
-                    </div>
                 </div>
             </div>
 

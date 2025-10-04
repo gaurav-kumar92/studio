@@ -53,6 +53,7 @@ type CanvasContextType = {
   updateLayers: () => void;
   selectNode: (node: any) => void;
   deselectNode: () => void;
+  handleSave: () => void;
   handleMoveNode: (action: 'up' | 'down', nodeId: string) => void;
   handleAlign: (position: string) => void;
   handleOpacityChange: (opacity: number) => void;
@@ -104,6 +105,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const deselectNode = useCallback(() => {
     setSelectedNode(null);
   }, []);
+
+  const handleSave = useCallback(() => {
+    if (!canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+
+    deselectNode();
+    const dataURL = stage.toDataURL({ mimeType: "image/png", quality: 1 });
+    const link = document.createElement('a');
+    link.download = 'konva-design.png';
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [deselectNode]);
 
   const applyFill = useCallback((node: any, config: any) => {
     const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
@@ -646,8 +661,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const { stage } = canvasRef.current;
-
-    const saveBtn = document.getElementById('save-btn');
     
     if (typeof window.Konva === 'undefined') {
       console.error('Konva library is not loaded. Canvas features are disabled.');
@@ -660,18 +673,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       updateLayers();
-      
-      saveBtn?.addEventListener('click', () => {
-        deselectNode();
-        if (!stage) return;
-        const dataURL = stage.toDataURL({ mimeType: "image/png", quality: 1 });
-        const link = document.createElement('a');
-        link.download = 'konva-design.png';
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
 
       stage.on('click tap', (e: any) => {
         if (window.isOpeningFileDialog) {
@@ -752,6 +753,7 @@ setEditingMaskNode,
     updateLayers,
     selectNode,
     deselectNode,
+    handleSave,
     handleMoveNode,
     handleAlign,
     handleOpacityChange,
