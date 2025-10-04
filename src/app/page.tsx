@@ -99,7 +99,7 @@ function Editor() {
             }
         }}
       />
-      {isLoading && (
+      {!isCanvasReady && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
           <p>Loading...</p>

@@ -13,6 +13,7 @@ const Toolbar = () => {
     selectedNode, 
     updateLayers,
     handleSave,
+    handleZoom,
   } = useCanvas();
 
   return (
@@ -39,14 +40,13 @@ const Toolbar = () => {
           variant={selectedNode ? "destructive" : "ghost"}
           size="icon"
           disabled={!selectedNode}
-          onClick={async(e) => {
+          onClick={() => {
             if (selectedNode) {
               selectedNode.destroy();
               deselectNode();
               updateLayers();
             }
-            await new Promise(resolve => setTimeout(resolve, 0));
-            e.currentTarget.blur();
+            
           }}
         >
           <Trash2 className="h-4 w-4" />
@@ -68,12 +68,12 @@ const Toolbar = () => {
 
       {/* Existing Zoom buttons */}
       <div className="toolbar-section">
-        <Button variant="ghost" size="icon" disabled>
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" disabled>
-          <ZoomOut className="h-4 w-4" />
-        </Button>
+      <Button variant="ghost" size="icon" onClick={() => handleZoom('in')}>
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => handleZoom('out')}>
+        <ZoomOut className="h-4 w-4" />
+      </Button>
       </div>
       <Separator orientation="vertical" />
 

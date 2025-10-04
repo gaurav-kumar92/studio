@@ -71,7 +71,10 @@ type CanvasContextType = {
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
+  handleZoom: (direction: 'in' | 'out') => void; // Add this line
   handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  setInitialScale: React.Dispatch<React.SetStateAction<number>>; // Add this
+  
 };
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -84,6 +87,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [initialScale, setInitialScale] = useState(1); // Add this state
   const [isLoading, setIsLoading] = useState(false);
 
   // Dialog states
@@ -431,6 +435,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
     layer.batchDraw();
   }, [selectedNode]);
+  const handleZoom = useCallback((direction: 'in' | 'out') => {
+    if (!canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+    const scaleBy = 1.1;
+    const oldScale = stage.scaleX();
+
+    let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+    if (direction === 'out' && newScale < initialScale) {
+      newScale = initialScale;
+    }
+    stage.scale({ x: newScale, y: newScale });
+    stage.draw();
+}, [initialScale]);
+
   const applyStroke = useCallback((node: any, config: any) => {
     if (config.isGradient) {
         const { width, height } = node.getClientRect({ relativeTo: node.getParent() });
@@ -772,6 +790,8 @@ setEditingMaskNode,
     handleMaskImageZoom,
     handleMaskImageReset,
     handleMaskImagePan,
+    handleZoom,
+    setInitialScale,
   };
 
   return (

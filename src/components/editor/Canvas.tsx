@@ -2,7 +2,7 @@
 'use client';
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-
+import { useCanvas } from '@/contexts/CanvasContext'; 
 // This is a global declaration for the Konva object.
 declare global {
   interface Window {
@@ -20,6 +20,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
+  const { setInitialScale } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -37,6 +38,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer) {
       return;
     }
+    // 3. Get the parent container
+    const relativeCanvas = canvasContainer.parentElement; 
+    if (!relativeCanvas) return;
     
     let tempStage = stage;
     if (!tempStage) {
@@ -61,12 +65,24 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
       });
       newLayer.add(newBackground);
       setBackground(newBackground);
+
+      // 4. Calculate and set initial scale
+      const containerWidth = relativeCanvas.clientWidth;
+      const containerHeight = relativeCanvas.clientHeight;
+      const stageWidth = tempStage.width();
+      const stageHeight = tempStage.height();
       
+      if (stageWidth > 0 && stageHeight > 0) {
+        const scale = Math.min(containerWidth / stageWidth, containerHeight / stageHeight);
+        tempStage.scale({ x: scale, y: scale });
+        setInitialScale(scale); // Set it in the context
+      }
+  
       newLayer.draw();
       onReady();
     }
     
-  }, [stage, onReady]);
+  }, [stage, onReady, setInitialScale]);
 
   useEffect(() => {
     if (!stage || !layer) return;
@@ -75,6 +91,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer) {
       return;
     }
+    const relativeCanvas = canvasContainer.parentElement; 
+    if (!relativeCanvas) return;
 
     const PIXELS_PER_POINT = 0.35; // This constant intentionally scales down print sizes to fit on screen.
 
