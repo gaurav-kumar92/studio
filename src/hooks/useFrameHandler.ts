@@ -81,9 +81,7 @@ export const useFrameHandler = ({
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
-       /* if (attrs.color) {
-          editingFrameNode.stroke(attrs.color);
-        }*/
+      
         if (attrs.thickness) {
           editingFrameNode.strokeWidth(attrs.thickness);
         }

@@ -417,44 +417,60 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     layer.batchDraw();
   }, [selectedNode]);
   const applyStroke = useCallback((node: any, config: any) => {
-    // Clear previous stroke properties
-    node.stroke(null);
-    node.strokeLinearGradientColorStops([]);
-   // node.strokeRadialGradientColorStops([]);
-
     if (config.isGradient) {
         const { width, height } = node.getClientRect({ relativeTo: node.getParent() });
         const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+        
         let start = { x: 0, y: 0 };
         let end = { x: 0, y: 0 };
-// This switch block now handles radial as a fallback to linear
-switch (config.gradientDirection) {
-  case 'left-to-right': 
-      end = { x: width, y: 0 }; 
-      break;
-  case 'diagonal-tl-br': 
-      end = { x: width, y: height }; 
-      break;
-  case 'diagonal-tr-bl': 
-      start = { x: width, y: 0 }; 
-      end = { x: 0, y: height }; 
-      break;
-  case 'radial': // Fallback for radial
-  case 'top-to-bottom': // Default case
-  default:
-      end = { x: 0, y: height }; 
-      break;
-}
 
-node.strokeLinearGradientStartPoint(start);
-node.strokeLinearGradientEndPoint(end);
-node.strokeLinearGradientColorStops(colorStopsFlat);
-} else {
-node.stroke(config.solidColor);
-}
+        switch (config.gradientDirection) {
+            case 'left-to-right': 
+                end = { x: width, y: 0 }; 
+                break;
+            case 'diagonal-tl-br': 
+                end = { x: width, y: height }; 
+                break;
+            case 'diagonal-tr-bl': 
+                start = { x: width, y: 0 }; 
+                end = { x: 0, y: height }; 
+                break;
+            case 'radial':
+            case 'top-to-bottom':
+            default:
+                end = { x: 0, y: height }; 
+                break;
+        }
+
+        node.strokeLinearGradientStartPoint(start);
+        node.strokeLinearGradientEndPoint(end);
+        node.strokeLinearGradientColorStops(colorStopsFlat);
+        
+        node.setAttr('data-is-gradient', true);
+        node.setAttr('data-gradient-direction', config.gradientDirection);
+        node.setAttr('data-color-stops', config.colorStops);
+    } else {
+        // Get solid color
+        let solidColor = config.solidColor || node.getAttr('data-solid-color') || '#3b82f6';
+        
+        // CRITICAL: Remove ALL gradient properties completely
+        node.strokeLinearGradientStartPoint({ x: 0, y: 0 });
+        node.strokeLinearGradientEndPoint({ x: 0, y: 0 });
+        node.strokeLinearGradientColorStops(null);
+        
+        // Then set solid stroke
+        node.stroke(solidColor);
+        
+        node.setAttr('data-is-gradient', false);
+        node.setAttr('data-solid-color', solidColor);
+    }
+    
+    // Force redraw
+    const layer = node.getLayer();
+    if (layer) {
+        layer.draw();
+    }
 }, []);
-
-
   
     const handleColorUpdate = useCallback((config: any) => {
         if (!selectedNode) return;
