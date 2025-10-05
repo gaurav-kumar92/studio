@@ -142,7 +142,7 @@ body {
 }
 
 #canvas-container {
-    margin: 0 auto;
+    /* margin: 0 auto; This rule is removed */
 }
 
 #controls {
