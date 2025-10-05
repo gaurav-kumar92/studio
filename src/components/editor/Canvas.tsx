@@ -1,8 +1,8 @@
-
 'use client';
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { useCanvas } from '@/contexts/CanvasContext'; 
+import { useCanvas } from '@/contexts/CanvasContext';
+
 // This is a global declaration for the Konva object.
 declare global {
   interface Window {
@@ -20,7 +20,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const { setInitialScale } = useCanvas();
+  const { setInitialScale, updateLayers } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -38,18 +38,22 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer) {
       return;
     }
-    // 3. Get the parent container
-    const relativeCanvas = canvasContainer.parentElement; 
+    const relativeCanvas = canvasContainer.parentElement;
     if (!relativeCanvas) return;
     
     let tempStage = stage;
     if (!tempStage) {
+      // Set draggable to false to prevent the stage from moving its position.
       tempStage = new window.Konva.Stage({
         container: 'canvas-container',
         width: 0,
         height: 0,
+        draggable: false, 
       });
       setStage(tempStage);
+
+      // No longer need the dragend event listener
+      // tempStage.on('dragend', ...);
 
       const newLayer = new window.Konva.Layer();
       tempStage.add(newLayer);
@@ -61,12 +65,13 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
         width: 0,
         height: 0,
         fill: '#ffffff',
-        name: 'background'
+        name: 'background',
+        // This is the key change: the background no longer captures events.
+        listening: false,
       });
       newLayer.add(newBackground);
       setBackground(newBackground);
 
-      // 4. Calculate and set initial scale
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
       const stageWidth = tempStage.width();
@@ -75,7 +80,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
       if (stageWidth > 0 && stageHeight > 0) {
         const scale = Math.min(containerWidth / stageWidth, containerHeight / stageHeight);
         tempStage.scale({ x: scale, y: scale });
-        setInitialScale(scale); // Set it in the context
+        setInitialScale(scale);
       }
   
       newLayer.draw();
@@ -91,10 +96,10 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer) {
       return;
     }
-    const relativeCanvas = canvasContainer.parentElement; 
+    const relativeCanvas = canvasContainer.parentElement;
     if (!relativeCanvas) return;
 
-    const PIXELS_PER_POINT = 0.35; // This constant intentionally scales down print sizes to fit on screen.
+    const PIXELS_PER_POINT = 0.35;
 
     const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
     
@@ -116,8 +121,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     canvasContainer.style.width = `${newWidth}px`;
     canvasContainer.style.height = `${newHeight}px`;
 
-    
-
     // Apply or remove circular clipping
     if (isCircular) {
       canvasContainer.style.borderRadius = '50%';
@@ -138,7 +141,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
   return (
     <div className="relative-canvas" style={{ display: 'grid' }}>
       <div id="canvas-container"style={{
-      margin: '0 auto', // Center horizontally when smaller
+      margin: 'auto',
     }}></div>
     </div>
   );
