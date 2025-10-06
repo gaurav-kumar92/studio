@@ -5,6 +5,7 @@ import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
+import { ListPlus } from 'lucide-react';
 
 const Toolbar = () => {
   const { 
@@ -18,13 +19,15 @@ const Toolbar = () => {
     redo,
     canUndo,
     canRedo,
-    saveState, // Add this
+    saveState,
+    
   } = useCanvas();
 
   return (
     <div className="toolbar">
       {/* "Add Item" button section */}
       <div className="toolbar-section">
+      
         <Button 
           variant="default" 
           size="sm" 

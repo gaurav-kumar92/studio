@@ -120,7 +120,7 @@ function Editor() {
                 <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
                     
                     <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-                    <BackgroundColorPicker defaultValue={backgroundColor} onChange={setBackgroundColor} />
+                    <BackgroundColorPicker value={backgroundColor} onChange={setBackgroundColor} />
 
                     {selectedNode && (
                         <ObjectPropertiesPanel

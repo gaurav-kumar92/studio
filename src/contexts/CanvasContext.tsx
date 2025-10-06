@@ -88,9 +88,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
-  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [backgroundColor, setBackgroundColor] = useState<any>({
+    isGradient: false,
+    solidColor: '#ffffff',
+    gradientDirection: 'top-to-bottom',
+    colorStops: [
+      { id: 0, stop: 0, color: '#3b82f6' },
+      { id: 1, stop: 1, color: '#a855f7' },
+    ],
+  });
   const [initialScale, setInitialScale] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  
   
   const isRestoringRef = useRef(false);
   const debouncedSaveRef = useRef<NodeJS.Timeout | null>(null);
@@ -711,14 +720,56 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       scheduleSave();
   }, [selectedNode, scheduleSave]);
 
-  useEffect(() => {
-      if (canvasRef.current?.background && isCanvasReady) {
-        canvasRef.current.background.fill(backgroundColor);
-        if (canvasRef.current.layer) {
-            canvasRef.current.layer.draw();
-        }
+ // In src/contexts/CanvasContext.tsx
+
+useEffect(() => {
+  if (!canvasRef.current?.background || !isCanvasReady) return;
+
+  const backgroundRect = canvasRef.current.background;
+  const layer = canvasRef.current.layer;
+
+  // Clear previous gradient settings
+  backgroundRect.fill(null);
+  backgroundRect.fillLinearGradientColorStops(null);
+  backgroundRect.fillRadialGradientColorStops(null);
+
+  if (backgroundColor.isGradient) {
+      const { width, height } = backgroundRect.getClientRect();
+      const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+
+      if (backgroundColor.gradientDirection === 'radial') {
+          backgroundRect.fillPriority('radial-gradient');
+          backgroundRect.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
+          backgroundRect.fillRadialGradientStartRadius(0);
+          backgroundRect.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
+          backgroundRect.fillRadialGradientEndRadius(Math.max(width, height) / 2);
+          backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
+      } else {
+          backgroundRect.fillPriority('linear-gradient');
+          let start = { x: 0, y: 0 };
+          let end = { x: 0, y: 0 };
+
+          switch (backgroundColor.gradientDirection) {
+              case 'top-to-bottom': end = { x: 0, y: height }; break;
+              case 'left-to-right': end = { x: width, y: 0 }; break;
+              case 'diagonal-tl-br': end = { x: width, y: height }; break;
+              case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
+          }
+          backgroundRect.fillLinearGradientStartPoint(start);
+          backgroundRect.fillLinearGradientEndPoint(end);
+          backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
       }
-  }, [backgroundColor, isCanvasReady]);
+  } else {
+      // It's a solid color
+      backgroundRect.fillPriority('color');
+      backgroundRect.fill(backgroundColor.solidColor);
+  }
+
+  if (layer) {
+      layer.draw();
+  }
+}, [backgroundColor, isCanvasReady]);
+
 
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.layer) return;

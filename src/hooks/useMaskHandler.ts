@@ -4,6 +4,7 @@
 
 import { useState, useCallback } from 'react';
 
+
 type UseMaskHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
@@ -340,6 +341,7 @@ export const useMaskHandler = ({
         setMaskDialogOpen(false);
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         group.setAttr('id', uniqueId);
+        
     
       }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen, attachDoubleClick]);
 

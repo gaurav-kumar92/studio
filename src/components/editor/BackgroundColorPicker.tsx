@@ -1,47 +1,56 @@
+// src/components/editor/BackgroundColorPicker.tsx
 
 'use client';
 
 import React from 'react';
+import ColorPropertiesPanel from './ColorPropertiesPanel';
 
 type BackgroundColorPickerProps = {
-  defaultValue?: string;
-  onChange: (color: string) => void;
+  // The 'defaultValue' is no longer needed as we'll manage state in the context
+  onChange: (config: any) => void;
+  // We don't have a 'selectedNode' for the background, so we make a fake one
+  // to satisfy the props of ColorPropertiesPanel.
+  value: any;
 };
 
 const BackgroundColorPicker: React.FC<BackgroundColorPickerProps> = ({
-  defaultValue = '#ffffff',
   onChange,
+  value,
 }) => {
-  const [color, setColor] = React.useState(defaultValue);
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = e.target.value;
-    setColor(newColor);
-    onChange(newColor);
+  // Create a mock `selectedNode` with the necessary attributes
+  // that ColorPropertiesPanel expects to read.
+  const mockNode = {
+    name: () => 'background',
+    getAttr: (attr: string) => {
+      switch (attr) {
+        case 'data-is-gradient':
+          return value.isGradient;
+        case 'data-solid-color':
+          return value.solidColor;
+        case 'data-color-stops':
+          return value.colorStops;
+        case 'data-gradient-direction':
+          return value.gradientDirection;
+        default:
+          return undefined;
+      }
+    },
+    // Add dummy functions that ColorPropertiesPanel might try to call
+    hasName: (name: string) => name === 'background',
+    findOne: () => null,
+    fill: () => value.solidColor,
   };
 
   return (
     <div className="mb-4">
-      <div className="color-picker-container-inline">
-        <label
-          htmlFor="background-color-picker"
-          className="block text-sm font-medium text-gray-700 mr-4"
-        >
-          Background Color
-        </label>
-        <div
-          id="color-preview-background"
-          className="color-preview-circle"
-          style={{ backgroundColor: color }}
-        ></div>
-        <input
-          type="color"
-          id="background-color-picker"
-          value={color}
-          onChange={handleColorChange}
-          className="color-picker-input-hidden"
-        />
-      </div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Background
+      </label>
+      <ColorPropertiesPanel
+        selectedNode={mockNode}
+        onColorChange={onChange}
+        isStroke={false} // Background is always a fill
+      />
     </div>
   );
 };
