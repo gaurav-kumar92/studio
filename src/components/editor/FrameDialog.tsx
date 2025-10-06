@@ -85,11 +85,11 @@ const FrameDialog: React.FC<FrameDialogProps> = ({ isOpen, onClose, onAddFrame, 
             <div className="dialog">
                 <h3 className="text-lg font-semibold mb-4">{dialogTitle}</h3>
                 <div className="flex flex-col gap-4 mb-4">
-                     <div className="color-picker-container-inline justify-center">
+                     {/*} <div className="color-picker-container-inline justify-center">
                         <label htmlFor="frame-color-picker" className="block text-sm font-medium text-gray-700 mr-4">Color</label>
                         <div id="color-preview-frame" className="color-preview-circle" style={{backgroundColor: color}}></div>
                         <input type="color" id="frame-color-picker" value={color} onChange={(e) => setColor(e.target.value)} className="color-picker-input-hidden" />
-                    </div>
+                    </div> */}
                     <div>
                         <label htmlFor="frame-thickness-slider" className="block text-sm font-medium text-gray-700">
                             Thickness (<span>{thickness}</span>px)

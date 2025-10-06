@@ -14,6 +14,11 @@ const Toolbar = () => {
     updateLayers,
     handleSave,
     handleZoom,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    saveState, // Add this
   } = useCanvas();
 
   return (
@@ -29,12 +34,11 @@ const Toolbar = () => {
           }}
         >
           <Plus className="h-4 w-4" />
-          
         </Button>
       </div>
       <Separator orientation="vertical" />
 
-      {/* Delete button section */}
+      {/* Delete button section - UPDATED to include saveState */}
       <div className="toolbar-section">
         <Button
           variant={selectedNode ? "destructive" : "ghost"}
@@ -45,43 +49,41 @@ const Toolbar = () => {
               selectedNode.destroy();
               deselectNode();
               updateLayers();
+              saveState(); // ADD THIS LINE - saves state after deletion
             }
-            
           }}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       <Separator orientation="vertical" />
-        
 
-      {/* Existing Undo/Redo buttons */}
+      {/* Undo/Redo buttons */}
       <div className="toolbar-section">
-        <Button variant="ghost" size="icon" disabled>
+        <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
           <Undo className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" disabled>
+        <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo}>
           <Redo className="h-4 w-4" />
         </Button>
       </div>
       <Separator orientation="vertical" />
 
-      {/* Existing Zoom buttons */}
+      {/* Zoom buttons */}
       <div className="toolbar-section">
-      <Button variant="ghost" size="icon" onClick={() => handleZoom('in')}>
-        <ZoomIn className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="icon" onClick={() => handleZoom('out')}>
-        <ZoomOut className="h-4 w-4" />
-      </Button>
+        <Button variant="ghost" size="icon" onClick={() => handleZoom('in')}>
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => handleZoom('out')}>
+          <ZoomOut className="h-4 w-4" />
+        </Button>
       </div>
       <Separator orientation="vertical" />
 
       {/* Save button section */}
       <div className="toolbar-section">
         <Button variant="default" size="sm" onClick={handleSave}>
-            <Save className="h-4 w-4" />
-            
+          <Save className="h-4 w-4" />
         </Button>
       </div>
     </div>

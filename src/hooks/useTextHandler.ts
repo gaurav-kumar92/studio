@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -11,6 +9,7 @@ type UseTextHandlerProps = {
     setSelectedNode: (node: any) => void;
     applyFill: (node: any, config: any) => void;
     attachDoubleClick: (node: any) => void;
+    saveState: () => void; // ADD THIS
 };
 
 export const useTextHandler = ({
@@ -20,6 +19,7 @@ export const useTextHandler = ({
     setSelectedNode,
     applyFill,
     attachDoubleClick,
+    saveState, // ADD THIS
 }: UseTextHandlerProps) => {
     const [isTextDialogOpen, setTextDialogOpen] = useState(false);
     const [editingTextNode, setEditingTextNode] = useState<any>(null);
@@ -43,7 +43,7 @@ export const useTextHandler = ({
         
         // Create the final data attributes by merging old and new.
         // New values from the dialog (config) take precedence.
-        const dataAttrs = {
+        const dataAttrs: any = {
             ...oldAttrs,
             'data-text': config.text,
             'data-font-size': config.fontSize,
@@ -222,12 +222,14 @@ export const useTextHandler = ({
             applyFill(newNode, colorConfig);
 
             setSelectedNode(newNode);
+            updateLayers();
+            layer.draw();
+            
+            saveState(); // ADD THIS - Save after adding/updating text
         }
 
-        updateLayers();
-        layer.draw();
         setTextDialogOpen(false);
-    }, [canvasRef, editingTextNode, deselectNode, setSelectedNode, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick]);
+    }, [canvasRef, editingTextNode, deselectNode, setSelectedNode, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]); // Add saveState to dependencies
 
     return {
         isTextDialogOpen,
@@ -237,5 +239,3 @@ export const useTextHandler = ({
         handleAddOrUpdateText,
     };
 };
-
-      

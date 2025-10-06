@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -8,6 +7,7 @@ type UseFrameHandlerProps = {
     updateLayers: () => void;
     setSelectedNode: (node: any) => void;
     attachDoubleClick: (node: any) => void;
+    saveState: () => void; // ADD THIS
 };
 
 export const useFrameHandler = ({
@@ -15,6 +15,7 @@ export const useFrameHandler = ({
     updateLayers,
     setSelectedNode,
     attachDoubleClick,
+    saveState, // ADD THIS
 }: UseFrameHandlerProps) => {
     const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
     const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
@@ -32,7 +33,6 @@ export const useFrameHandler = ({
         const commonAttrs = {
             x: x, 
             y: y,
-           // stroke: config.color,
             strokeWidth: config.thickness,
             draggable: true,
             name: 'frame',
@@ -61,23 +61,24 @@ export const useFrameHandler = ({
         }
     
         if(newFrame) {
-          // ADD these data attributes for color
           newFrame.setAttrs({
             'data-is-gradient': false,
             'data-solid-color': config.color || '#3b82f6',
-        });
-        newFrame.stroke(config.color || '#3b82f6');
+          });
+          newFrame.stroke(config.color || '#3b82f6');
         
-            attachDoubleClick(newFrame);
-            layer.add(newFrame);
-            updateLayers();
-            layer.draw();
-            setSelectedNode(newFrame);
-            const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            newFrame.setAttr('id', uniqueId);
+          attachDoubleClick(newFrame);
+          layer.add(newFrame);
+          updateLayers();
+          layer.draw();
+          setSelectedNode(newFrame);
+          const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          newFrame.setAttr('id', uniqueId);
+          
+          saveState(); // ADD THIS - Save after adding frame
         }
         setFrameDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick]);
+      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick, saveState]); // Add saveState to dependencies
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
@@ -89,7 +90,8 @@ export const useFrameHandler = ({
           editingFrameNode.sides(attrs.sides);
         }
         canvasRef.current?.layer.draw();
-      }, [editingFrameNode, canvasRef]);
+        saveState(); // ADD THIS - Save after updating frame
+      }, [editingFrameNode, canvasRef, saveState]); // Add saveState to dependencies
 
     return {
         isFrameDialogOpen,
@@ -100,5 +102,3 @@ export const useFrameHandler = ({
         handleUpdateFrame,
     };
 };
-
-      

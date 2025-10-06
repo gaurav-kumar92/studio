@@ -1,18 +1,29 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
+
+const MAX_HISTORY_SIZE = 5;
 
 export const useHistory = () => {
     const [history, setHistory] = useState<string[]>([]);
     const [currentStep, setCurrentStep] = useState<number>(-1);
 
     const saveState = useCallback((state: string) => {
-        const newHistory = history.slice(0, currentStep + 1);
-        newHistory.push(state);
-        setHistory(newHistory);
-        setCurrentStep(newHistory.length - 1);
-    }, [history, currentStep]);
+        setHistory(prev => {
+          const trimmed = prev.slice(0, currentStep + 1);
+      
+          // Don't save if state is identical to the last saved
+          if (trimmed.length > 0 && trimmed[trimmed.length - 1] === state) {
+            return prev;
+          }
+      
+          const updated = [...trimmed, state].slice(-MAX_HISTORY_SIZE);
+          setCurrentStep(updated.length - 1);
+          return updated;
+        });
+      }, [currentStep]);
+      
+      
 
     const undo = useCallback(() => {
         if (currentStep > 0) {
@@ -31,12 +42,18 @@ export const useHistory = () => {
         }
         return null;
     }, [currentStep, history]);
-
+    
+    // Calculate based on current values
+    const canUndo = currentStep > 0;
+    const canRedo = currentStep < history.length - 1;
+    
     return {
         history,
         currentStep,
         saveState,
         undo,
-        redo
+        redo,
+        canUndo, 
+        canRedo, 
     };
 };

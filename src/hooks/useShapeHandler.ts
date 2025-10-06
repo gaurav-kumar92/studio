@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -9,6 +7,7 @@ type UseShapeHandlerProps = {
     updateLayers: () => void;
     setSelectedNode: (node: any) => void;
     attachDoubleClick: (node: any) => void;
+    saveState: () => void; // ADD THIS
 };
 
 export const useShapeHandler = ({
@@ -16,6 +15,7 @@ export const useShapeHandler = ({
     updateLayers,
     setSelectedNode,
     attachDoubleClick,
+    saveState, // ADD THIS
 }: UseShapeHandlerProps) => {
     const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
     const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
@@ -72,38 +72,39 @@ export const useShapeHandler = ({
             newShape.x(x);
             newShape.y(y);
             break;
-            case 'roundedRect':
-              newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, cornerRadius: 10 });
-              break;
-            case 'heart':
+          case 'roundedRect':
+            newShape = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, cornerRadius: 10 });
+            break;
+          case 'heart':
             newShape = new window.Konva.Path({
-            ...commonAttrs,
-            data: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
-            scale: { x: size / 24, y: size / 24 }, // Scale the path to the desired size
+              ...commonAttrs,
+              data: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+              scale: { x: size / 24, y: size / 24 },
             });
             break;
-  
         }
+        
         if(newShape) {
-           newShape.setAttrs({
-                'data-is-gradient': false,
-                'data-solid-color': '#3b82f6',
-            });
-            if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
-                newShape.stroke('#3b82f6');
-                if (config.type === 'arrow') newShape.fill('#3b82f6');
-            } else {
-                newShape.fill('#3b82f6');
-            }
+          newShape.setAttrs({
+            'data-is-gradient': false,
+            'data-solid-color': '#3b82f6',
+          });
+          if (config.type === 'line' || config.type === 'arrow' || config.type === 'curve') {
+            newShape.stroke('#3b82f6');
+            if (config.type === 'arrow') newShape.fill('#3b82f6');
+          } else {
+            newShape.fill('#3b82f6');
+          }
           attachDoubleClick(newShape);
           layer.add(newShape);
           updateLayers();
           layer.draw();
           setSelectedNode(newShape);
-          newShape.setAttr('id', uniqueId);
+          newShape.setAttr('id', uniqueId); 
+          saveState(); // ADD THIS - Save after adding shape
         }
         setShapeDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick]);
+      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick, saveState]); // Add saveState to dependencies
     
       const handleUpdateShape = useCallback((attrs: any) => {
         if (!editingShapeNode || !canvasRef.current) return;
@@ -118,7 +119,8 @@ export const useShapeHandler = ({
             editingShapeNode.setAttr('data-tension', attrs.tension);
         }
         canvasRef.current.layer.draw();
-      }, [editingShapeNode, canvasRef]);
+        saveState(); // ADD THIS - Save after updating shape
+      }, [editingShapeNode, canvasRef, saveState]); // Add saveState to dependencies
 
     return {
         isShapeDialogOpen,
@@ -129,5 +131,3 @@ export const useShapeHandler = ({
         handleUpdateShape,
     };
 };
-
-      

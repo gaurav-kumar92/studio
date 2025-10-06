@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -7,9 +6,8 @@ import { useShapeHandler } from '@/hooks/useShapeHandler';
 import { useFrameHandler } from '@/hooks/useFrameHandler';
 import { useMaskHandler } from '@/hooks/useMaskHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
+import { useHistory } from '@/hooks/useHistory';
 
-
-// This is a global declaration for the Konva object.
 declare global {
   interface Window {
     Konva: any;
@@ -71,10 +69,14 @@ type CanvasContextType = {
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
-  handleZoom: (direction: 'in' | 'out') => void; // Add this line
+  handleZoom: (direction: 'in' | 'out') => void;
   handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
-  setInitialScale: React.Dispatch<React.SetStateAction<number>>; // Add this
-  
+  setInitialScale: React.Dispatch<React.SetStateAction<number>>;
+  saveState: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 };
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -87,10 +89,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
-  const [initialScale, setInitialScale] = useState(1); // Add this state
+  const [initialScale, setInitialScale] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Dialog states
+  
+  const isRestoringRef = useRef(false);
+  const debouncedSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const hasInitializedHistoryRef = useRef(false);
+    
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   
   const updateLayers = useCallback(() => {
@@ -124,13 +129,57 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     document.body.removeChild(link);
   }, [deselectNode]);
 
+  // HISTORY SETUP - Must be defined early
+  const serializeCanvas = useCallback(() => {
+    if (!canvasRef.current?.layer) return '';
+    const { layer } = canvasRef.current;
+
+    const childrenConfigs = layer.getChildren()
+        .filter((node: any) => node.name() !== 'background' && node.className !== 'Transformer')
+        .map((node: any) => node.toObject());
+    
+    return JSON.stringify(childrenConfigs);
+  }, []);
+
+  const { 
+    history, 
+    currentStep, 
+    saveState: historySaveState,
+    undo: historyUndo,
+    redo: historyRedo,
+    canUndo,
+    canRedo,
+  } = useHistory();
+
+  const saveState = useCallback(() => {
+    if (isRestoringRef.current) {
+      console.log('Skipping save - currently restoring');
+      return;
+    }
+    
+    const state = serializeCanvas();
+    console.log('Saving state:', state.substring(0, 100) + '...');
+    historySaveState(state);
+  }, [serializeCanvas, historySaveState]);
+
+  const scheduleSave = useCallback(() => {
+    if (isRestoringRef.current) return;
+    
+    if (debouncedSaveRef.current) {
+      clearTimeout(debouncedSaveRef.current);
+    }
+    
+    debouncedSaveRef.current = setTimeout(() => {
+      saveState();
+    }, 500);
+  }, [saveState]);
+
   const applyFill = useCallback((node: any, config: any) => {
     const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
       ? node.find('.mainChar, .text, Text') 
       : [node];
 
     targetNodes.forEach((n: any) => {
-      // Always clear previous fills to prevent conflicts
       n.fill(null);
       n.fillLinearGradientColorStops([]);
       n.fillRadialGradientColorStops([]);
@@ -139,16 +188,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
 
             if (config.gradientDirection === 'radial') {
-              // Apply Radial Gradient
-              n.fillPriority('radial-gradient'); // Prioritize radial gradient rendering
+              n.fillPriority('radial-gradient');
               n.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
               n.fillRadialGradientStartRadius(0);
               n.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
               n.fillRadialGradientEndRadius(Math.max(width, height) / 2);
               n.fillRadialGradientColorStops(colorStopsFlat);
           } else {
-              // Apply Linear Gradient (existing logic)
-              n.fillPriority('linear-gradient'); // Prioritize linear gradient rendering
+              n.fillPriority('linear-gradient');
               let start = { x: 0, y: 0 };
               let end = { x: 0, y: 0 };
 
@@ -163,12 +210,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
               n.fillLinearGradientColorStops(colorStopsFlat);
           }
       } else {
-          // Apply Solid Color
           n.fillPriority('color');
           n.fill(config.solidColor);
       }
   });
 }, []);
+
   const {
     isTextDialogOpen,
     setTextDialogOpen,
@@ -181,8 +228,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     deselectNode,
     setSelectedNode,
     applyFill,
-    attachDoubleClick: (node) => attachDoubleClick(node), 
+    attachDoubleClick: (node) => attachDoubleClick(node),
+    saveState,
   });
+  
 
   const {
     isShapeDialogOpen,
@@ -196,6 +245,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     updateLayers,
     setSelectedNode,
     attachDoubleClick: (node) => attachDoubleClick(node),
+    saveState,
   });
 
   const {
@@ -210,6 +260,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     updateLayers,
     setSelectedNode,
     attachDoubleClick: (node) => attachDoubleClick(node),
+    saveState,
   });
 
   const {
@@ -226,6 +277,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNode,
     setIsLoading,
     attachDoubleClick: (node) => attachDoubleClick(node),
+    saveState,
   });
 
   const { handleDoubleClick, attachDoubleClick } = useNodeHandlers({
@@ -238,6 +290,77 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     addImageToMask,
     setIsLoading,
   });
+
+  const restoreKonvaState = useCallback((savedStateJson: string) => {
+    if (!canvasRef.current?.layer || !window.Konva) return;
+  
+    const { layer } = canvasRef.current;
+    console.log('Restoring state:', savedStateJson.substring(0, 100) + '...');
+  
+    isRestoringRef.current = true;
+  
+    // Remove all nodes except background
+    layer.getChildren((node: any) => node.name() !== 'background' && node.className !== 'Transformer')
+         .forEach((node: any) => node.destroy());
+  
+    try {
+      const savedConfigs = JSON.parse(savedStateJson || '[]');
+      console.log('Restoring', savedConfigs.length, 'nodes');
+  
+      savedConfigs.forEach((config: any) => {
+        let node: any;
+  
+        if (config.className === 'Image' && typeof config.attrs?.image === 'string') {
+          // ✅ Proper image restoration
+          const image = new window.Image();
+          image.src = config.attrs.image;
+          image.onload = () => {
+            const konvaImage = new window.Konva.Image({
+              ...config.attrs,
+              image,
+            });
+            layer.add(konvaImage);
+            attachDoubleClick(konvaImage);
+            layer.batchDraw(); // Redraw after image load
+          };
+        } else {
+          // ✅ Other shapes
+          node = window.Konva.Node.create(config);
+          layer.add(node);
+          attachDoubleClick(node);
+        }
+      });
+  
+      // ✅ Force redraw after adding nodes
+      layer.batchDraw();
+      updateLayers();
+      setSelectedNode(null);
+  
+    } catch (error) {
+      console.error('Failed to restore Konva state:', error);
+    } finally {
+      isRestoringRef.current = false;
+    }
+  }, [updateLayers, attachDoubleClick, setSelectedNode]);
+  
+
+  const undo = useCallback(() => {
+    console.log('Undo clicked, currentStep:', currentStep, 'history length:', history.length);
+    const savedState = historyUndo();
+    console.log('Retrieved state for undo:', savedState ? savedState.substring(0, 100) + '...' : 'null');
+    if (savedState) {
+        restoreKonvaState(savedState);
+    }
+  }, [historyUndo, restoreKonvaState, currentStep, history]);
+
+  const redo = useCallback(() => {
+    console.log('Redo clicked, currentStep:', currentStep, 'history length:', history.length);
+    const savedState = historyRedo();
+    console.log('Retrieved state for redo:', savedState ? savedState.substring(0, 100) + '...' : 'null');
+    if (savedState) {
+        restoreKonvaState(savedState);
+    }
+  }, [historyRedo, restoreKonvaState, currentStep, history]);
 
   const selectNode = useCallback((node: any) => {
     if (!canvasRef.current?.layer) return;
@@ -286,16 +409,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                     selectNode(img);
                     layer.draw();
                     setIsLoading(false);
+                    saveState();
                 });
             };
             reader.onerror = () => setIsLoading(false);
             reader.readAsDataURL(file);
         }
-        imageFileInput.value = ''; // Reset for next time
+        imageFileInput.value = '';
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, selectNode, attachDoubleClick]);
-  
+  }, [updateLayers, setIsLoading, selectNode, attachDoubleClick, saveState]);
+
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
     deselectNode();
@@ -325,7 +449,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       default:
         break;
     }
-  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setMaskDialogOpen, setEditingMaskNode]);
+  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setMaskDialogOpen]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
@@ -337,22 +461,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (action === 'up') {
       node.moveUp();
     } else if (action === 'down') {
-      // Prevent moving behind the background
       if (node.getZIndex() > 1) {
         node.moveDown();
       }
     }
 
-    // Get the updated children list from Konva itself
     const newChildrenArray = Array.from(layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer'));
-
-    // Force a re-render by setting the new array
     setKonvaObjects(newChildrenArray);
-
     layer.batchDraw();
-  }, []);
+    saveState();
+  }, [saveState]);
   
-  
+
   const handleAlign = useCallback((position: string) => {
     if (!selectedNode || !canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
@@ -385,16 +505,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             break;
     }
     if (canvasRef.current?.layer) canvasRef.current.layer.draw();
-  }, [selectedNode]);
+    scheduleSave();
+  }, [selectedNode, scheduleSave]);
   
   const handleOpacityChange = useCallback((opacity: number) => {
     if (selectedNode) {
       selectedNode.opacity(opacity);
       if (canvasRef.current?.layer) {
         canvasRef.current.layer.draw();
+        scheduleSave();
       }
     }
-  }, [selectedNode]);
+  }, [selectedNode, scheduleSave]);
 
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
     if (!selectedNode) return;
@@ -405,11 +527,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const width = node.width();
     const height = node.height();
   
-    // Get current center position in absolute coordinates
-    const centerX = node.x();
-    const centerY = node.y();
-  
-    // If offset is not already centered, set it and adjust position
     if (node.offsetX() !== width / 2 || node.offsetY() !== height / 2) {
       const oldCenterX = node.x() + (width / 2 - node.offsetX()) * node.scaleX();
       const oldCenterY = node.y() + (height / 2 - node.offsetY()) * node.scaleY();
@@ -419,14 +536,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         y: height / 2,
       });
       
-      // Update position to maintain the same visual center
       node.position({
         x: oldCenterX,
         y: oldCenterY,
       });
     }
   
-    // Toggle scale to flip
     if (direction === 'horizontal') {
       node.scaleX(node.scaleX() * -1);
     } else {
@@ -434,7 +549,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }
   
     layer.batchDraw();
-  }, [selectedNode]);
+    scheduleSave();
+  }, [selectedNode, scheduleSave]);
+
   const handleZoom = useCallback((direction: 'in' | 'out') => {
     if (!canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
@@ -445,22 +562,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (direction === 'out' && newScale < initialScale) {
       newScale = initialScale;
     }
-    // Get the original, unscaled dimensions from the canvas size prop
+    
     const [originalWidth, originalHeight] = canvasSize.split('x').map(Number);
     const PIXELS_PER_POINT = 0.35;
     const unscaledWidth = originalWidth * PIXELS_PER_POINT;
     const unscaledHeight = originalHeight * PIXELS_PER_POINT;
     
-    // Set the new, larger pixel dimensions of the stage
     stage.width(unscaledWidth * newScale);
     stage.height(unscaledHeight * newScale);
-    
     stage.scale({ x: newScale, y: newScale });
-
-    
-    
     stage.draw();
-}, [initialScale, canvasSize]);
+  }, [initialScale, canvasSize]);
 
   const applyStroke = useCallback((node: any, config: any) => {
     if (config.isGradient) {
@@ -496,126 +608,123 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         node.setAttr('data-gradient-direction', config.gradientDirection);
         node.setAttr('data-color-stops', config.colorStops);
     } else {
-        // Get solid color
         let solidColor = config.solidColor || node.getAttr('data-solid-color') || '#3b82f6';
         
-        // CRITICAL: Remove ALL gradient properties completely
         node.strokeLinearGradientStartPoint({ x: 0, y: 0 });
         node.strokeLinearGradientEndPoint({ x: 0, y: 0 });
         node.strokeLinearGradientColorStops(null);
         
-        // Then set solid stroke
         node.stroke(solidColor);
         
         node.setAttr('data-is-gradient', false);
         node.setAttr('data-solid-color', solidColor);
     }
     
-    // Force redraw
     const layer = node.getLayer();
     if (layer) {
         layer.draw();
+        scheduleSave();
     }
-}, []);
+  }, [scheduleSave]);
   
-    const handleColorUpdate = useCallback((config: any) => {
-        if (!selectedNode) return;
+  const handleColorUpdate = useCallback((config: any) => {
+      if (!selectedNode) return;
 
-        const nodeType = selectedNode.name();
-        const shapeType = selectedNode.getAttr('data-type');
-        const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
-        
-        selectedNode.setAttrs({
-            'data-is-gradient': config.isGradient,
-            'data-solid-color': config.solidColor,
-            'data-color-stops': config.colorStops,
-            'data-gradient-direction': config.gradientDirection,
-        });
-        if (usesStroke) {
-          applyStroke(selectedNode, config);
-      } else {
-          // All other shapes and text use fill
-          applyFill(selectedNode, config);
-      }
+      const nodeType = selectedNode.name();
+      const shapeType = selectedNode.getAttr('data-type');
+      const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
       
+      selectedNode.setAttrs({
+          'data-is-gradient': config.isGradient,
+          'data-solid-color': config.solidColor,
+          'data-color-stops': config.colorStops,
+          'data-gradient-direction': config.gradientDirection,
+      });
+      if (usesStroke) {
+        applyStroke(selectedNode, config);
+      } else {
+        applyFill(selectedNode, config);
+      }
+    
       canvasRef.current?.layer.draw();
-  }, [selectedNode, applyFill, applyStroke, canvasRef]);
+      scheduleSave();
+  }, [selectedNode, applyFill, applyStroke, canvasRef, scheduleSave]);
 
-    const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
-        if (!selectedNode || !selectedNode.hasName('mask')) return;
-        const image = selectedNode.findOne('.mask-image');
-        if (!image) return;
-    
-        const scaleBy = 1.1;
-        const oldScale = image.scaleX();
-        const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    
-        image.scale({ x: newScale, y: newScale });
-        canvasRef.current?.layer.batchDraw();
-      }, [selectedNode]);
-    
-      const handleMaskImageReset = useCallback(() => {
-        if (!selectedNode || !selectedNode.hasName('mask')) return;
-        const image = selectedNode.findOne('.mask-image');
-        if (!image) return;
+  const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
+      if (!selectedNode || !selectedNode.hasName('mask')) return;
+      const image = selectedNode.findOne('.mask-image');
+      if (!image) return;
   
-        const maskWidth = selectedNode.width();
-        const maskHeight = selectedNode.height();
-        const imgWidth = image.getAttr('data-original-width');
-        const imgHeight = image.getAttr('data-original-height');
+      const scaleBy = 1.1;
+      const oldScale = image.scaleX();
+      const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
   
-        if (!imgWidth || !imgHeight) return; // Cannot reset if original dimensions are unknown
+      image.scale({ x: newScale, y: newScale });
+      canvasRef.current?.layer.batchDraw();
+      scheduleSave();
+  }, [selectedNode, scheduleSave]);
   
-        const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-        
-        image.position({ x: 0, y: 0 });
-        image.scale({ x: scale, y: scale });
-  
-        canvasRef.current?.layer.batchDraw();
-      }, [selectedNode]);
-  
-      const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-        if (!selectedNode || !selectedNode.hasName('mask')) return;
-        const image = selectedNode.findOne('.mask-image');
-        if (!image) return;
-    
-        const panAmount = 10;
-        const currentPos = image.position();
-        let newPos = { ...currentPos };
-    
-        switch (direction) {
-          case 'up': newPos.y -= panAmount; break;
-          case 'down': newPos.y += panAmount; break;
-          case 'left': newPos.x -= panAmount; break;
-          case 'right': newPos.x += panAmount; break;
-        }
-    
-        // Use the dragBoundFunc to constrain the new position
-        const boundFunc = image.getAttr('dragBoundFunc');
-        if (boundFunc) {
-            newPos = boundFunc.call(image, newPos);
-        }
-    
-        image.position(newPos);
-        canvasRef.current?.layer.batchDraw();
-      }, [selectedNode]);
+  const handleMaskImageReset = useCallback(() => {
+      if (!selectedNode || !selectedNode.hasName('mask')) return;
+      const image = selectedNode.findOne('.mask-image');
+      if (!image) return;
 
-    useEffect(() => {
-        if (canvasRef.current?.background && isCanvasReady) {
-          canvasRef.current.background.fill(backgroundColor);
-          if (canvasRef.current.layer) {
-              canvasRef.current.layer.draw();
-          }
-        }
-    }, [backgroundColor, isCanvasReady]);
+      const maskWidth = selectedNode.width();
+      const maskHeight = selectedNode.height();
+      const imgWidth = image.getAttr('data-original-width');
+      const imgHeight = image.getAttr('data-original-height');
 
-  // Handle transformer attachment
+      if (!imgWidth || !imgHeight) return;
+
+      const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+      
+      image.position({ x: 0, y: 0 });
+      image.scale({ x: scale, y: scale });
+
+      canvasRef.current?.layer.batchDraw();
+      scheduleSave();
+  }, [selectedNode, scheduleSave]);
+
+  const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+      if (!selectedNode || !selectedNode.hasName('mask')) return;
+      const image = selectedNode.findOne('.mask-image');
+      if (!image) return;
+  
+      const panAmount = 10;
+      const currentPos = image.position();
+      let newPos = { ...currentPos };
+  
+      switch (direction) {
+        case 'up': newPos.y -= panAmount; break;
+        case 'down': newPos.y += panAmount; break;
+        case 'left': newPos.x -= panAmount; break;
+        case 'right': newPos.x += panAmount; break;
+      }
+  
+      const boundFunc = image.getAttr('dragBoundFunc');
+      if (boundFunc) {
+          newPos = boundFunc.call(image, newPos);
+      }
+  
+      image.position(newPos);
+      canvasRef.current?.layer.batchDraw();
+      scheduleSave();
+  }, [selectedNode, scheduleSave]);
+
+  useEffect(() => {
+      if (canvasRef.current?.background && isCanvasReady) {
+        canvasRef.current.background.fill(backgroundColor);
+        if (canvasRef.current.layer) {
+            canvasRef.current.layer.draw();
+        }
+      }
+  }, [backgroundColor, isCanvasReady]);
+
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.layer) return;
   
     const { layer } = canvasRef.current;
   
-    // Destroy previous transformer if it exists
     if (transformerRef.current) {
       transformerRef.current.destroy();
     }
@@ -627,26 +736,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         nodes: [selectedNode],
         rotateEnabled: true,
         keepRatio: true,
-        // Set boundary function for mask groups
         ...(isMaskGroup && {
           boundBoxFunc: (oldBox: any, newBox: any) => {
-            // For mask groups, use the mask dimensions, not the image
             return newBox;
           },
-          // Use the mask group's actual size for transformer bounds
           ignoreStroke: true,
         }),
       });
   
-      // For mask groups, manually set the transformer to use mask dimensions
       if (isMaskGroup) {
         const maskWidth = selectedNode.width();
         const maskHeight = selectedNode.height();
         
-        // Override the client rect calculation for transformer
         selectedNode.getClientRect = function(config: any) {
           const skipTransform = config?.skipTransform || false;
-          const relativeTo = config?.relativeTo;
           
           const x = this.x();
           const y = this.y();
@@ -675,16 +778,30 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
       layer.add(tr);
       transformerRef.current = tr;
+      selectedNode.on('transformend', () => {
+        console.log('Node transformed — saving state');
+        saveState();
+      });
+  
+      // 🧠 Optionally: save after dragend too
+      selectedNode.on('dragend', () => {
+        console.log('Node dragged — saving state');
+        saveState();
+      });
     } 
     layer.batchDraw();
     
-    // Cleanup on unmount
     return () => {
       if (transformerRef.current) {
         transformerRef.current.destroy();
       }
+      if (selectedNode) {
+        selectedNode.off('transformend');
+        selectedNode.off('dragend');
+      }
     };
-  }, [selectedNode, isCanvasReady]);
+  }, [selectedNode, isCanvasReady, saveState]);
+  
 
   const initializeKonva = useCallback(() => {
     if (!canvasRef.current || !canvasRef.current.stage) {
@@ -703,6 +820,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         console.error("Stage is not initialized. Cannot proceed.");
         return;
       }
+      
       updateLayers();
 
       stage.on('click tap', (e: any) => {
@@ -726,18 +844,27 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       
       stage.on('dragend', () => {
         updateLayers();
+        scheduleSave();
       });
+      
+      if (!hasInitializedHistoryRef.current) {
+        hasInitializedHistoryRef.current = true;
+        setTimeout(() => {
+          console.log('Initializing history with empty canvas');
+          saveState();
+        }, 100);
+      }
 
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
-  }, [updateLayers, deselectNode, selectNode, handleDoubleClick]);
+  }, [updateLayers, deselectNode, selectNode, handleDoubleClick, scheduleSave, saveState]);
   
   useEffect(() => {
     if ((window as any).Konva && isCanvasReady) {
       initializeKonva();
     }
-  }, [isCanvasReady, selectedNode, initializeKonva]);
+  }, [isCanvasReady, initializeKonva]);
 
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
@@ -745,8 +872,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const newChildren = Array.from(children || []);
     setKonvaObjects(newChildren);
   }, [selectedNode]);
-
-  
 
   const value: CanvasContextType = {
     canvasRef,
@@ -777,8 +902,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingShapeNode,
     editingFrameNode,
     setEditingFrameNode,
-editingMaskNode,
-setEditingMaskNode,
+    editingMaskNode,
+    setEditingMaskNode,
     editingTextNode,
     setEditingTextNode,
     updateLayers,
@@ -805,6 +930,11 @@ setEditingMaskNode,
     handleMaskImagePan,
     handleZoom,
     setInitialScale,
+    saveState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 
   return (
@@ -821,7 +951,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
-
-    
