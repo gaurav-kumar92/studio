@@ -3,7 +3,7 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -126,7 +126,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           <Separator orientation="vertical" />
           <Popover>
             <PopoverTrigger asChild>
-               <Button variant="ghost" size="icon"><ZoomIn size={16}/></Button>
+               <Button variant="ghost" size="icon"><Menu size={16}/></Button>
             </PopoverTrigger>
             <PopoverContent>
               <div id="mask-properties" className="py-2">
