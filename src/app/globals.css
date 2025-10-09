@@ -145,15 +145,6 @@ body {
     /* margin: 0 auto; This rule is removed */
 }
 
-#controls {
-    width: 100%;
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-top: 1.5rem;
-}
-
 /* --- Layers Panel --- */
 #layers-panel {
     width: 100%; /* Full width on mobile */
@@ -453,27 +444,17 @@ body {
     color: #10b981; /* Example color for enabled text icon */
 }
 
-
-#object-properties {
-    border-top: 1px solid #e5e7eb;
-    margin-top: 1rem;
-    padding-top: 1rem;
-}
-
-.alignment-controls {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
+/* Updated Alignment & Opacity Controls for horizontal layout */
 .align-btn {
     background-color: #f3f4f6;
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
-    padding: 0.5rem;
+    padding: 0.25rem; /* Make buttons smaller for toolbar */
     cursor: pointer;
     transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .align-btn:hover {
@@ -486,25 +467,26 @@ body {
 }
 
 .align-btn svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1rem; /* Smaller icons */
+    height: 1rem;
     stroke: #4b5563;
 }
 
-.opacity-controls {
+.opacity-controls-horizontal {
     display: flex;
-    flex-direction: column;
+    align-items: center;
 }
 
-.opacity-controls label {
-    margin-bottom: 0.5rem;
+.opacity-controls-horizontal label {
+    margin-bottom: 0;
     font-size: 0.875rem;
     color: #4b5563;
 }
 
 #opacity-slider {
-    width: 100%;
+    width: 80px; /* Give slider a fixed width */
 }
+
 
 .shape-slider-container {
     width: 100%;

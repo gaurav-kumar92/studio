@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -11,15 +10,11 @@ import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
 import TextDialog from '@/components/editor/TextDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
-import ObjectPropertiesPanel from '@/components/editor/ObjectPropertiesPanel';
-import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
-import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
+import PropertiesToolbar from '@/components/editor/PropertiesToolbar'; // Import the new toolbar
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar'; 
 
 // This is a global declaration for the Konva object.
-// It's a way to tell TypeScript that 'Konva' will be available on the window object
-// at runtime, even though we can't import it directly as a module.
 declare global {
   interface Window {
     Konva: any;
@@ -29,14 +24,11 @@ declare global {
 function Editor() {
   const {
     canvasRef,
+    canvasSize,
     isCanvasReady,
     setCanvasReady,
     konvaObjects,
     selectedNode,
-    canvasSize,
-    setCanvasSize,
-    backgroundColor,
-    setBackgroundColor,
     isAddItemDialogOpen,
     setAddItemDialogOpen,
     isShapeDialogOpen,
@@ -48,22 +40,10 @@ function Editor() {
     isMaskDialogOpen,
     setMaskDialogOpen,
     editingShapeNode,
-    setEditingShapeNode,
     editingFrameNode,
-    setEditingFrameNode,
     editingMaskNode,
-    setEditingMaskNode,
     editingTextNode,
-    setEditingTextNode,
-    isLoading,
     selectNode,
-    deselectNode,
-    handleMoveNode,
-    handleAlign,
-    handleOpacityChange,
-    handleFlip,
-    handleColorUpdate,
-    handleSelectItem,
     handleAddShape,
     handleUpdateShape,
     handleAddOrUpdateText,
@@ -71,10 +51,8 @@ function Editor() {
     handleUpdateFrame,
     handleAddMask,
     handleUpdateMask,
-    updateLayers,
-    handleMaskImageZoom,
-    handleMaskImageReset,
-    handleMaskImagePan,
+    handleSelectItem,
+    handleMoveNode,
   } = useCanvas();
 
   const isCircular = canvasSize.endsWith('-circle');
@@ -117,24 +95,9 @@ function Editor() {
                     onReady={() => setCanvasReady(true)}
                 />
                 
-                <div id="controls" className="bg-white p-4 rounded-xl shadow-lg mt-4">
-                    
-                    <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-                    <BackgroundColorPicker value={backgroundColor} onChange={setBackgroundColor} />
+                {/* The old controls div is replaced by the new PropertiesToolbar */}
+                <PropertiesToolbar />
 
-                    {selectedNode && (
-                        <ObjectPropertiesPanel
-                            selectedNode={selectedNode}
-                            onAlign={handleAlign}
-                            onOpacityChange={handleOpacityChange}
-                            onFlip={handleFlip}
-                            onColorChange={handleColorUpdate}
-                            onMaskImageZoom={handleMaskImageZoom}
-                            onMaskImageReset={handleMaskImageReset}
-                            onMaskImagePan={handleMaskImagePan}
-                        />
-                    )}
-                </div>
             </div>
 
             <LayersPanel 
