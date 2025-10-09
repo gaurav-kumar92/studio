@@ -152,3 +152,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 };
 
 export default ObjectPropertiesPanel;
+
+
+    

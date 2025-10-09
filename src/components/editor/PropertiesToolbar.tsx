@@ -24,7 +24,7 @@ const PropertiesToolbar = () => {
     handleMaskImagePan,
   } = useCanvas();
 
-  const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
+  const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
 
   return (
     <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">
@@ -57,5 +57,7 @@ const PropertiesToolbar = () => {
 };
 
 export default PropertiesToolbar;
+
+    
 
     
