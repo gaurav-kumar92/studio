@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -8,17 +6,19 @@ import { useState, useCallback } from 'react';
 type UseMaskHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
-    setSelectedNode: (node: any) => void;
+    setSelectedNodes: (nodes: any[]) => void;
     setIsLoading: (isLoading: boolean) => void;
     attachDoubleClick: (node: any) => void;
+    saveState: () => void;
 };
 
 export const useMaskHandler = ({
     canvasRef,
     updateLayers,
-    setSelectedNode,
+    setSelectedNodes,
     setIsLoading,
     attachDoubleClick,
+    saveState,
 }: UseMaskHandlerProps) => {
     const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
     const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
@@ -99,6 +99,7 @@ export const useMaskHandler = ({
                         layer.draw();
                         updateLayers();
                         setIsLoading(false);
+                        saveState();
                     });
                 };
                 reader.onerror = () => {
@@ -151,7 +152,7 @@ export const useMaskHandler = ({
         
         window.isOpeningFileDialog = true;
         imageFileInput.click();
-    }, [updateLayers, setIsLoading]);
+    }, [updateLayers, setIsLoading, saveState]);
 
     const handleAddMask = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
@@ -337,13 +338,12 @@ export const useMaskHandler = ({
         layer.add(group);
         updateLayers();
         layer.draw();
-        setSelectedNode(group);
+        setSelectedNodes([group]);
         setMaskDialogOpen(false);
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         group.setAttr('id', uniqueId);
-        
-    
-      }, [canvasRef, updateLayers, setSelectedNode, setMaskDialogOpen, attachDoubleClick]);
+        saveState();
+      }, [canvasRef, updateLayers, setSelectedNodes, setMaskDialogOpen, attachDoubleClick, saveState]);
 
       const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
@@ -360,7 +360,8 @@ export const useMaskHandler = ({
           }
         }
         canvasRef.current?.layer.draw();
-    }, [editingMaskNode, canvasRef]);
+        saveState();
+    }, [editingMaskNode, canvasRef, saveState]);
 
 
     return {
@@ -373,7 +374,3 @@ export const useMaskHandler = ({
         addImageToMask,
     };
 };
-
-      
-
-    

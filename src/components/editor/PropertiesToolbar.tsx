@@ -14,7 +14,7 @@ const PropertiesToolbar = () => {
     setCanvasSize,
     backgroundColor,
     setBackgroundColor,
-    selectedNode,
+    selectedNodes,
     handleAlign,
     handleOpacityChange,
     handleFlip,
@@ -23,6 +23,8 @@ const PropertiesToolbar = () => {
     handleMaskImageReset,
     handleMaskImagePan,
   } = useCanvas();
+
+  const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
 
   return (
     <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">

@@ -10,11 +10,10 @@ import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
 import TextDialog from '@/components/editor/TextDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
-import PropertiesToolbar from '@/components/editor/PropertiesToolbar'; // Import the new toolbar
+import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar'; 
 
-// This is a global declaration for the Konva object.
 declare global {
   interface Window {
     Konva: any;
@@ -28,7 +27,7 @@ function Editor() {
     isCanvasReady,
     setCanvasReady,
     konvaObjects,
-    selectedNode,
+    selectedNodes,
     isAddItemDialogOpen,
     setAddItemDialogOpen,
     isShapeDialogOpen,
@@ -95,14 +94,13 @@ function Editor() {
                     onReady={() => setCanvasReady(true)}
                 />
                 
-                {/* The old controls div is replaced by the new PropertiesToolbar */}
                 <PropertiesToolbar />
 
             </div>
 
             <LayersPanel 
                 layers={konvaObjects}
-                selectedNode={selectedNode}
+                selectedNodes={selectedNodes}
                 onSelectNode={(id) => {
                     const node = canvasRef.current?.layer.findOne(`#${id}`);
                     if (node) {

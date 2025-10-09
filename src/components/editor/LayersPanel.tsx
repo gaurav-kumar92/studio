@@ -5,14 +5,14 @@ import { Node } from 'konva/lib/Node';
 
 type LayersPanelProps = {
   layers: Node[];
-  selectedNode: Node | null;
+  selectedNodes: Node[];
   onSelectNode: (nodeId: string) => void;
   onMoveNode: (action: 'up' | 'down', nodeId: string) => void;
 };
 
 const LayersPanel: React.FC<LayersPanelProps> = ({
   layers,
-  selectedNode,
+  selectedNodes,
   onSelectNode,
   onMoveNode,
 }) => {
@@ -20,7 +20,15 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
     let icon: React.ReactNode = null;
     let name = 'Object';
 
-    if (node.hasName('textGroup') || node.hasName('circularText')) {
+    if (node.hasName('group')) {
+        icon = (
+            <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <rect x="7" y="7" width="10" height="10" rx="1"/>
+            </svg>
+        );
+        name = `Group (${node.getChildren().length} items)`;
+    } else if (node.hasName('textGroup') || node.hasName('circularText')) {
       const textContent = node.getAttr('data-text') || '';
       const shortText =
         textContent.length > 15
@@ -146,7 +154,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
       <ul id="layers-list">
         {reversedLayers.map((node: Node, index: number) => {
           const { icon, name } = getLayerNameAndIcon(node);
-          const isSelected = selectedNode && selectedNode.id() === node.id();
+          const isSelected = selectedNodes.some(n => n.id() === node.id());
           const nodeCount = reversedLayers.length;
 
           return (

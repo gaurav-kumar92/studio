@@ -6,7 +6,7 @@ type UseTextHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
     deselectNode: () => void;
-    setSelectedNode: (node: any) => void;
+    setSelectedNodes: (nodes: any[]) => void;
     applyFill: (node: any, config: any) => void;
     attachDoubleClick: (node: any) => void;
     saveState: () => void; // ADD THIS
@@ -16,7 +16,7 @@ export const useTextHandler = ({
     canvasRef,
     updateLayers,
     deselectNode,
-    setSelectedNode,
+    setSelectedNodes,
     applyFill,
     attachDoubleClick,
     saveState, // ADD THIS
@@ -221,7 +221,7 @@ export const useTextHandler = ({
             };
             applyFill(newNode, colorConfig);
 
-            setSelectedNode(newNode);
+            setSelectedNodes([newNode]);
             updateLayers();
             layer.draw();
             
@@ -229,7 +229,7 @@ export const useTextHandler = ({
         }
 
         setTextDialogOpen(false);
-    }, [canvasRef, editingTextNode, deselectNode, setSelectedNode, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]); // Add saveState to dependencies
+    }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]); // Add saveState to dependencies
 
     return {
         isTextDialogOpen,

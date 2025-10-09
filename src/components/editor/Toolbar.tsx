@@ -1,17 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save } from 'lucide-react';
+import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save, Group, Ungroup, ListPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
-import { ListPlus } from 'lucide-react';
 
 const Toolbar = () => {
   const { 
     setAddItemDialogOpen, 
     deselectNode, 
-    selectedNode, 
+    selectedNodes,
     updateLayers,
     handleSave,
     handleZoom,
@@ -20,8 +19,23 @@ const Toolbar = () => {
     canUndo,
     canRedo,
     saveState,
-    
+    isMultiSelectMode,
+    setIsMultiSelectMode,
+    handleGroup,
+    handleUngroup,
+    setSelectedNodes,
   } = useCanvas();
+
+  const handleMultiSelectToggle = () => {
+    const newMode = !isMultiSelectMode;
+    setIsMultiSelectMode(newMode);
+    // When exiting multi-select mode, clear the selection
+    if (!newMode) {
+      setSelectedNodes([]);
+    }
+  };
+
+  const isGroupSelected = selectedNodes.length === 1 && selectedNodes[0]?.name() === 'group';
 
   return (
     <div className="toolbar">
@@ -41,18 +55,42 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Delete button section - UPDATED to include saveState */}
+       {/* Multi-Select Toggle */}
+       <div className="toolbar-section">
+        <Button
+          variant={isMultiSelectMode ? "destructive" : "ghost"}
+          size="icon"
+          onClick={handleMultiSelectToggle}
+          title="Select Multiple"
+        >
+          <ListPlus className="h-4 w-4" />
+        </Button>
+      </div>
+      <Separator orientation="vertical" />
+
+      {/* Group/Ungroup buttons */}
+      <div className="toolbar-section">
+        <Button variant="ghost" size="icon" onClick={handleGroup} disabled={selectedNodes.length < 2}>
+            <Group className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={handleUngroup} disabled={!isGroupSelected}>
+            <Ungroup className="h-4 w-4" />
+        </Button>
+      </div>
+      <Separator orientation="vertical" />
+
+      {/* Delete button section */}
       <div className="toolbar-section">
         <Button
-          variant={selectedNode ? "destructive" : "ghost"}
+          variant={selectedNodes.length > 0 ? "destructive" : "ghost"}
           size="icon"
-          disabled={!selectedNode}
+          disabled={selectedNodes.length === 0}
           onClick={() => {
-            if (selectedNode) {
-              selectedNode.destroy();
+            if (selectedNodes.length > 0) {
+              selectedNodes.forEach(node => node.destroy());
               deselectNode();
               updateLayers();
-              saveState(); // ADD THIS LINE - saves state after deletion
+              saveState();
             }
           }}
         >

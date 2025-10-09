@@ -5,7 +5,7 @@ import { useState, useCallback } from 'react';
 type UseShapeHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
-    setSelectedNode: (node: any) => void;
+    setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
     saveState: () => void; // ADD THIS
 };
@@ -13,7 +13,7 @@ type UseShapeHandlerProps = {
 export const useShapeHandler = ({
     canvasRef,
     updateLayers,
-    setSelectedNode,
+    setSelectedNodes,
     attachDoubleClick,
     saveState, // ADD THIS
 }: UseShapeHandlerProps) => {
@@ -99,12 +99,12 @@ export const useShapeHandler = ({
           layer.add(newShape);
           updateLayers();
           layer.draw();
-          setSelectedNode(newShape);
+          setSelectedNodes([newShape]);
           newShape.setAttr('id', uniqueId); 
           saveState(); // ADD THIS - Save after adding shape
         }
         setShapeDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick, saveState]); // Add saveState to dependencies
+      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]); // Add saveState to dependencies
     
       const handleUpdateShape = useCallback((attrs: any) => {
         if (!editingShapeNode || !canvasRef.current) return;

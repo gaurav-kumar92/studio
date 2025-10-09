@@ -13,7 +13,7 @@ type UseFrameHandlerProps = {
 export const useFrameHandler = ({
     canvasRef,
     updateLayers,
-    setSelectedNode,
+    setSelectedNodes,
     attachDoubleClick,
     saveState, // ADD THIS
 }: UseFrameHandlerProps) => {
@@ -71,14 +71,14 @@ export const useFrameHandler = ({
           layer.add(newFrame);
           updateLayers();
           layer.draw();
-          setSelectedNode(newFrame);
+          setSelectedNodes([newFrame]);
           const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           newFrame.setAttr('id', uniqueId);
           
           saveState(); // ADD THIS - Save after adding frame
         }
         setFrameDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNode, attachDoubleClick, saveState]); // Add saveState to dependencies
+      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]); // Add saveState to dependencies
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
