@@ -55,9 +55,21 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
 
   // Determine the current color for the popover trigger
+  const getFillColor = () => {
+    if (typeof selectedNode.fill === 'function') {
+      return selectedNode.fill();
+    }
+    // For groups like text, we might need to find the child and get its fill
+    const textChild = selectedNode.findOne?.('Text, .mainChar');
+    if (textChild && typeof textChild.fill === 'function') {
+      return textChild.fill();
+    }
+    return null;
+  };
+
   const currentColor = selectedNode.getAttr('data-is-gradient') 
     ? 'linear-gradient(to right, #3b82f6, #a855f7)'
-    : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : selectedNode.fill()) || '#000000';
+    : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000';
 
   return (
     // Use flex layout to arrange items horizontally
