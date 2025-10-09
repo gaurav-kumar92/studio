@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
@@ -26,8 +27,8 @@ type CanvasContextType = {
   setCanvasSize: React.Dispatch<React.SetStateAction<string>>;
   isCanvasReady: boolean;
   setCanvasReady: React.Dispatch<React.SetStateAction<boolean>>;
-  backgroundColor: string;
-  setBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
+  backgroundColor: any;
+  setBackgroundColor: React.Dispatch<React.SetStateAction<any>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   isAddItemDialogOpen: boolean;
@@ -272,7 +273,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   } = useFrameHandler({
     canvasRef,
     updateLayers,
-    setSelectedNodes,
+    setSelectedNode: (node) => setSelectedNodes([node]),
     attachDoubleClick: (node) => attachDoubleClick(node),
     saveState,
   });
@@ -380,6 +381,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!canvasRef.current?.layer) return;
   
     let nodeToSelect = node;
+    // Ascend up to find the group parent if it exists, so the whole group is selected.
     if (
       node.parent?.hasName('circularText') ||
       node.parent?.hasName('mask') ||
@@ -400,6 +402,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setSelectedNodes([nodeToSelect]);
     }
   }, [isMultiSelectMode, selectedNodes]);
+  
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -473,7 +476,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       default:
         break;
     }
-  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setMaskDialogOpen]);
+  }, [deselectNode, addImageFromComputer, setTextDialogOpen, setEditingTextNode, setShapeDialogOpen, setEditingShapeNode, setFrameDialogOpen, setEditingFrameNode, setMaskDialogOpen, setEditingMaskNode]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
@@ -956,12 +959,7 @@ useEffect(() => {
           return;
         }
 
-        let targetNode = e.target;
-        if (e.target.parent?.hasName('circularText') || e.target.parent?.hasName('mask') || e.target.parent?.hasName('textGroup') || e.target.parent?.hasName('group')) {
-            targetNode = e.target.parent;
-        }
-
-        selectNode(targetNode);
+        selectNode(e.target);
       });
       
       stage.on('dragend', () => {
@@ -1077,3 +1075,6 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
+    
