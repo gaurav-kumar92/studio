@@ -59,18 +59,16 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
-  const canHaveColor = selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame');
-  const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame');
-  const isMask = selectedNode.hasName('mask');
+  const canHaveColor = selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame'));
+  const isLineOrCurve = selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
+  const isMask = selectedNodes.length === 1 && selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
-  const isGroupSelected = selectedNodes.length === 1 && selectedNodes[0]?.name() === 'group';
+  const isGroupSelected = selectedNodes.length === 1 && selectedNodes[0]?.hasName('group');
 
-  // Determine the current color for the popover trigger
   const getFillColor = () => {
     if (typeof selectedNode.fill === 'function') {
       return selectedNode.fill();
     }
-    // For groups like text, we might need to find the child and get its fill
     const textChild = selectedNode.findOne?.('Text, .mainChar');
     if (textChild && typeof textChild.fill === 'function') {
       return textChild.fill();
@@ -78,30 +76,28 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     return null;
   };
 
-  const currentColor = selectedNode.getAttr('data-is-gradient') 
+  const currentColor = canHaveColor && (selectedNode.getAttr('data-is-gradient') 
     ? 'linear-gradient(to right, #3b82f6, #a855f7)'
-    : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000';
+    : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
 
   return (
-    // Use flex layout to arrange items horizontally
     <div id="object-properties" className="flex items-center gap-2">
-       {/* Multi-Select & Grouping Section */}
        <Button
           variant={isMultiSelectMode ? "destructive" : "ghost"}
           size="icon"
           onClick={onMultiSelectToggle}
-          title="Select Multiple"
+          title={isMultiSelectMode ? "Exit Multi-Select" : "Select Multiple"}
         >
           <ListPlus className="h-4 w-4" />
         </Button>
 
         {selectedNodes.length > 1 && (
-            <Button variant="ghost" size="icon" onClick={onGroup}>
+            <Button variant="ghost" size="icon" onClick={onGroup} title="Group Items">
                 <Group className="h-4 w-4" />
             </Button>
         )}
         {isGroupSelected && (
-            <Button variant="ghost" size="icon" onClick={onUngroup}>
+            <Button variant="ghost" size="icon" onClick={onUngroup} title="Ungroup Items">
                 <Ungroup className="h-4 w-4" />
             </Button>
         )}
@@ -178,9 +174,10 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           </Popover>
         </>
       )}
-
     </div>
   );
 };
 
 export default ObjectPropertiesPanel;
+
+    

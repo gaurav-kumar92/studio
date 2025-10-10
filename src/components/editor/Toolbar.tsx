@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -24,7 +25,6 @@ const Toolbar = () => {
 
   return (
     <div className="toolbar">
-      {/* "Add Item" button section */}
       <div className="toolbar-section">
       
         <Button 
@@ -40,7 +40,6 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Delete button section */}
       <div className="toolbar-section">
         <Button
           variant={selectedNodes.length > 0 ? "destructive" : "ghost"}
@@ -60,7 +59,6 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Undo/Redo buttons */}
       <div className="toolbar-section">
         <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
           <Undo className="h-4 w-4" />
@@ -71,7 +69,6 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Zoom buttons */}
       <div className="toolbar-section">
         <Button variant="ghost" size="icon" onClick={() => handleZoom('in')}>
           <ZoomIn className="h-4 w-4" />
@@ -82,7 +79,6 @@ const Toolbar = () => {
       </div>
       <Separator orientation="vertical" />
 
-      {/* Save button section */}
       <div className="toolbar-section">
         <Button variant="default" size="sm" onClick={handleSave}>
           <Save className="h-4 w-4" />
@@ -93,3 +89,5 @@ const Toolbar = () => {
 };
 
 export default Toolbar;
+
+    

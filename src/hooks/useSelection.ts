@@ -1,11 +1,9 @@
 
-// src/hooks/useSelection.ts
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 type UseSelectionProps = {
   isCanvasReady: boolean;
   canvasRef: React.RefObject<{ stage: any; layer: any; }>;
-  transformerRef: React.RefObject<any>;
   isMultiSelectMode: boolean;
   selectedNodes: any[];
   setSelectedNodes: (nodes: any[]) => void;
@@ -15,27 +13,22 @@ type UseSelectionProps = {
 export function useSelection({
   isCanvasReady,
   canvasRef,
-  transformerRef,
   isMultiSelectMode,
   selectedNodes,
   setSelectedNodes,
   saveState,
 }: UseSelectionProps) {
 
-  // Handle click/tap events for selection
+  const transformersRef = useRef<any[]>([]);
+
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.stage) return;
 
     const stage = canvasRef.current.stage;
 
     const handleStageClick = (e: any) => {
-      if (window.isOpeningFileDialog) {
-        return;
-      }
-      
       const isShiftPressed = e.evt.shiftKey;
 
-      // If clicked on empty area, deselect all unless shift is pressed
       if (e.target === stage || e.target.hasName('background')) {
         if (!isMultiSelectMode && !isShiftPressed) {
           setSelectedNodes([]);
@@ -43,7 +36,6 @@ export function useSelection({
         return;
       }
 
-      // Find the clicked node and check if it's part of a group
       let node = e.target;
       if (
         node.parent?.hasName('circularText') ||
@@ -54,19 +46,15 @@ export function useSelection({
         node = node.parent;
       }
 
-      // Handle selection logic
       const isSelected = selectedNodes.some(n => n.id() === node.id());
 
       if (isMultiSelectMode || isShiftPressed) {
         if (isSelected) {
-          // If already selected, remove it
           setSelectedNodes(selectedNodes.filter(n => n.id() !== node.id()));
         } else {
-          // If not selected, add it to the selection
           setSelectedNodes([...selectedNodes, node]);
         }
       } else {
-        // If not in multi-select mode, just select the one clicked node
         setSelectedNodes([node]);
       }
     };
@@ -80,21 +68,19 @@ export function useSelection({
   }, [isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
 
-  // Handle transformer attachment and events
   useEffect(() => {
-    if (!canvasRef.current?.layer) return;
+    if (!canvasRef.current?.layer || !window.Konva) return;
     const layer = canvasRef.current.layer;
 
-    // Destroy existing transformer
-    if (transformerRef.current) {
-      transformerRef.current.destroy();
-      transformerRef.current = null;
-    }
+    // Destroy all existing transformers
+    transformersRef.current.forEach(tr => tr.destroy());
+    transformersRef.current = [];
 
-    // Create new transformer if there are selected nodes
-    if (selectedNodes.length > 0) {
+    // Create a new transformer for each selected node
+    selectedNodes.forEach(node => {
       const tr = new window.Konva.Transformer({
-        nodes: selectedNodes,
+        nodes: [node],
+        name: 'Transformer',
         keepRatio: true,
         rotateEnabled: true,
         enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
@@ -107,14 +93,18 @@ export function useSelection({
       });
 
       layer.add(tr);
-      transformerRef.current = tr;
+      transformersRef.current.push(tr);
       
-      // Save state after a transformation is complete
       tr.on('transformend', saveState);
-    }
+    });
     
     layer.batchDraw();
 
-    // No explicit cleanup for transformer.on, as it's destroyed with the transformer itself
-  }, [selectedNodes, canvasRef, transformerRef, saveState]);
+    return () => {
+      transformersRef.current.forEach(tr => tr.destroy());
+      transformersRef.current = [];
+    };
+  }, [selectedNodes, canvasRef, saveState]);
 }
+
+    

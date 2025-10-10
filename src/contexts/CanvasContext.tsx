@@ -19,11 +19,10 @@ declare global {
 
 type CanvasContextType = {
   canvasRef: React.RefObject<{ stage: any; layer: any; background: any; }>;
-  transformerRef: React.RefObject<any>;
   konvaObjects: any[];
   setKonvaObjects: React.Dispatch<React.SetStateAction<any[]>>;
-  selectedNodes: any[]; // Changed from selectedNode
-  setSelectedNodes: React.Dispatch<React.SetStateAction<any[]>>; // Changed from setSelectedNode
+  selectedNodes: any[];
+  setSelectedNodes: React.Dispatch<React.SetStateAction<any[]>>;
   isMultiSelectMode: boolean;
   setMultiSelectMode: React.Dispatch<React.SetStateAction<boolean>>;
   canvasSize: string;
@@ -53,7 +52,6 @@ type CanvasContextType = {
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
   updateLayers: () => void;
-  selectNode: (node: any) => void;
   deselectNodes: () => void;
   handleSave: () => void;
   handleMoveNode: (action: 'up' | 'down', nodeId: string) => void;
@@ -89,9 +87,8 @@ const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any; }>(null);
-  const transformerRef = useRef<any>(null);
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
-  const [selectedNodes, setSelectedNodes] = useState<any[]>([]); // Changed to array
+  const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
@@ -118,7 +115,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!canvasRef.current?.layer) return;
   
     const children = canvasRef.current.layer.getChildren(
-      (node: any) => node.name() !== 'background' && node.className !== 'Transformer'
+      (node: any) => node.name() !== 'background' && !node.hasName('Transformer')
     );
   
     const childrenArray = Array.from(children);
@@ -192,7 +189,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const { layer } = canvasRef.current;
 
     const childrenConfigs = layer.getChildren()
-        .filter((node: any) => node.name() !== 'background' && node.className !== 'Transformer')
+        .filter((node: any) => node.name() !== 'background' && !node.hasName('Transformer'))
         .map((node: any) => node.toObject());
     
     return JSON.stringify(childrenConfigs);
@@ -261,7 +258,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   useSelection({
     isCanvasReady,
     canvasRef,
-    transformerRef,
     isMultiSelectMode,
     selectedNodes,
     setSelectedNodes,
@@ -339,6 +335,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setShapeDialogOpen,
     setEditingFrameNode,
     setFrameDialogOpen,
+    setEditingMaskNode,
+    setMaskDialogOpen,
     addImageToMask,
     setIsLoading,
   });
@@ -356,31 +354,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         restoreKonvaState(savedState);
     }
   }, [historyRedo, restoreKonvaState]);
-
-  const selectNode = useCallback((node: any) => {
-    if (!canvasRef.current?.layer) return;
-  
-    let nodeToSelect = node;
-    if (
-      node.parent?.hasName('circularText') ||
-      node.parent?.hasName('mask') ||
-      node.parent?.hasName('textGroup') ||
-      node.parent?.hasName('group')
-    ) {
-      nodeToSelect = node.parent;
-    }
-  
-    if (isMultiSelectMode) {
-      const isSelected = selectedNodes.some(n => n.id() === nodeToSelect.id());
-      if (isSelected) {
-        setSelectedNodes(prev => prev.filter(n => n.id() !== nodeToSelect.id()));
-      } else {
-        setSelectedNodes(prev => [...prev, nodeToSelect]);
-      }
-    } else {
-      setSelectedNodes([nodeToSelect]);
-    }
-  }, [isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -413,7 +386,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                     attachDoubleClick(img);
                     layer.add(img);
                     updateLayers();
-                    selectNode(img);
+                    setSelectedNodes([img]);
                     layer.draw();
                     setIsLoading(false);
                     saveState();
@@ -425,7 +398,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         imageFileInput.value = '';
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, selectNode, attachDoubleClick, saveState]);
+  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, saveState]);
 
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
@@ -534,27 +507,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!layer) return;
   
     selectedNodes.forEach(node => {
-      // Get the current absolute position (visual center on canvas)
-      const absPos = node.getAbsolutePosition();
       const box = node.getClientRect();
-      
-      // Calculate the visual center point
       const visualCenterX = box.x + box.width / 2;
       const visualCenterY = box.y + box.height / 2;
       
-      // Flip the scale
       if (direction === 'horizontal') {
         node.scaleX(node.scaleX() * -1);
       } else {
         node.scaleY(node.scaleY() * -1);
       }
       
-      // Get new box after flip
       const newBox = node.getClientRect();
       const newVisualCenterX = newBox.x + newBox.width / 2;
       const newVisualCenterY = newBox.y + newBox.height / 2;
       
-      // Adjust position to keep visual center in same place
       const deltaX = visualCenterX - newVisualCenterX;
       const deltaY = visualCenterY - newVisualCenterY;
       
@@ -736,61 +702,61 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     const layer = canvasRef.current.layer;
     const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    const groupRect = window.Konva.Node.getClientRect({
+      nodes: selectedNodes,
+      skipTransform: false,
+    });
+    
     const newGroup = new window.Konva.Group({
         id: uniqueId,
         draggable: true,
         name: 'group',
+        x: groupRect.x,
+        y: groupRect.y,
+        width: groupRect.width,
+        height: groupRect.height
     });
     layer.add(newGroup);
 
-    const groupPos = { x: Infinity, y: Infinity };
     selectedNodes.forEach(node => {
-        const nodePos = node.position();
-        groupPos.x = Math.min(groupPos.x, nodePos.x);
-        groupPos.y = Math.min(groupPos.y, nodePos.y);
-    });
-    newGroup.position(groupPos);
-
-    selectedNodes.forEach(node => {
-        const nodePos = node.position();
-        node.position({
-            x: nodePos.x - groupPos.x,
-            y: nodePos.y - groupPos.y
-        });
+        const nodeAbsPos = node.getAbsolutePosition();
         node.moveTo(newGroup);
+        node.setAbsolutePosition({
+          x: nodeAbsPos.x,
+          y: nodeAbsPos.y,
+        });
     });
 
     layer.draw();
     setSelectedNodes([newGroup]);
+    setMultiSelectMode(false);
     updateLayers();
     saveState();
-  }, [selectedNodes, updateLayers, saveState, setSelectedNodes]);
+  }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
 
   const handleUngroup = useCallback(() => {
-    if (selectedNodes.length !== 1 || selectedNodes[0]?.name() !== 'group' || !canvasRef.current?.layer) return;
+    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('group') || !canvasRef.current?.layer) return;
     
     const group = selectedNodes[0];
     const layer = canvasRef.current.layer;
-    const groupPos = group.position();
     const children = group.getChildren().slice();
     const nodesToSelect = [];
 
     children.forEach(child => {
-        const childPos = child.position();
+        const childAbsPos = child.getAbsolutePosition();
         child.moveTo(layer);
-        child.position({
-            x: groupPos.x + childPos.x,
-            y: groupPos.y + childPos.y
-        });
+        child.setAbsolutePosition(childAbsPos);
         nodesToSelect.push(child);
     });
     
     group.destroy();
     layer.draw();
     setSelectedNodes(nodesToSelect);
+    setMultiSelectMode(true);
     updateLayers();
     saveState();
-  }, [selectedNodes, updateLayers, saveState, setSelectedNodes]);
+  }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
 
   useEffect(() => {
       if (canvasRef.current?.background && isCanvasReady) {
@@ -842,36 +808,21 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!canvasRef.current || !canvasRef.current.stage || !canvasRef.current.layer) {
       return;
     }
-
-    const { stage, layer } = canvasRef.current;
-    
-    if (typeof window.Konva === 'undefined') {
-      console.error('Konva library is not loaded. Canvas features are disabled.');
-      return;
-    }
-
+    const { stage } = canvasRef.current;
+    if (typeof window.Konva === 'undefined') return;
     try {
-      if (!stage) {
-        console.error("Stage is not initialized. Cannot proceed.");
-        return;
-      }
-      
+      if (!stage) return;
       updateLayers();
-      
       stage.on('dragend', () => {
         updateLayers();
         scheduleSave();
       });
-      
       if (!hasInitializedHistoryRef.current) {
         hasInitializedHistoryRef.current = true;
-        setTimeout(() => {
-          saveState();
-        }, 100);
+        setTimeout(() => saveState(), 100);
       }
-
     } catch (error) {
-      console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
+      console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components.", error);
     }
   }, [updateLayers, scheduleSave, saveState]);
   
@@ -883,14 +834,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
-    const children = canvasRef.current.layer.getChildren((n: any) => n.name() !== 'background' && n.className !== 'Transformer');
+    const children = canvasRef.current.layer.getChildren((n: any) => n.name() !== 'background' && !n.hasName('Transformer'));
     const newChildren = Array.from(children || []);
     setKonvaObjects(newChildren);
   }, [selectedNodes]);
 
   const value: CanvasContextType = {
     canvasRef,
-    transformerRef,
     konvaObjects,
     setKonvaObjects,
     selectedNodes,
@@ -913,7 +863,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setTextDialogOpen,
     isFrameDialogOpen,
     setFrameDialogOpen,
-    isMaskDialogOpen,
+isMaskDialogOpen,
     setMaskDialogOpen,
     editingShapeNode,
     setEditingShapeNode,
@@ -924,7 +874,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     editingTextNode,
     setEditingTextNode,
     updateLayers,
-    selectNode,
     deselectNodes,
     handleSave,
     handleMoveNode,
@@ -970,3 +919,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
