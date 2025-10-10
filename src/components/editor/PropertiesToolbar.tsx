@@ -22,6 +22,11 @@ const PropertiesToolbar = () => {
     handleMaskImageZoom,
     handleMaskImageReset,
     handleMaskImagePan,
+    isMultiSelectMode,
+    setMultiSelectMode,
+    handleGroup,
+    handleUngroup,
+    setSelectedNodes,
   } = useCanvas();
 
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
@@ -40,7 +45,7 @@ const PropertiesToolbar = () => {
           <Separator orientation="vertical" />
           <div className="toolbar-section flex-wrap justify-center">
             <ObjectPropertiesPanel
-              selectedNode={selectedNode}
+              selectedNodes={selectedNodes}
               onAlign={handleAlign}
               onOpacityChange={handleOpacityChange}
               onFlip={handleFlip}
@@ -48,6 +53,17 @@ const PropertiesToolbar = () => {
               onMaskImageZoom={handleMaskImageZoom}
               onMaskImageReset={handleMaskImageReset}
               onMaskImagePan={handleMaskImagePan}
+              isMultiSelectMode={isMultiSelectMode}
+              onMultiSelectToggle={() => {
+                const newMode = !isMultiSelectMode;
+                setMultiSelectMode(newMode);
+                if (!newMode && selectedNodes.length > 1) {
+                  // If exiting multi-select, keep only the last selected item
+                  setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+                }
+              }}
+              onGroup={handleGroup}
+              onUngroup={handleUngroup}
             />
           </div>
         </>
@@ -57,7 +73,3 @@ const PropertiesToolbar = () => {
 };
 
 export default PropertiesToolbar;
-
-    
-
-    

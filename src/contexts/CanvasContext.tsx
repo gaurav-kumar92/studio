@@ -48,7 +48,7 @@ type CanvasContextType = {
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
   setEditingFrameNode: React.Dispatch<React.SetStateAction<any>>;
-editingMaskNode: any;
+  editingMaskNode: any;
   setEditingMaskNode: React.Dispatch<React.SetStateAction<any>>;
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
@@ -95,8 +95,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
-  const stageRef = useRef<any>(null);
-  const layerRef = useRef<any>(null);
   const [backgroundColor, setBackgroundColor] = useState<any>({
     isGradient: false,
     solidColor: '#ffffff',
@@ -262,8 +260,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   useSelection({
     isCanvasReady,
-    stageRef,
-    layerRef,
+    canvasRef,
     transformerRef,
     isMultiSelectMode,
     selectedNodes,
@@ -860,8 +857,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
       
       updateLayers();
-      stageRef.current = stage;
-      layerRef.current = layer;
       
       stage.on('dragend', () => {
         updateLayers();

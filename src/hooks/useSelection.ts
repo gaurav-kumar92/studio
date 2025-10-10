@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 
 type UseSelectionProps = {
   isCanvasReady: boolean;
-  stageRef: React.RefObject<any>;
-  layerRef: React.RefObject<any>;
+  canvasRef: React.RefObject<{ stage: any; layer: any; }>;
   transformerRef: React.RefObject<any>;
   isMultiSelectMode: boolean;
   selectedNodes: any[];
@@ -15,8 +14,7 @@ type UseSelectionProps = {
 
 export function useSelection({
   isCanvasReady,
-  stageRef,
-  layerRef,
+  canvasRef,
   transformerRef,
   isMultiSelectMode,
   selectedNodes,
@@ -26,18 +24,20 @@ export function useSelection({
 
   // Handle click/tap events for selection
   useEffect(() => {
-    if (!isCanvasReady || !stageRef.current) return;
+    if (!isCanvasReady || !canvasRef.current?.stage) return;
 
-    const stage = stageRef.current;
+    const stage = canvasRef.current.stage;
 
     const handleStageClick = (e: any) => {
       if (window.isOpeningFileDialog) {
         return;
       }
+      
+      const isShiftPressed = e.evt.shiftKey;
 
-      // If clicked on empty area, deselect all
+      // If clicked on empty area, deselect all unless shift is pressed
       if (e.target === stage || e.target.hasName('background')) {
-        if (!isMultiSelectMode) {
+        if (!isMultiSelectMode && !isShiftPressed) {
           setSelectedNodes([]);
         }
         return;
@@ -55,8 +55,9 @@ export function useSelection({
       }
 
       // Handle selection logic
-      if (isMultiSelectMode) {
-        const isSelected = selectedNodes.some(n => n.id() === node.id());
+      const isSelected = selectedNodes.some(n => n.id() === node.id());
+
+      if (isMultiSelectMode || isShiftPressed) {
         if (isSelected) {
           // If already selected, remove it
           setSelectedNodes(selectedNodes.filter(n => n.id() !== node.id()));
@@ -76,13 +77,13 @@ export function useSelection({
       stage.off('click tap', handleStageClick);
     };
 
-  }, [isCanvasReady, stageRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
+  }, [isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
 
   // Handle transformer attachment and events
   useEffect(() => {
-    if (!layerRef.current) return;
-    const layer = layerRef.current;
+    if (!canvasRef.current?.layer) return;
+    const layer = canvasRef.current.layer;
 
     // Destroy existing transformer
     if (transformerRef.current) {
@@ -115,5 +116,5 @@ export function useSelection({
     layer.batchDraw();
 
     // No explicit cleanup for transformer.on, as it's destroyed with the transformer itself
-  }, [selectedNodes, layerRef, transformerRef, saveState]);
+  }, [selectedNodes, canvasRef, transformerRef, saveState]);
 }

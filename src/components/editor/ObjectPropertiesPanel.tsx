@@ -3,13 +3,13 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 
 type ObjectPropertiesPanelProps = {
-  selectedNode: any;
+  selectedNodes: any[];
   onAlign: (position: string) => void;
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
@@ -17,10 +17,14 @@ type ObjectPropertiesPanelProps = {
   onMaskImageZoom: (direction: 'in' | 'out') => void;
   onMaskImageReset: () => void;
   onMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  isMultiSelectMode: boolean;
+  onMultiSelectToggle: () => void;
+  onGroup: () => void;
+  onUngroup: () => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
-  selectedNode,
+  selectedNodes,
   onAlign,
   onOpacityChange,
   onFlip,
@@ -28,9 +32,15 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onMaskImageZoom,
   onMaskImageReset,
   onMaskImagePan,
+  isMultiSelectMode,
+  onMultiSelectToggle,
+  onGroup,
+  onUngroup,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
+  const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
+
   useEffect(() => {
     if (selectedNode) {
       setOpacity(selectedNode.opacity() ?? 1);
@@ -53,6 +63,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   const isLineOrCurve = selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame');
   const isMask = selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
+  const isGroupSelected = selectedNodes.length === 1 && selectedNodes[0]?.name() === 'group';
 
   // Determine the current color for the popover trigger
   const getFillColor = () => {
@@ -74,6 +85,27 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   return (
     // Use flex layout to arrange items horizontally
     <div id="object-properties" className="flex items-center gap-2">
+       {/* Multi-Select & Grouping Section */}
+       <Button
+          variant={isMultiSelectMode ? "destructive" : "ghost"}
+          size="icon"
+          onClick={onMultiSelectToggle}
+          title="Select Multiple"
+        >
+          <ListPlus className="h-4 w-4" />
+        </Button>
+
+        {selectedNodes.length > 1 && (
+            <Button variant="ghost" size="icon" onClick={onGroup}>
+                <Group className="h-4 w-4" />
+            </Button>
+        )}
+        {isGroupSelected && (
+            <Button variant="ghost" size="icon" onClick={onUngroup}>
+                <Ungroup className="h-4 w-4" />
+            </Button>
+        )}
+
       {canHaveColor && (
         <Popover>
           <PopoverTrigger asChild>
@@ -152,6 +184,3 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 };
 
 export default ObjectPropertiesPanel;
-
-
-    
