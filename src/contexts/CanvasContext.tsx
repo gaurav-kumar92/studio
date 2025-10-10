@@ -899,35 +899,33 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       layerRef.current = layer;
 
       stage.on('click tap', (e: any) => {
-        const clickedOnEmpty = e.target === stage;
-        const layer = canvasRef.current?.layer;
-        if (!layer) return;
+        // if we are selecting with rect, do nothing
+        if (window.isOpeningFileDialog) {
+          return;
+        }
       
-        // Prevent selecting the Stage (canvas itself)
-        if (clickedOnEmpty) {
+        // if click on empty area - remove all selections
+        if (e.target === stage || e.target.hasName('background')) {
           if (!isMultiSelectMode) {
             setSelectedNodes([]);
           }
           return;
         }
       
-        const node = e.target;
+        let node = e.target;
       
-        // Ignore background layer or anything that shouldn't be selectable
-        if (node === stage || node.name() === 'background') return;
+        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('group')) {
+          node = node.parent;
+        }
       
-        // ✅ Multi-select mode
         if (isMultiSelectMode) {
-          setSelectedNodes((prev) => {
-            const already = prev.find((n) => n._id === node._id);
-            if (already) {
-              return prev.filter((n) => n._id !== node._id);
-            } else {
-              return [...prev, node];
-            }
-          });
+          const isSelected = selectedNodes.some((n) => n.id() === node.id());
+          if (isSelected) {
+            setSelectedNodes((prev) => prev.filter((n) => n.id() !== node.id()));
+          } else {
+            setSelectedNodes((prev) => [...prev, node]);
+          }
         } else {
-          // ✅ Single select
           setSelectedNodes([node]);
         }
       });
@@ -1046,3 +1044,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
