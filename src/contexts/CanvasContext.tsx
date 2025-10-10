@@ -899,12 +899,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       layerRef.current = layer;
 
       stage.on('click tap', (e: any) => {
-        // if we are selecting with rect, do nothing
         if (window.isOpeningFileDialog) {
           return;
         }
       
-        // if click on empty area - remove all selections
         if (e.target === stage || e.target.hasName('background')) {
           if (!isMultiSelectMode) {
             setSelectedNodes([]);
@@ -929,8 +927,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           setSelectedNodes([node]);
         }
       });
-      
-
       
       stage.on('dragend', () => {
         updateLayers();
