@@ -9,7 +9,7 @@ import { useCanvas } from '@/contexts/CanvasContext';
 const Toolbar = () => {
   const { 
     setAddItemDialogOpen, 
-    deselectNode, 
+    deselectNodes, 
     selectedNodes,
     updateLayers,
     handleSave,
@@ -47,7 +47,7 @@ const Toolbar = () => {
           size="sm" 
           onClick={() => {
             setAddItemDialogOpen(true);
-            deselectNode();
+            deselectNodes();
           }}
         >
           <Plus className="h-4 w-4" />
@@ -88,7 +88,7 @@ const Toolbar = () => {
           onClick={() => {
             if (selectedNodes.length > 0) {
               selectedNodes.forEach(node => node.destroy());
-              deselectNode();
+              deselectNodes();
               updateLayers();
               saveState();
             }
