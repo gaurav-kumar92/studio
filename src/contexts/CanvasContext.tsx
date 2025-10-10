@@ -48,7 +48,7 @@ type CanvasContextType = {
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
   setEditingFrameNode: React.Dispatch<React.SetStateAction<any>>;
-  editingMaskNode: any;
+editingMaskNode: any;
   setEditingMaskNode: React.Dispatch<React.SetStateAction<any>>;
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
@@ -260,9 +260,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }, 500);
   }, [saveState]);
 
-
-
   useSelection({
+    isCanvasReady,
     stageRef,
     layerRef,
     transformerRef,
@@ -282,7 +281,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef,
     updateLayers,
     deselectNode: deselectNodes,
-    setSelectedNodes: (nodes) => setSelectedNodes(nodes),
+    setSelectedNodes,
     applyFill,
     attachDoubleClick: (node) => attachDoubleClick(node),
     saveState,
@@ -384,7 +383,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setSelectedNodes([nodeToSelect]);
     }
-  }, [isMultiSelectMode, selectedNodes]);
+  }, [isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -842,40 +841,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
   }, [backgroundColor, isCanvasReady]);
 
-  // Handle transformer attachment for multi-select
-  useEffect(() => {
-    if (!isCanvasReady || !canvasRef.current?.layer) return;
-  
-    const { layer } = canvasRef.current;
-  
-    if (transformerRef.current) {
-      transformerRef.current.destroy();
-      transformerRef.current = null;
-    }
-  
-    if (selectedNodes.length > 0) {
-      const tr = new window.Konva.Transformer({
-        nodes: selectedNodes,
-        rotateEnabled: true,
-        keepRatio: false,
-        boundBoxFunc: (oldBox: any, newBox: any) => {
-          if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
-            return oldBox;
-          }
-          return newBox;
-        },
-      });
-  
-      layer.add(tr);
-      transformerRef.current = tr;
-      tr.on('transformend', saveState);
-    } 
-    layer.batchDraw();
-    
-    // No explicit return with cleanup, rely on destruction at the start of effect
-  }, [selectedNodes, isCanvasReady, saveState]);
-  
-
   const initializeKonva = useCallback(() => {
     if (!canvasRef.current || !canvasRef.current.stage || !canvasRef.current.layer) {
       return;
@@ -897,36 +862,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       updateLayers();
       stageRef.current = stage;
       layerRef.current = layer;
-
-      stage.on('click tap', (e: any) => {
-        if (window.isOpeningFileDialog) {
-          return;
-        }
-      
-        if (e.target === stage || e.target.hasName('background')) {
-          if (!isMultiSelectMode) {
-            setSelectedNodes([]);
-          }
-          return;
-        }
-      
-        let node = e.target;
-      
-        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('group')) {
-          node = node.parent;
-        }
-      
-        if (isMultiSelectMode) {
-          const isSelected = selectedNodes.some((n) => n.id() === node.id());
-          if (isSelected) {
-            setSelectedNodes((prev) => prev.filter((n) => n.id() !== node.id()));
-          } else {
-            setSelectedNodes((prev) => [...prev, node]);
-          }
-        } else {
-          setSelectedNodes([node]);
-        }
-      });
       
       stage.on('dragend', () => {
         updateLayers();
@@ -943,7 +878,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
-  }, [updateLayers, scheduleSave, saveState, isMultiSelectMode, selectedNodes, setSelectedNodes]);
+  }, [updateLayers, scheduleSave, saveState]);
   
   useEffect(() => {
     if ((window as any).Konva && isCanvasReady) {
@@ -991,7 +926,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingFrameNode,
     editingMaskNode,
     setEditingMaskNode,
-editingTextNode,
+    editingTextNode,
     setEditingTextNode,
     updateLayers,
     selectNode,
@@ -1040,5 +975,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
