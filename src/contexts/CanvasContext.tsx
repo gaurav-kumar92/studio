@@ -318,7 +318,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingMaskNode,
     handleAddMask,
     handleUpdateMask,
-    addImageToMask,
+addImageToMask,
   } = useMaskHandler({
     canvasRef,
     updateLayers,
@@ -335,8 +335,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setShapeDialogOpen,
     setEditingFrameNode,
     setFrameDialogOpen,
-    setEditingMaskNode,
-    setMaskDialogOpen,
     addImageToMask,
     setIsLoading,
   });
@@ -611,21 +609,39 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (selectedNodes.length === 0) return;
 
       selectedNodes.forEach(node => {
-        const nodeType = node.name();
-        const shapeType = node.getAttr('data-type');
-        const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
-        
-        node.setAttrs({
-            'data-is-gradient': config.isGradient,
-            'data-solid-color': config.solidColor,
-            'data-color-stops': config.colorStops,
-            'data-gradient-direction': config.gradientDirection,
-        });
-        
-        if (usesStroke) {
-          applyStroke(node, config);
-        } else {
-          applyFill(node, config);
+        // If it's a group, apply to children
+        if (node.hasName('group')) {
+          node.getChildren().forEach((child: any) => {
+            const childUsesStroke = (child.name() === 'shape' && (child.getAttr('data-type') === 'line' || child.getAttr('data-type') === 'arrow' || child.getAttr('data-type') === 'curve')) || child.name() === 'frame';
+            child.setAttrs({
+                'data-is-gradient': config.isGradient,
+                'data-solid-color': config.solidColor,
+                'data-color-stops': config.colorStops,
+                'data-gradient-direction': config.gradientDirection,
+            });
+            if (childUsesStroke) {
+              applyStroke(child, config);
+            } else {
+              applyFill(child, config);
+            }
+          });
+        } else { // Apply to the node itself
+          const nodeType = node.name();
+          const shapeType = node.getAttr('data-type');
+          const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
+          
+          node.setAttrs({
+              'data-is-gradient': config.isGradient,
+              'data-solid-color': config.solidColor,
+              'data-color-stops': config.colorStops,
+              'data-gradient-direction': config.gradientDirection,
+          });
+          
+          if (usesStroke) {
+            applyStroke(node, config);
+          } else {
+            applyFill(node, config);
+          }
         }
       });
     
@@ -702,7 +718,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     const layer = canvasRef.current.layer;
     const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
+
     const groupRect = window.Konva.Node.getClientRect({
       nodes: selectedNodes,
       skipTransform: false,
@@ -714,23 +730,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         name: 'group',
         x: groupRect.x,
         y: groupRect.y,
-        width: groupRect.width,
-        height: groupRect.height
     });
     layer.add(newGroup);
 
     selectedNodes.forEach(node => {
         const nodeAbsPos = node.getAbsolutePosition();
         node.moveTo(newGroup);
-        node.setAbsolutePosition({
-          x: nodeAbsPos.x,
-          y: nodeAbsPos.y,
+        // Set position relative to the new group
+        node.position({
+          x: nodeAbsPos.x - groupRect.x,
+          y: nodeAbsPos.y - groupRect.y,
         });
     });
 
     layer.draw();
-    setSelectedNodes([newGroup]);
     setMultiSelectMode(false);
+    setSelectedNodes([newGroup]); // Select the new group
     updateLayers();
     saveState();
   }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
@@ -744,16 +759,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const nodesToSelect = [];
 
     children.forEach(child => {
-        const childAbsPos = child.getAbsolutePosition();
+        const childAbsPos = child.getAbsolutePosition(layer);
         child.moveTo(layer);
-        child.setAbsolutePosition(childAbsPos);
+        child.position(childAbsPos);
+        child.scale(group.scale());
+        child.rotation(group.rotation());
         nodesToSelect.push(child);
     });
     
     group.destroy();
     layer.draw();
-    setSelectedNodes(nodesToSelect);
     setMultiSelectMode(true);
+    setSelectedNodes(nodesToSelect);
     updateLayers();
     saveState();
   }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
@@ -919,5 +936,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
