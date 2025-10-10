@@ -5,9 +5,9 @@ import { useState, useCallback } from 'react';
 type UseFrameHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
-    setSelectedNode: (node: any) => void;
+    setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void; // ADD THIS
+    saveState: () => void;
 };
 
 export const useFrameHandler = ({
@@ -15,7 +15,7 @@ export const useFrameHandler = ({
     updateLayers,
     setSelectedNodes,
     attachDoubleClick,
-    saveState, // ADD THIS
+    saveState,
 }: UseFrameHandlerProps) => {
     const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
     const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
@@ -75,10 +75,10 @@ export const useFrameHandler = ({
           const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           newFrame.setAttr('id', uniqueId);
           
-          saveState(); // ADD THIS - Save after adding frame
+          saveState();
         }
         setFrameDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]); // Add saveState to dependencies
+      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]);
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
@@ -90,8 +90,8 @@ export const useFrameHandler = ({
           editingFrameNode.sides(attrs.sides);
         }
         canvasRef.current?.layer.draw();
-        saveState(); // ADD THIS - Save after updating frame
-      }, [editingFrameNode, canvasRef, saveState]); // Add saveState to dependencies
+        saveState();
+      }, [editingFrameNode, canvasRef, saveState]);
 
     return {
         isFrameDialogOpen,

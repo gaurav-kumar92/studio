@@ -7,7 +7,7 @@ type UseShapeHandlerProps = {
     updateLayers: () => void;
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void; // ADD THIS
+    saveState: () => void;
 };
 
 export const useShapeHandler = ({
@@ -15,7 +15,7 @@ export const useShapeHandler = ({
     updateLayers,
     setSelectedNodes,
     attachDoubleClick,
-    saveState, // ADD THIS
+    saveState,
 }: UseShapeHandlerProps) => {
     const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
     const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
@@ -101,10 +101,10 @@ export const useShapeHandler = ({
           layer.draw();
           setSelectedNodes([newShape]);
           newShape.setAttr('id', uniqueId); 
-          saveState(); // ADD THIS - Save after adding shape
+          saveState();
         }
         setShapeDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]); // Add saveState to dependencies
+      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]);
     
       const handleUpdateShape = useCallback((attrs: any) => {
         if (!editingShapeNode || !canvasRef.current) return;
@@ -119,8 +119,8 @@ export const useShapeHandler = ({
             editingShapeNode.setAttr('data-tension', attrs.tension);
         }
         canvasRef.current.layer.draw();
-        saveState(); // ADD THIS - Save after updating shape
-      }, [editingShapeNode, canvasRef, saveState]); // Add saveState to dependencies
+        saveState();
+      }, [editingShapeNode, canvasRef, saveState]);
 
     return {
         isShapeDialogOpen,
