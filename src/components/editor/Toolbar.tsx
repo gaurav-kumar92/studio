@@ -20,7 +20,7 @@ const Toolbar = () => {
     canRedo,
     saveState,
     isMultiSelectMode,
-    setIsMultiSelectMode,
+    setMultiSelectMode,
     handleGroup,
     handleUngroup,
     setSelectedNodes,
@@ -28,7 +28,7 @@ const Toolbar = () => {
 
   const handleMultiSelectToggle = () => {
     const newMode = !isMultiSelectMode;
-    setIsMultiSelectMode(newMode);
+    setMultiSelectMode(newMode);
     // When exiting multi-select mode, clear the selection
     if (!newMode) {
       setSelectedNodes([]);
