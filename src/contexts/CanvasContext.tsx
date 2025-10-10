@@ -8,6 +8,7 @@ import { useFrameHandler } from '@/hooks/useFrameHandler';
 import { useMaskHandler } from '@/hooks/useMaskHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useHistory } from '@/hooks/useHistory';
+import { useSelection } from '@/hooks/useSelection';
 
 declare global {
   interface Window {
@@ -94,6 +95,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [canvasSize, setCanvasSize] = useState('842x1191');
   const [isCanvasReady, setCanvasReady] = useState(false);
+  const stageRef = useRef<any>(null);
+  const layerRef = useRef<any>(null);
   const [backgroundColor, setBackgroundColor] = useState<any>({
     isGradient: false,
     solidColor: '#ffffff',
@@ -103,6 +106,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       { id: 1, stop: 1, color: '#a855f7' },
     ],
   });
+  
   const [initialScale, setInitialScale] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -256,6 +260,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }, 500);
   }, [saveState]);
 
+
+
+  useSelection({
+    stageRef,
+    layerRef,
+    transformerRef,
+    isMultiSelectMode,
+    selectedNodes,
+    setSelectedNodes,
+    saveState,
+  });
+
   const {
     isTextDialogOpen,
     setTextDialogOpen,
@@ -387,8 +403,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
                     const MAX_WIDTH = stage.width() * 0.8;
                     const MAX_HEIGHT = stage.height() * 0.8;
                     const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
+                    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
                     img.setAttrs({
+                        id: uniqueId,
                         x: (stage.width() - img.width() * scale) / 2,
                         y: (stage.height() - img.height() * scale) / 2,
                         scaleX: scale,
@@ -520,29 +538,32 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!layer) return;
   
     selectedNodes.forEach(node => {
-      const width = node.width();
-      const height = node.height();
-    
-      if (node.offsetX() !== width / 2 || node.offsetY() !== height / 2) {
-        const oldCenterX = node.x() + (width / 2 - node.offsetX()) * node.scaleX();
-        const oldCenterY = node.y() + (height / 2 - node.offsetY()) * node.scaleY();
-        
-        node.offset({
-          x: width / 2,
-          y: height / 2,
-        });
-        
-        node.position({
-          x: oldCenterX,
-          y: oldCenterY,
-        });
-      }
-    
+      // Get the current absolute position (visual center on canvas)
+      const absPos = node.getAbsolutePosition();
+      const box = node.getClientRect();
+      
+      // Calculate the visual center point
+      const visualCenterX = box.x + box.width / 2;
+      const visualCenterY = box.y + box.height / 2;
+      
+      // Flip the scale
       if (direction === 'horizontal') {
         node.scaleX(node.scaleX() * -1);
       } else {
         node.scaleY(node.scaleY() * -1);
       }
+      
+      // Get new box after flip
+      const newBox = node.getClientRect();
+      const newVisualCenterX = newBox.x + newBox.width / 2;
+      const newVisualCenterY = newBox.y + newBox.height / 2;
+      
+      // Adjust position to keep visual center in same place
+      const deltaX = visualCenterX - newVisualCenterX;
+      const deltaY = visualCenterY - newVisualCenterY;
+      
+      node.x(node.x() + deltaX);
+      node.y(node.y() + deltaY);
     });
   
     layer.batchDraw();
@@ -718,7 +739,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (selectedNodes.length < 2 || !canvasRef.current?.layer) return;
 
     const layer = canvasRef.current.layer;
+    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const newGroup = new window.Konva.Group({
+        id: uniqueId,
         draggable: true,
         name: 'group',
     });
@@ -872,36 +895,44 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
       
       updateLayers();
+      stageRef.current = stage;
+      layerRef.current = layer;
 
       stage.on('click tap', (e: any) => {
-        if (window.isOpeningFileDialog) {
-            window.isOpeningFileDialog = false;
-            return;
+        const clickedOnEmpty = e.target === stage;
+        const layer = canvasRef.current?.layer;
+        if (!layer) return;
+      
+        // Prevent selecting the Stage (canvas itself)
+        if (clickedOnEmpty) {
+          if (!isMultiSelectMode) {
+            setSelectedNodes([]);
+          }
+          return;
         }
-
-        if (e.target === stage || e.target.hasName('background')) {
-            if (!isMultiSelectMode) {
-                setSelectedNodes([]);
-            }
-            return;
-        }
-        
-        let node = e.target;
-        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('group')) {
-          node = node.parent;
-        }
-
+      
+        const node = e.target;
+      
+        // Ignore background layer or anything that shouldn't be selectable
+        if (node === stage || node.name() === 'background') return;
+      
+        // ✅ Multi-select mode
         if (isMultiSelectMode) {
-            const isSelected = selectedNodes.some(n => n.id() === node.id());
-            if (isSelected) {
-                setSelectedNodes(prev => prev.filter(n => n.id() !== node.id()));
+          setSelectedNodes((prev) => {
+            const already = prev.find((n) => n._id === node._id);
+            if (already) {
+              return prev.filter((n) => n._id !== node._id);
             } else {
-                setSelectedNodes(prev => [...prev, node]);
+              return [...prev, node];
             }
+          });
         } else {
-            setSelectedNodes([node]);
+          // ✅ Single select
+          setSelectedNodes([node]);
         }
       });
+      
+
       
       stage.on('dragend', () => {
         updateLayers();
@@ -918,7 +949,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("CRITICAL KONVA ERROR: Failed to initialize Konva components (stage/layer).", error);
     }
-  }, [updateLayers, deselectNodes, selectNode, handleDoubleClick, scheduleSave, saveState, isMultiSelectMode, selectedNodes, setSelectedNodes]);
+  }, [updateLayers, scheduleSave, saveState, isMultiSelectMode, selectedNodes, setSelectedNodes]);
   
   useEffect(() => {
     if ((window as any).Konva && isCanvasReady) {
@@ -966,7 +997,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingFrameNode,
     editingMaskNode,
     setEditingMaskNode,
-    editingTextNode,
+editingTextNode,
     setEditingTextNode,
     updateLayers,
     selectNode,
@@ -1015,5 +1046,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
