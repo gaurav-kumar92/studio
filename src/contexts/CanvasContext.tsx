@@ -318,7 +318,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingMaskNode,
     handleAddMask,
     handleUpdateMask,
-addImageToMask,
+    addImageToMask,
   } = useMaskHandler({
     canvasRef,
     updateLayers,
@@ -492,6 +492,12 @@ addImageToMask,
   const handleOpacityChange = useCallback((opacity: number) => {
     selectedNodes.forEach(node => {
       node.opacity(opacity);
+      // If it's a group, apply opacity to all children as well
+      if (node.hasName('group')) {
+        node.find('*').forEach((child: any) => {
+          child.opacity(opacity);
+        });
+      }
     });
     if (canvasRef.current?.layer) {
       canvasRef.current.layer.draw();
@@ -611,7 +617,7 @@ addImageToMask,
       selectedNodes.forEach(node => {
         // If it's a group, apply to children
         if (node.hasName('group')) {
-          node.getChildren().forEach((child: any) => {
+          node.find('*').forEach((child: any) => {
             const childUsesStroke = (child.name() === 'shape' && (child.getAttr('data-type') === 'line' || child.getAttr('data-type') === 'arrow' || child.getAttr('data-type') === 'curve')) || child.name() === 'frame';
             child.setAttrs({
                 'data-is-gradient': config.isGradient,
@@ -715,15 +721,27 @@ addImageToMask,
 
   const handleGroup = useCallback(() => {
     if (selectedNodes.length < 2 || !canvasRef.current?.layer) return;
-
+    
     const layer = canvasRef.current.layer;
     const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    const groupRect = window.Konva.Node.getClientRect({
-      nodes: selectedNodes,
-      skipTransform: false,
+    // Manually calculate bounding box of selected nodes
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    selectedNodes.forEach(node => {
+        const box = node.getClientRect();
+        minX = Math.min(minX, box.x);
+        minY = Math.min(minY, box.y);
+        maxX = Math.max(maxX, box.x + box.width);
+        maxY = Math.max(maxY, box.y + box.height);
     });
-    
+
+    const groupRect = {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+    };
+
     const newGroup = new window.Konva.Group({
         id: uniqueId,
         draggable: true,
@@ -748,7 +766,7 @@ addImageToMask,
     setSelectedNodes([newGroup]); // Select the new group
     updateLayers();
     saveState();
-  }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
+  }, [selectedNodes, updateLayers, saveState, setMultiSelectMode, setSelectedNodes]);
 
   const handleUngroup = useCallback(() => {
     if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('group') || !canvasRef.current?.layer) return;
@@ -758,7 +776,7 @@ addImageToMask,
     const children = group.getChildren().slice();
     const nodesToSelect = [];
 
-    children.forEach(child => {
+    children.forEach((child:any) => {
         const childAbsPos = child.getAbsolutePosition(layer);
         child.moveTo(layer);
         child.position(childAbsPos);
@@ -773,7 +791,7 @@ addImageToMask,
     setSelectedNodes(nodesToSelect);
     updateLayers();
     saveState();
-  }, [selectedNodes, updateLayers, saveState, setSelectedNodes, setMultiSelectMode]);
+  }, [selectedNodes, updateLayers, saveState, setMultiSelectMode, setSelectedNodes]);
 
   useEffect(() => {
       if (canvasRef.current?.background && isCanvasReady) {
@@ -880,7 +898,7 @@ addImageToMask,
     setTextDialogOpen,
     isFrameDialogOpen,
     setFrameDialogOpen,
-isMaskDialogOpen,
+    isMaskDialogOpen,
     setMaskDialogOpen,
     editingShapeNode,
     setEditingShapeNode,
@@ -936,3 +954,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
