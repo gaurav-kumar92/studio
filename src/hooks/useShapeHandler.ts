@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -7,7 +8,7 @@ type UseShapeHandlerProps = {
     updateLayers: () => void;
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void;
+    saveState: (command: any) => void;
     editingShapeNode: any;
     setEditingShapeNode: (node: any) => void;
 };
@@ -39,6 +40,7 @@ export const useShapeHandler = ({
             draggable: true,
             name: 'shape',
             'data-type': config.type,
+            id: uniqueId,
         };
     
         switch (config.type) {
@@ -103,14 +105,16 @@ export const useShapeHandler = ({
           updateLayers();
           layer.draw();
           setSelectedNodes([newShape]);
-          newShape.setAttr('id', uniqueId); 
-          saveState();
+          saveState({ type: 'ADD', targets: [{ id: uniqueId, config: newShape.toObject() }] });
         }
         setShapeDialogOpen(false);
       }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]);
     
       const handleUpdateShape = useCallback((attrs: any) => {
         if (!editingShapeNode || !canvasRef.current) return;
+
+        const beforeState = [{ id: editingShapeNode.id(), config: editingShapeNode.toObject() }];
+
         if (attrs.thickness) {
             editingShapeNode.strokeWidth(attrs.thickness);
         }
@@ -122,7 +126,9 @@ export const useShapeHandler = ({
             editingShapeNode.setAttr('data-tension', attrs.tension);
         }
         canvasRef.current.layer.draw();
-        saveState();
+
+        const afterState = [{ id: editingShapeNode.id(), config: editingShapeNode.toObject() }];
+        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
       }, [editingShapeNode, canvasRef, saveState]);
 
     return {

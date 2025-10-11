@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -9,7 +10,7 @@ type UseMaskHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     setIsLoading: (isLoading: boolean) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void;
+    saveState: (command: any) => void;
     editingMaskNode: any;
     setEditingMaskNode: (node: any) => void;
 };
@@ -53,6 +54,8 @@ export const useMaskHandler = ({
                 reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
+                        const beforeState = [{ id: maskGroup.id(), config: maskGroup.toObject() }];
+
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
                         const maskWidth = maskGroup.width();
@@ -102,7 +105,9 @@ export const useMaskHandler = ({
                         layer.draw();
                         updateLayers();
                         setIsLoading(false);
-                        saveState();
+                        
+                        const afterState = [{ id: maskGroup.id(), config: maskGroup.toObject() }];
+                        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
                     });
                 };
                 reader.onerror = () => {
@@ -162,6 +167,7 @@ export const useMaskHandler = ({
         const { stage, layer } = canvasRef.current;
     
         const size = 150;
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const group = new window.Konva.Group({
             x: stage.width() / 4,
             y: stage.height() / 4,
@@ -171,6 +177,7 @@ export const useMaskHandler = ({
             name: 'mask',
             'data-type': config.type,
             'data-letter': config.letter,
+            id: uniqueId,
         });
     
         let borderShape: any;
@@ -343,14 +350,15 @@ export const useMaskHandler = ({
         layer.draw();
         setSelectedNodes([group]);
         setMaskDialogOpen(false);
-        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        group.setAttr('id', uniqueId);
-        saveState();
+        saveState({ type: 'ADD', targets: [{ id: uniqueId, config: group.toObject() }] });
       }, [canvasRef, updateLayers, setSelectedNodes, setMaskDialogOpen, attachDoubleClick, saveState]);
 
       const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
         const border = editingMaskNode.findOne('.border-shape');
+
+        const beforeState = [{ id: editingMaskNode.id(), config: editingMaskNode.toObject() }];
+
         if (border) {
           if (attrs.borderColor) {
             border.stroke(attrs.borderColor);
@@ -363,7 +371,8 @@ export const useMaskHandler = ({
           }
         }
         canvasRef.current?.layer.draw();
-        saveState();
+        const afterState = [{ id: editingMaskNode.id(), config: editingMaskNode.toObject() }];
+        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
     }, [editingMaskNode, canvasRef, saveState]);
 
 

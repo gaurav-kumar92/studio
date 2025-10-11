@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -7,7 +8,7 @@ type UseFrameHandlerProps = {
     updateLayers: () => void;
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void;
+    saveState: (command: any) => void;
 };
 
 export const useFrameHandler = ({
@@ -61,9 +62,11 @@ export const useFrameHandler = ({
         }
     
         if(newFrame) {
+          const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           newFrame.setAttrs({
             'data-is-gradient': false,
             'data-solid-color': config.color || '#3b82f6',
+            id: uniqueId,
           });
           newFrame.stroke(config.color || '#3b82f6');
         
@@ -72,10 +75,8 @@ export const useFrameHandler = ({
           updateLayers();
           layer.draw();
           setSelectedNodes([newFrame]);
-          const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-          newFrame.setAttr('id', uniqueId);
           
-          saveState();
+          saveState({ type: 'ADD', targets: [{ id: uniqueId, config: newFrame.toObject() }] });
         }
         setFrameDialogOpen(false);
       }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]);
@@ -83,6 +84,8 @@ export const useFrameHandler = ({
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
       
+        const beforeState = [{ id: editingFrameNode.id(), config: editingFrameNode.toObject() }];
+
         if (attrs.thickness) {
           editingFrameNode.strokeWidth(attrs.thickness);
         }
@@ -90,7 +93,9 @@ export const useFrameHandler = ({
           editingFrameNode.sides(attrs.sides);
         }
         canvasRef.current?.layer.draw();
-        saveState();
+
+        const afterState = [{ id: editingFrameNode.id(), config: editingFrameNode.toObject() }];
+        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
       }, [editingFrameNode, canvasRef, saveState]);
 
     return {

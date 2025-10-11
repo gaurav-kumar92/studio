@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -9,7 +10,7 @@ type UseTextHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     applyFill: (node: any, config: any) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void;
+    saveState: (command: any) => void;
     editingTextNode: any;
     setEditingTextNode: (node: any) => void;
     setTextDialogOpen: (isOpen: boolean) => void;
@@ -32,6 +33,12 @@ export const useTextHandler = ({
     const handleAddOrUpdateText = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
         const { stage, layer } = canvasRef.current;
+        const uniqueId = editingTextNode?.id() || `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        let beforeState;
+        if (editingTextNode) {
+            beforeState = [{ id: editingTextNode.id(), config: editingTextNode.toObject() }];
+        }
 
         let oldAttrs: { [key: string]: any } = {};
         if (editingTextNode) {
@@ -79,6 +86,7 @@ export const useTextHandler = ({
                 y: stage.height() / 2,
                 draggable: true,
                 name: 'circularText',
+                id: uniqueId,
                 ...dataAttrs
             });
             newNode = circularGroup;
@@ -167,6 +175,7 @@ export const useTextHandler = ({
                 y: stage.height() / 4,
                 draggable: true,
                 name: 'textGroup',
+                id: uniqueId,
                 ...dataAttrs
             });
             newNode = textGroup;
@@ -214,9 +223,7 @@ export const useTextHandler = ({
         if (newNode) {
             attachDoubleClick(newNode);
             layer.add(newNode);
-            const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            newNode.setAttr('id', uniqueId);
-
+            
             // Re-apply color/gradient settings from the final data attributes
             const colorConfig = {
                 isGradient: dataAttrs['data-is-gradient'] || false,
@@ -230,11 +237,16 @@ export const useTextHandler = ({
             updateLayers();
             layer.draw();
             
-            saveState(); // ADD THIS - Save after adding/updating text
+            if (editingTextNode) {
+                 const afterState = [{ id: uniqueId, config: newNode.toObject() }];
+                 saveState({ type: 'UPDATE', before: beforeState, after: afterState });
+            } else {
+                 saveState({ type: 'ADD', targets: [{ id: uniqueId, config: newNode.toObject() }] });
+            }
         }
 
         setTextDialogOpen(false);
-    }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]); // Add saveState to dependencies
+    }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]);
 
     return {
         isTextDialogOpen: isTextDialogOpen,
