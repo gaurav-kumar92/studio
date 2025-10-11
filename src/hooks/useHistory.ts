@@ -16,17 +16,10 @@ export const useHistory = () => {
     const [history, setHistory] = useState<Command[]>([]);
     const [currentStep, setCurrentStep] = useState<number>(-1);
 
-    const record = useCallback((command: Omit<Command, 'before' | 'after'>) => {
+    const record = useCallback((command: Command) => {
         setHistory(prev => {
             const newHistory = prev.slice(0, currentStep + 1);
-            
-            const fullCommand: Command = {
-                ...command,
-                before: command.type === 'UPDATE' ? [] : undefined,
-                after: command.type === 'UPDATE' ? [] : undefined,
-            };
-
-            const updated = [...newHistory, fullCommand];
+            const updated = [...newHistory, command];
             const final = updated.length > MAX_HISTORY_SIZE ? updated.slice(updated.length - MAX_HISTORY_SIZE) : updated;
             
             setCurrentStep(final.length - 1);

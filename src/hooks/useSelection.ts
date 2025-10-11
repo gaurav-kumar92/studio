@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 type UseSelectionProps = {
   isCanvasReady: boolean;
@@ -7,7 +7,7 @@ type UseSelectionProps = {
   isMultiSelectMode: boolean;
   selectedNodes: any[];
   setSelectedNodes: (nodes: any[]) => void;
-  saveState: (command: any) => void;
+  saveState: (command: any, before?: any[], after?: any[]) => void;
 };
 
 export function useSelection({
@@ -21,6 +21,7 @@ export function useSelection({
 
   const transformersRef = useRef<any[]>([]);
   const selectionBoxRef = useRef<any>();
+  const beforeStateRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.stage || !window.Konva) return;
@@ -136,6 +137,15 @@ export function useSelection({
 
   }, [isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
+  const onTransformStart = useCallback(() => {
+    beforeStateRef.current = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
+  }, [selectedNodes]);
+  
+  const onTransformEnd = useCallback(() => {
+    const afterState = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
+    saveState({ type: 'UPDATE' }, beforeStateRef.current, afterState);
+    beforeStateRef.current = [];
+  }, [selectedNodes, saveState]);
 
   useEffect(() => {
     if (!canvasRef.current?.layer || !window.Konva) return;
@@ -143,8 +153,6 @@ export function useSelection({
 
     transformersRef.current.forEach(tr => tr.destroy());
     transformersRef.current = [];
-
-    const beforeState = selectedNodes.map(node => ({ id: node.id(), config: node.toObject() }));
 
     selectedNodes.forEach(node => {
       const tr = new window.Konva.Transformer({
@@ -164,15 +172,8 @@ export function useSelection({
       layer.add(tr);
       transformersRef.current.push(tr);
       
-      tr.on('transformend', () => {
-        const afterState = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
-        saveState({ type: 'UPDATE', targets: beforeState, after: afterState });
-      });
-
-      node.on('dragend', () => {
-        const afterState = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
-        saveState({ type: 'UPDATE', targets: beforeState, after: afterState });
-      });
+      node.on('dragstart transformstart', onTransformStart);
+      node.on('dragend transformend', onTransformEnd);
     });
     
     layer.batchDraw();
@@ -180,6 +181,10 @@ export function useSelection({
     return () => {
       transformersRef.current.forEach(tr => tr.destroy());
       transformersRef.current = [];
+      selectedNodes.forEach(node => {
+        node.off('dragstart transformstart', onTransformStart);
+        node.off('dragend transformend', onTransformEnd);
+      });
     };
-  }, [selectedNodes, canvasRef, saveState]);
+  }, [selectedNodes, canvasRef, onTransformStart, onTransformEnd]);
 }
