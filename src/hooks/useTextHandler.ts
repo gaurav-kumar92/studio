@@ -10,7 +10,6 @@ type UseTextHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     applyFill: (node: any, config: any) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: (command: any) => void;
     editingTextNode: any;
     setEditingTextNode: (node: any) => void;
     setTextDialogOpen: (isOpen: boolean) => void;
@@ -23,22 +22,15 @@ export const useTextHandler = ({
     setSelectedNodes,
     applyFill,
     attachDoubleClick,
-    saveState,
     editingTextNode,
     setEditingTextNode,
     setTextDialogOpen
 }: UseTextHandlerProps) => {
-    const [isTextDialogOpen, _setTextDialogOpen] = useState(false); // Internal state for dialog
 
     const handleAddOrUpdateText = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
         const { stage, layer } = canvasRef.current;
         const uniqueId = editingTextNode?.id() || `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-        let beforeState;
-        if (editingTextNode) {
-            beforeState = [{ id: editingTextNode.id(), config: editingTextNode.toObject() }];
-        }
 
         let oldAttrs: { [key: string]: any } = {};
         if (editingTextNode) {
@@ -236,21 +228,12 @@ export const useTextHandler = ({
             setSelectedNodes([newNode]);
             updateLayers();
             layer.draw();
-            
-            if (editingTextNode) {
-                 const afterState = [{ id: uniqueId, config: newNode.toObject() }];
-                 saveState({ type: 'UPDATE', before: beforeState, after: afterState });
-            } else {
-                 saveState({ type: 'ADD', targets: [{ id: uniqueId, config: newNode.toObject() }] });
-            }
         }
 
         setTextDialogOpen(false);
-    }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]);
+    }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick]);
 
     return {
-        isTextDialogOpen: isTextDialogOpen,
-        setTextDialogOpen: setTextDialogOpen,
         handleAddOrUpdateText,
     };
 };

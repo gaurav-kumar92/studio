@@ -7,7 +7,6 @@ type UseSelectionProps = {
   isMultiSelectMode: boolean;
   selectedNodes: any[];
   setSelectedNodes: (nodes: any[]) => void;
-  saveState: (command: any, before?: any[], after?: any[]) => void;
 };
 
 export function useSelection({
@@ -16,12 +15,10 @@ export function useSelection({
   isMultiSelectMode,
   selectedNodes,
   setSelectedNodes,
-  saveState,
 }: UseSelectionProps) {
 
   const transformersRef = useRef<any[]>([]);
   const selectionBoxRef = useRef<any>();
-  const beforeStateRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!isCanvasReady || !canvasRef.current?.stage || !window.Konva) return;
@@ -137,16 +134,6 @@ export function useSelection({
 
   }, [isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
 
-  const onTransformStart = useCallback(() => {
-    beforeStateRef.current = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
-  }, [selectedNodes]);
-  
-  const onTransformEnd = useCallback(() => {
-    const afterState = selectedNodes.map(n => ({ id: n.id(), config: n.toObject() }));
-    saveState({ type: 'UPDATE' }, beforeStateRef.current, afterState);
-    beforeStateRef.current = [];
-  }, [selectedNodes, saveState]);
-
   useEffect(() => {
     if (!canvasRef.current?.layer || !window.Konva) return;
     const layer = canvasRef.current.layer;
@@ -172,8 +159,6 @@ export function useSelection({
       layer.add(tr);
       transformersRef.current.push(tr);
       
-      node.on('dragstart transformstart', onTransformStart);
-      node.on('dragend transformend', onTransformEnd);
     });
     
     layer.batchDraw();
@@ -181,10 +166,6 @@ export function useSelection({
     return () => {
       transformersRef.current.forEach(tr => tr.destroy());
       transformersRef.current = [];
-      selectedNodes.forEach(node => {
-        node.off('dragstart transformstart', onTransformStart);
-        node.off('dragend transformend', onTransformEnd);
-      });
     };
-  }, [selectedNodes, canvasRef, onTransformStart, onTransformEnd]);
+  }, [selectedNodes, canvasRef]);
 }

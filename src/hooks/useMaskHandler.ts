@@ -10,7 +10,6 @@ type UseMaskHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     setIsLoading: (isLoading: boolean) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: (command: any) => void;
     editingMaskNode: any;
     setEditingMaskNode: (node: any) => void;
 };
@@ -21,7 +20,6 @@ export const useMaskHandler = ({
     setSelectedNodes,
     setIsLoading,
     attachDoubleClick,
-    saveState,
     editingMaskNode,
     setEditingMaskNode,
 }: UseMaskHandlerProps) => {
@@ -54,7 +52,6 @@ export const useMaskHandler = ({
                 reader.onloadstart = () => setIsLoading(true);
                 reader.onload = (e) => {
                     window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                        const beforeState = [{ id: maskGroup.id(), config: maskGroup.toObject() }];
 
                         maskGroup.find('.placeholder-icon, .mask-image').forEach((child: any) => child.destroy());
                         
@@ -106,8 +103,6 @@ export const useMaskHandler = ({
                         updateLayers();
                         setIsLoading(false);
                         
-                        const afterState = [{ id: maskGroup.id(), config: maskGroup.toObject() }];
-                        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
                     });
                 };
                 reader.onerror = () => {
@@ -160,7 +155,7 @@ export const useMaskHandler = ({
         
         window.isOpeningFileDialog = true;
         imageFileInput.click();
-    }, [updateLayers, setIsLoading, saveState]);
+    }, [updateLayers, setIsLoading]);
 
     const handleAddMask = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
@@ -350,14 +345,11 @@ export const useMaskHandler = ({
         layer.draw();
         setSelectedNodes([group]);
         setMaskDialogOpen(false);
-        saveState({ type: 'ADD', targets: [{ id: uniqueId, config: group.toObject() }] });
-      }, [canvasRef, updateLayers, setSelectedNodes, setMaskDialogOpen, attachDoubleClick, saveState]);
+      }, [canvasRef, updateLayers, setSelectedNodes, setMaskDialogOpen, attachDoubleClick]);
 
       const handleUpdateMask = useCallback((attrs: any) => {
         if (!editingMaskNode) return;
         const border = editingMaskNode.findOne('.border-shape');
-
-        const beforeState = [{ id: editingMaskNode.id(), config: editingMaskNode.toObject() }];
 
         if (border) {
           if (attrs.borderColor) {
@@ -371,9 +363,7 @@ export const useMaskHandler = ({
           }
         }
         canvasRef.current?.layer.draw();
-        const afterState = [{ id: editingMaskNode.id(), config: editingMaskNode.toObject() }];
-        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
-    }, [editingMaskNode, canvasRef, saveState]);
+    }, [editingMaskNode, canvasRef]);
 
 
     return {

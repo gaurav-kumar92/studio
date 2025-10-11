@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCallback, useState } from 'react';
@@ -11,7 +12,6 @@ export type CommandType = 'ADD' | 'DELETE' | 'UPDATE';
 
 export type Command = {
   type: CommandType;
-  targets?: CanvasNode[];        // the nodes added/deleted/updated
   before?: CanvasNode[];        // for UPDATE or DELETE (previous state)
   after?: CanvasNode[];         // for UPDATE or ADD (new state)
 };

@@ -1,4 +1,4 @@
-//The name of this file is useFrameHandler.ts
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -8,7 +8,6 @@ type UseFrameHandlerProps = {
     updateLayers: () => void;
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: (command: any) => void;
 };
 
 export const useFrameHandler = ({
@@ -16,7 +15,6 @@ export const useFrameHandler = ({
     updateLayers,
     setSelectedNodes,
     attachDoubleClick,
-    saveState,
 }: UseFrameHandlerProps) => {
     const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
     const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
@@ -76,16 +74,13 @@ export const useFrameHandler = ({
           layer.draw();
           setSelectedNodes([newFrame]);
           
-          saveState({ type: 'ADD', targets: [{ id: uniqueId, config: newFrame.toObject() }] });
         }
         setFrameDialogOpen(false);
-      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, saveState]);
+      }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick]);
     
       const handleUpdateFrame = useCallback((attrs: any) => {
         if (!editingFrameNode) return;
       
-        const beforeState = [{ id: editingFrameNode.id(), config: editingFrameNode.toObject() }];
-
         if (attrs.thickness) {
           editingFrameNode.strokeWidth(attrs.thickness);
         }
@@ -94,9 +89,7 @@ export const useFrameHandler = ({
         }
         canvasRef.current?.layer.draw();
 
-        const afterState = [{ id: editingFrameNode.id(), config: editingFrameNode.toObject() }];
-        saveState({ type: 'UPDATE', before: beforeState, after: afterState });
-      }, [editingFrameNode, canvasRef, saveState]);
+      }, [editingFrameNode, canvasRef]);
 
     return {
         isFrameDialogOpen,
