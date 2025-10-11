@@ -10,6 +10,8 @@ type UseMaskHandlerProps = {
     setIsLoading: (isLoading: boolean) => void;
     attachDoubleClick: (node: any) => void;
     saveState: () => void;
+    editingMaskNode: any;
+    setEditingMaskNode: (node: any) => void;
 };
 
 export const useMaskHandler = ({
@@ -19,9 +21,10 @@ export const useMaskHandler = ({
     setIsLoading,
     attachDoubleClick,
     saveState,
+    editingMaskNode,
+    setEditingMaskNode,
 }: UseMaskHandlerProps) => {
     const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
-    const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
 
     const addImageToMask = useCallback((maskGroup: any) => {
         if (!maskGroup || maskGroup.name() !== 'mask' || !canvasRef.current?.layer) return;

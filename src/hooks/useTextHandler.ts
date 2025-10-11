@@ -9,7 +9,10 @@ type UseTextHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     applyFill: (node: any, config: any) => void;
     attachDoubleClick: (node: any) => void;
-    saveState: () => void; // ADD THIS
+    saveState: () => void;
+    editingTextNode: any;
+    setEditingTextNode: (node: any) => void;
+    setTextDialogOpen: (isOpen: boolean) => void;
 };
 
 export const useTextHandler = ({
@@ -19,10 +22,12 @@ export const useTextHandler = ({
     setSelectedNodes,
     applyFill,
     attachDoubleClick,
-    saveState, // ADD THIS
+    saveState,
+    editingTextNode,
+    setEditingTextNode,
+    setTextDialogOpen
 }: UseTextHandlerProps) => {
-    const [isTextDialogOpen, setTextDialogOpen] = useState(false);
-    const [editingTextNode, setEditingTextNode] = useState<any>(null);
+    const [isTextDialogOpen, _setTextDialogOpen] = useState(false); // Internal state for dialog
 
     const handleAddOrUpdateText = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
@@ -232,10 +237,8 @@ export const useTextHandler = ({
     }, [canvasRef, editingTextNode, deselectNode, setSelectedNodes, updateLayers, applyFill, setEditingTextNode, setTextDialogOpen, attachDoubleClick, saveState]); // Add saveState to dependencies
 
     return {
-        isTextDialogOpen,
-        setTextDialogOpen,
-        editingTextNode,
-        setEditingTextNode,
+        isTextDialogOpen: isTextDialogOpen,
+        setTextDialogOpen: setTextDialogOpen,
         handleAddOrUpdateText,
     };
 };

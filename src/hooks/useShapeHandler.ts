@@ -8,6 +8,8 @@ type UseShapeHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
     saveState: () => void;
+    editingShapeNode: any;
+    setEditingShapeNode: (node: any) => void;
 };
 
 export const useShapeHandler = ({
@@ -16,9 +18,10 @@ export const useShapeHandler = ({
     setSelectedNodes,
     attachDoubleClick,
     saveState,
+    editingShapeNode,
+    setEditingShapeNode
 }: UseShapeHandlerProps) => {
     const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
-    const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
 
     const handleAddShape = useCallback((config: any) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
