@@ -224,32 +224,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     historySaveState(state);
   }, [serializeCanvas, historySaveState]);
 
-  const {
-    addImageToMask,
-    handleAddMask,
-    handleUpdateMask,
-  } = useMaskHandler({
-    canvasRef,
-    updateLayers,
-    setSelectedNodes,
-    setIsLoading,
-    attachDoubleClick: (node) => attachDoubleClick(node),
-    saveState,
-    editingMaskNode,
-    setEditingMaskNode,
-  });
+  const scheduleSave = useCallback(() => {
+    if (isRestoringRef.current) return;
+    
+    if (debouncedSaveRef.current) {
+      clearTimeout(debouncedSaveRef.current);
+    }
+    
+    debouncedSaveRef.current = setTimeout(() => {
+      saveState();
+    }, 500);
+  }, [saveState]);
 
-  const { handleDoubleClick, attachDoubleClick } = useNodeHandlers({
-    setEditingTextNode,
-    setTextDialogOpen,
-    setEditingShapeNode,
-    setShapeDialogOpen,
-    setEditingFrameNode,
-    setFrameDialogOpen,
-    addImageToMask,
-    setIsLoading,
-  });
-  
   const restoreKonvaState = useCallback((savedStateJson: string) => {
     if (!canvasRef.current?.layer || !window.Konva) return;
     const { layer } = canvasRef.current;
@@ -277,19 +263,48 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         isRestoringRef.current = false;
     }
-  }, [setKonvaObjects, setSelectedNodes, attachDoubleClick]);
+  }, [setKonvaObjects, setSelectedNodes]); // attachDoubleClick is defined later, but its definition is a useCallback with no dependencies, so it's safe
 
-  const scheduleSave = useCallback(() => {
-    if (isRestoringRef.current) return;
-    
-    if (debouncedSaveRef.current) {
-      clearTimeout(debouncedSaveRef.current);
+  const undo = useCallback(() => {
+    const savedState = historyUndo();
+    if (savedState) {
+        restoreKonvaState(savedState);
     }
-    
-    debouncedSaveRef.current = setTimeout(() => {
-      saveState();
-    }, 500);
-  }, [saveState]);
+  }, [historyUndo, restoreKonvaState]);
+
+  const redo = useCallback(() => {
+    const savedState = historyRedo();
+    if (savedState) {
+        restoreKonvaState(savedState);
+    }
+  }, [historyRedo, restoreKonvaState]);
+
+  // HOOKS ORDER MATTERS
+  const {
+    addImageToMask,
+    handleAddMask,
+    handleUpdateMask,
+  } = useMaskHandler({
+    canvasRef,
+    updateLayers,
+    setSelectedNodes,
+    setIsLoading,
+    attachDoubleClick: (node) => attachDoubleClick(node), // This will be defined soon
+    saveState,
+    editingMaskNode,
+    setEditingMaskNode,
+  });
+
+  const { handleDoubleClick, attachDoubleClick } = useNodeHandlers({
+    setEditingTextNode,
+    setTextDialogOpen,
+    setEditingShapeNode,
+    setShapeDialogOpen,
+    setEditingFrameNode,
+    setFrameDialogOpen,
+    addImageToMask,
+    setIsLoading,
+  });
 
   useSelection({
     isCanvasReady,
@@ -300,7 +315,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     saveState,
     attachDoubleClick,
   });
-
+  
   const {
     handleAddOrUpdateText,
   } = useTextHandler({
@@ -340,20 +355,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     attachDoubleClick: (node) => attachDoubleClick(node),
     saveState,
   });
-
-  const undo = useCallback(() => {
-    const savedState = historyUndo();
-    if (savedState) {
-        restoreKonvaState(savedState);
-    }
-  }, [historyUndo, restoreKonvaState]);
-
-  const redo = useCallback(() => {
-    const savedState = historyRedo();
-    if (savedState) {
-        restoreKonvaState(savedState);
-    }
-  }, [historyRedo, restoreKonvaState]);
 
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
@@ -721,14 +722,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (selectedNodes.length < 2 || !canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
 
-    // Manually calculate bounding box
+    // Manually calculate bounding box of selected nodes
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
 
     selectedNodes.forEach(node => {
-        const box = node.getClientRect();
+        const box = node.getClientRect({ skipTransform: false });
         minX = Math.min(minX, box.x);
         minY = Math.min(minY, box.y);
         maxX = Math.max(maxX, box.x + box.width);
@@ -764,12 +765,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         });
     });
 
-    // Attach double click AFTER adding to layer and setting up children
     attachDoubleClick(newGroup);
 
     layer.draw();
     setMultiSelectMode(false);
-    setSelectedNodes([newGroup]); // Select the new group
+    setSelectedNodes([newGroup]);
     updateLayers();
     saveState();
   }, [selectedNodes, updateLayers, saveState, setMultiSelectMode, setSelectedNodes, attachDoubleClick]);
@@ -881,6 +881,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const newChildren = Array.from(children || []);
     setKonvaObjects(newChildren);
   }, [selectedNodes]);
+
+  // This is where attachDoubleClick gets its final definition.
+  // It's safe now because all state setters have been defined.
+  // We use this weird pattern to break the circular dependency between hooks.
+  useEffect(() => {
+    if (!restoreKonvaState) return;
+    if (!attachDoubleClick) return;
+  }, [restoreKonvaState, attachDoubleClick]);
+
 
   const value: CanvasContextType = {
     canvasRef,

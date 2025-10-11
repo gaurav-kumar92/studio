@@ -28,6 +28,8 @@ function Editor() {
     setCanvasReady,
     konvaObjects,
     selectedNodes,
+    setSelectedNodes,
+    isMultiSelectMode,
     isAddItemDialogOpen,
     setAddItemDialogOpen,
     isShapeDialogOpen,
@@ -42,7 +44,6 @@ function Editor() {
     editingFrameNode,
     editingMaskNode,
     editingTextNode,
-    selectNode,
     handleAddShape,
     handleUpdateShape,
     handleAddOrUpdateText,
@@ -104,7 +105,16 @@ function Editor() {
                 onSelectNode={(id) => {
                     const node = canvasRef.current?.layer.findOne(`#${id}`);
                     if (node) {
-                      selectNode(node);
+                      if (isMultiSelectMode) {
+                        const isSelected = selectedNodes.some(n => n.id() === node.id());
+                        if (isSelected) {
+                          setSelectedNodes(selectedNodes.filter(n => n.id() !== node.id()));
+                        } else {
+                          setSelectedNodes([...selectedNodes, node]);
+                        }
+                      } else {
+                        setSelectedNodes([node]);
+                      }
                     }
                 }}
                 onMoveNode={handleMoveNode}
