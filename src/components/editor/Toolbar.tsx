@@ -12,14 +12,13 @@ const Toolbar = () => {
     setAddItemDialogOpen, 
     deselectNodes, 
     selectedNodes,
-    updateLayers,
     handleSave,
     handleZoom,
     undo,
     redo,
     canUndo,
     canRedo,
-    saveState,
+    handleDelete,
   } = useCanvas();
 
 
@@ -45,14 +44,7 @@ const Toolbar = () => {
           variant={selectedNodes.length > 0 ? "destructive" : "ghost"}
           size="icon"
           disabled={selectedNodes.length === 0}
-          onClick={() => {
-            if (selectedNodes.length > 0) {
-              selectedNodes.forEach(node => node.destroy());
-              deselectNodes();
-              updateLayers();
-              saveState();
-            }
-          }}
+          onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -89,5 +81,3 @@ const Toolbar = () => {
 };
 
 export default Toolbar;
-
-    
