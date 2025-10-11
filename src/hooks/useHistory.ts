@@ -1,64 +1,74 @@
-
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
-const MAX_HISTORY_SIZE = 30;
-
-export type Command = {
-    type: 'ADD' | 'DELETE' | 'UPDATE';
-    targets: { id: string, config: any }[];
-    before?: { id: string, config: any }[];
-    after?: { id: string, config: any }[];
+export type CanvasNode = {
+  id: string;
+  config: any;
 };
 
-export const useHistory = () => {
-    const [history, setHistory] = useState<Command[]>([]);
-    const [currentStep, setCurrentStep] = useState<number>(-1);
+export type CommandType = 'ADD' | 'DELETE' | 'UPDATE';
 
-    const record = useCallback((command: Command) => {
-        setHistory(prev => {
-            const newHistory = prev.slice(0, currentStep + 1);
-            const updated = [...newHistory, command];
-            const final = updated.length > MAX_HISTORY_SIZE ? updated.slice(updated.length - MAX_HISTORY_SIZE) : updated;
-            
-            setCurrentStep(final.length - 1);
-            return final;
-        });
-    }, [currentStep]);
+export type Command = {
+  type: CommandType;
+  targets?: CanvasNode[];        // the nodes added/deleted/updated
+  before?: CanvasNode[];        // for UPDATE or DELETE (previous state)
+  after?: CanvasNode[];         // for UPDATE or ADD (new state)
+};
 
-    const undo = useCallback(() => {
-        if (currentStep < 0) return null;
+const DEFAULT_MAX_HISTORY = 30;
 
-        const command = history[currentStep];
-        setCurrentStep(prev => prev - 1);
-        return command;
-    }, [currentStep, history]);
+export const useHistory = (maxSize: number = DEFAULT_MAX_HISTORY) => {
+  const [history, setHistory] = useState<Command[]>([]);
+  const [currentStep, setCurrentStep] = useState<number>(-1);
 
-    const redo = useCallback(() => {
-        if (currentStep < history.length - 1) {
-            const newStep = currentStep + 1;
-            const command = history[newStep];
-            setCurrentStep(newStep);
-            return command;
-        }
-        return null;
-    }, [currentStep, history]);
+  // record a new command (ADD / DELETE / UPDATE)
+  const record = useCallback((command: Command) => {
+    setHistory(prev => {
+      // cut off redo-able future when recording new command
+      const base = prev.slice(0, currentStep + 1);
+      const updated = [...base, command];
+      const final = updated.length > maxSize ? updated.slice(updated.length - maxSize) : updated;
 
-    const clearHistory = useCallback(() => {
-        setHistory([]);
-        setCurrentStep(-1);
-    }, []);
+      // set current step to last index of final
+      setCurrentStep(final.length - 1);
+      return final;
+    });
+  }, [currentStep, maxSize]);
 
-    const canUndo = currentStep >= 0;
-    const canRedo = currentStep < history.length - 1;
+  // undo: returns the command to be applied by caller (or null)
+  const undo = useCallback((): Command | null => {
+    if (currentStep < 0) return null;
+    const cmd = history[currentStep];
+    setCurrentStep(prev => prev - 1);
+    return cmd ?? null;
+  }, [currentStep, history]);
 
-    return {
-        record,
-        undo,
-        redo,
-        canUndo,
-        canRedo,
-        clearHistory,
-    };
+  // redo: returns the command to be applied by caller (or null)
+  const redo = useCallback((): Command | null => {
+    if (currentStep >= history.length - 1) return null;
+    const next = currentStep + 1;
+    const cmd = history[next];
+    setCurrentStep(next);
+    return cmd ?? null;
+  }, [currentStep, history]);
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    setCurrentStep(-1);
+  }, []);
+
+  const canUndo = currentStep >= 0;
+  const canRedo = currentStep < history.length - 1;
+
+  return {
+    history,
+    currentStep,
+    record,
+    undo,
+    redo,
+    clearHistory,
+    canUndo,
+    canRedo,
+  };
 };
