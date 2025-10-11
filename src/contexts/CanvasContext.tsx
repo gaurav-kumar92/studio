@@ -224,6 +224,21 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     historySaveState(state);
   }, [serializeCanvas, historySaveState]);
 
+  const {
+    addImageToMask,
+    handleAddMask,
+    handleUpdateMask,
+  } = useMaskHandler({
+    canvasRef,
+    updateLayers,
+    setSelectedNodes,
+    setIsLoading,
+    attachDoubleClick: (node) => attachDoubleClick(node),
+    saveState,
+    editingMaskNode,
+    setEditingMaskNode,
+  });
+
   const { handleDoubleClick, attachDoubleClick } = useNodeHandlers({
     setEditingTextNode,
     setTextDialogOpen,
@@ -234,7 +249,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     addImageToMask,
     setIsLoading,
   });
-
+  
   const restoreKonvaState = useCallback((savedStateJson: string) => {
     if (!canvasRef.current?.layer || !window.Konva) return;
     const { layer } = canvasRef.current;
@@ -324,21 +339,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNodes,
     attachDoubleClick: (node) => attachDoubleClick(node),
     saveState,
-  });
-
-  const {
-    addImageToMask,
-    handleAddMask,
-    handleUpdateMask,
-  } = useMaskHandler({
-    canvasRef,
-    updateLayers,
-    setSelectedNodes,
-    setIsLoading,
-    attachDoubleClick: (node) => attachDoubleClick(node),
-    saveState,
-    editingMaskNode,
-    setEditingMaskNode,
   });
 
   const undo = useCallback(() => {
