@@ -1,7 +1,15 @@
-
 'use client';
 
-import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from 'react';
+
 import { useTextHandler } from '@/hooks/useTextHandler';
 import { useShapeHandler } from '@/hooks/useShapeHandler';
 import { useFrameHandler } from '@/hooks/useFrameHandler';
@@ -9,6 +17,8 @@ import { useMaskHandler } from '@/hooks/useMaskHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
+import { useLockHandler } from '@/hooks/useLockHandler';
+import { Node } from 'konva/lib/Node';
 
 declare global {
   interface Window {
@@ -18,7 +28,7 @@ declare global {
 }
 
 type CanvasContextType = {
-  canvasRef: React.RefObject<{ stage: any; layer: any; background: any; }>;
+  canvasRef: React.RefObject<{ stage: any; layer: any; background: any }>;
   konvaObjects: any[];
   setKonvaObjects: React.Dispatch<React.SetStateAction<any[]>>;
   selectedNodes: any[];
@@ -51,6 +61,7 @@ type CanvasContextType = {
   setEditingMaskNode: React.Dispatch<React.SetStateAction<any>>;
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
+
   updateLayers: () => void;
   deselectNodes: () => void;
   handleSave: () => void;
@@ -71,24 +82,30 @@ type CanvasContextType = {
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
-  handleZoom: (direction: 'in' | 'out') => void;
   handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  handleZoom: (direction: 'in' | 'out') => void;
+
   setInitialScale: React.Dispatch<React.SetStateAction<number>>;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+
   handleGroup: () => void;
   handleUngroup: () => void;
   handleDelete: () => void;
   forceRecord: () => void;
+
+  // 🔒 Lock API
+  isSelectionLocked: boolean;
+  toggleLock: () => void;
 };
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
-  const canvasRef = useRef<{ stage: any; layer: any; background: any; }>(null);
-  
+  const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
+
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [canvasSize, setCanvasSize] = useState('842x1191');
@@ -104,8 +121,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   });
   const [initialScale, setInitialScale] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-    
-  // DIALOG STATE
+
+  // Dialog state
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
@@ -115,157 +132,230 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
-  
+
   const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
 
-  // NEW: Global change tracker for Undo/Redo
-  const { undo, redo, canUndo, canRedo, forceRecord } = useCanvasChangeTracker(
-    canvasRef,
-    isCanvasReady
-  );
+  // Global change tracker for Undo/Redo
+  const {
+    undo: undoBase,
+    redo: redoBase,
+    canUndo,
+    canRedo,
+    forceRecord,
+    runAsSingleHistoryStep,
+  } = useCanvasChangeTracker(canvasRef, isCanvasReady);
 
+  // 🔒 Lock hook — DO NOT pass forceRecord, so lock/unlock is NOT recorded to history
+  const { isSelectionLocked, toggleLock } = useLockHandler(selectedNodes /* no forceRecord */);
+
+  // -------------------------------
+  // Helpers for lock-aware logic
+  // -------------------------------
+  const isNodeLocked = useCallback((n: any) => !!n?.getAttr?.('isLocked'), []);
+  const getUnlocked = useCallback((nodes: any[]) => nodes.filter((n) => !isNodeLocked(n)), [isNodeLocked]);
+
+  // ————————————————————————————————————————————
+  // Keep "Layers" list limited to real objects only
+  // ————————————————————————————————————————————
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
-  
-    const children = canvasRef.current.layer.getChildren(
-      (node: any) => node.name() !== 'background' && !node.hasName('Transformer')
-    );
-  
-    const childrenArray = Array.from(children);
-    setKonvaObjects(childrenArray);
-  
-    canvasRef.current.layer.draw();
+    const layer = canvasRef.current.layer;
+
+    const children = layer.getChildren((node: any) => {
+      const className = node?.getClassName?.() ?? '';
+      const isTransformer = className === 'Transformer' || node?.hasName?.('Transformer');
+      const isBackground = node?.name?.() === 'background';
+      const hasId = !!node?.id?.();
+      return hasId && !isTransformer && !isBackground;
+    });
+
+    setKonvaObjects(Array.from(children));
+    layer.draw();
   }, []);
 
+  // ❗ Keep only one definition of deselectNodes
   const deselectNodes = useCallback(() => {
     setSelectedNodes([]);
   }, []);
 
-  const applyFill = useCallback((node: any, config: any) => {
-    const targetNodes = (node.hasName('textGroup') || node.hasName('circularText')) 
-      ? node.find('.mainChar, .text, Text') 
-      : [node];
+  // ---- Fill / Stroke helpers (used by color updates) ----
+  const applyFill = useCallback(
+    (node: any, config: any) => {
+      if (isNodeLocked(node)) return;
 
-    targetNodes.forEach((n: any) => {
-      n.fill(null);
-      n.fillLinearGradientColorStops([]);
-      n.fillRadialGradientColorStops([]);
+      const targetNodes =
+        node.hasName('textGroup') || node.hasName('circularText')
+          ? node.find('.mainChar, .text, Text')
+          : [node];
+
+      targetNodes.forEach((n: any) => {
+        if (isNodeLocked(n)) return;
+
+        n.fill(null);
+        n.fillLinearGradientColorStops([]);
+        n.fillRadialGradientColorStops([]);
+
         if (config.isGradient) {
-            const { width, height } = n.getClientRect({ relativeTo: n.getParent() });
-            const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+          const { width, height } = n.getClientRect({ relativeTo: n.getParent() });
+          const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
 
-            if (config.gradientDirection === 'radial') {
-              n.fillPriority('radial-gradient');
-              n.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
-              n.fillRadialGradientStartRadius(0);
-              n.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
-              n.fillRadialGradientEndRadius(Math.max(width, height) / 2);
-              n.fillRadialGradientColorStops(colorStopsFlat);
+          if (config.gradientDirection === 'radial') {
+            n.fillPriority('radial-gradient');
+            n.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
+            n.fillRadialGradientStartRadius(0);
+            n.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
+            n.fillRadialGradientEndRadius(Math.max(width, height) / 2);
+            n.fillRadialGradientColorStops(colorStopsFlat);
           } else {
-              n.fillPriority('linear-gradient');
-              let start = { x: 0, y: 0 };
-              let end = { x: 0, y: 0 };
-
-              switch (config.gradientDirection) {
-                  case 'top-to-bottom': end = { x: 0, y: height }; break;
-                  case 'left-to-right': end = { x: width, y: 0 }; break;
-                  case 'diagonal-tl-br': end = { x: width, y: height }; break;
-                  case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-              }
-              n.fillLinearGradientStartPoint(start);
-              n.fillLinearGradientEndPoint(end);
-              n.fillLinearGradientColorStops(colorStopsFlat);
+            n.fillPriority('linear-gradient');
+            let start = { x: 0, y: 0 };
+            let end = { x: 0, y: 0 };
+            switch (config.gradientDirection) {
+              case 'top-to-bottom':
+                end = { x: 0, y: height };
+                break;
+              case 'left-to-right':
+                end = { x: width, y: 0 };
+                break;
+              case 'diagonal-tl-br':
+                end = { x: width, y: height };
+                break;
+              case 'diagonal-tr-bl':
+                start = { x: width, y: 0 };
+                end = { x: 0, y: height };
+                break;
+            }
+            n.fillLinearGradientStartPoint(start);
+            n.fillLinearGradientEndPoint(end);
+            n.fillLinearGradientColorStops(colorStopsFlat);
           }
-      } else {
+        } else {
           n.fillPriority('color');
           n.fill(config.solidColor);
-      }
-    });
-  }, []);
+        }
+      });
+    },
+    [isNodeLocked]
+  );
 
-  const applyStroke = useCallback((node: any, config: any) => {
-    if (config.isGradient) {
+  const applyStroke = useCallback(
+    (node: any, config: any) => {
+      if (isNodeLocked(node)) return;
+
+      if (config.isGradient) {
         const { width, height } = node.getClientRect({ relativeTo: node.getParent() });
         const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-        
         let start = { x: 0, y: 0 };
         let end = { x: 0, y: 0 };
 
         switch (config.gradientDirection) {
-            case 'left-to-right': 
-                end = { x: width, y: 0 }; 
-                break;
-            case 'diagonal-tl-br': 
-                end = { x: width, y: height }; 
-                break;
-            case 'diagonal-tr-bl': 
-                start = { x: width, y: 0 }; 
-                end = { x: 0, y: height }; 
-                break;
-            case 'radial':
-            case 'top-to-bottom':
-            default:
-                end = { x: 0, y: height }; 
-                break;
+          case 'left-to-right':
+            end = { x: width, y: 0 };
+            break;
+          case 'diagonal-tl-br':
+            end = { x: width, y: height };
+            break;
+          case 'diagonal-tr-bl':
+            start = { x: width, y: 0 };
+            end = { x: 0, y: height };
+            break;
+          case 'radial':
+          case 'top-to-bottom':
+          default:
+            end = { x: 0, y: height };
+            break;
         }
 
         node.strokeLinearGradientStartPoint(start);
         node.strokeLinearGradientEndPoint(end);
         node.strokeLinearGradientColorStops(colorStopsFlat);
-        
         node.setAttr('data-is-gradient', true);
         node.setAttr('data-gradient-direction', config.gradientDirection);
         node.setAttr('data-color-stops', config.colorStops);
-    } else {
-        let solidColor = config.solidColor || node.getAttr('data-solid-color') || '#3b82f6';
-        
+      } else {
+        const solidColor = config.solidColor || node.getAttr('data-solid-color') || '#3b82f6';
         node.strokeLinearGradientStartPoint({ x: 0, y: 0 });
         node.strokeLinearGradientEndPoint({ x: 0, y: 0 });
         node.strokeLinearGradientColorStops(null);
-        
         node.stroke(solidColor);
-        
         node.setAttr('data-is-gradient', false);
         node.setAttr('data-solid-color', solidColor);
-    }
-    
-    const layer = node.getLayer();
-    if (layer) {
+      }
+
+      const layer = node.getLayer();
+      if (layer) {
         layer.draw();
-    }
-  }, []);
+      }
+    },
+    [isNodeLocked]
+  );
 
   const handleDoubleClick = useCallback((node: any) => {
-    const nodeName = node.name();
     const handleNodeDoubleClick = (targetNode: any) => {
       // Implementation will be provided by useNodeHandlers
     };
     handleNodeDoubleClick(node);
   }, []);
 
-  const attachDoubleClick = useCallback((node: any) => {
-    node.on('dblclick dbltap', () => {
-        let targetNode = node;
-        // This logic is important for grouped objects like masks or text
-        if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
-            targetNode = node.parent;
+  const handleUngroup = useCallback(() => {
+    const group = selectedNodes[0];
+    if (
+      selectedNodes.length !== 1 ||
+      !group.hasName('group') ||
+      group.getAttr('isLocked') ||
+      !canvasRef.current?.layer
+    )
+      return;
+
+    runAsSingleHistoryStep(() => {
+      const layer = canvasRef.current!.layer;
+      const children = group.getChildren().slice();
+      const nodesToSelect: Node[] = [];
+
+      children.forEach((child: Node) => {
+        const childAbsPos = child.getAbsolutePosition(layer);
+        child.draggable(true);
+        child.moveTo(layer);
+        child.position(childAbsPos);
+        child.scale(group.scale());
+        child.rotation(group.rotation());
+        nodesToSelect.push(child);
+      });
+
+      group.destroy();
+      layer.draw();
+      setMultiSelectMode(true);
+      setSelectedNodes(nodesToSelect);
+      updateLayers();
+    });
+  }, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+
+  const attachDoubleClick = useCallback(
+    (node: Node) => {
+      node.on('dblclick dbltap', () => {
+        if (node.getAttr('isLocked')) return;
+
+        let targetNode = node as any;
+        if (
+          node.parent?.hasName('circularText') ||
+          node.parent?.hasName('mask') ||
+          node.parent?.hasName('textGroup')
+        ) {
+          targetNode = node.parent;
         }
-        
+
         if (targetNode.hasName('group')) {
           handleUngroup();
         } else {
           handleDoubleClick(targetNode);
         }
-    });
-  }, []); // handleUngroup, handleDoubleClick dependencies are tricky here, will be handled implicitly by context.
-
+      });
+    },
+    [handleUngroup, handleDoubleClick]
+  );
 
   // Order of hooks is important due to dependencies
-  const {
-    addImageToMask,
-    handleAddMask,
-    handleUpdateMask,
-  } = useMaskHandler({
+  const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({
     canvasRef,
     updateLayers,
     setSelectedNodes,
@@ -289,91 +379,70 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   // Inject the implementation of handleDoubleClick
   const handleDoubleClickRef = useRef(handleDoubleClick);
   handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
-  
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [nodeHandlers.handleDoubleClick];
   }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   const handleGroup = useCallback(() => {
-    if (selectedNodes.length < 2 || !canvasRef.current?.layer) return;
-    const layer = canvasRef.current.layer;
+    const processNodes = selectedNodes.filter((node) => !node.getAttr('isLocked'));
+    if (processNodes.length < 2 || !canvasRef.current?.layer) return;
 
-    // Manually record before state because we are destroying nodes
-    forceRecord();
-    
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    runAsSingleHistoryStep(() => {
+      const layer = canvasRef.current!.layer;
 
-    selectedNodes.forEach(node => {
-      const box = node.getClientRect({ skipTransform: false });
-      minX = Math.min(minX, box.x);
-      minY = Math.min(minY, box.y);
-      maxX = Math.max(maxX, box.x + box.width);
-      maxY = Math.max(maxY, box.y + box.height);
-    });
-    
-    const groupRect = { x: minX, y: minY };
-    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const newGroup = new window.Konva.Group({
+      // Compute bounding box
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+
+      processNodes.forEach((node) => {
+        const box = node.getClientRect({ skipTransform: false });
+        minX = Math.min(minX, box.x);
+        minY = Math.min(minY, box.y);
+        maxX = Math.max(maxX, box.x + box.width);
+        maxY = Math.max(maxY, box.y + box.height);
+      });
+
+      const groupRect = { x: minX, y: minY };
+      const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const newGroup = new window.Konva.Group({
         id: uniqueId,
         draggable: true,
         name: 'group',
         x: groupRect.x,
         y: groupRect.y,
-    });
-    
-    attachDoubleClick(newGroup);
-    layer.add(newGroup);
+      });
 
-    selectedNodes.forEach(node => {
+      attachDoubleClick(newGroup as unknown as Node);
+
+      layer.add(newGroup);
+
+      processNodes.forEach((node) => {
         const nodeAbsPos = node.getAbsolutePosition();
         node.draggable(false);
         node.moveTo(newGroup);
         node.position({
-            x: nodeAbsPos.x - groupRect.x,
-            y: nodeAbsPos.y - groupRect.y,
+          x: nodeAbsPos.x - groupRect.x,
+          y: nodeAbsPos.y - groupRect.y,
         });
+      });
+
+      layer.draw();
+      setMultiSelectMode(false);
+      setSelectedNodes([newGroup]);
+      updateLayers();
     });
-
-    layer.draw();
-    
-    setMultiSelectMode(false);
-    setSelectedNodes([newGroup]);
-    updateLayers();
-    forceRecord(); // Manually record after state
-  }, [selectedNodes, updateLayers, setMultiSelectMode, setSelectedNodes, attachDoubleClick, forceRecord]);
-
-  const handleUngroup = useCallback(() => {
-    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('group') || !canvasRef.current?.layer) return;
-    
-    // Manually record before state
-    forceRecord();
-
-    const group = selectedNodes[0];
-    const layer = canvasRef.current.layer;
-    const children = group.getChildren().slice();
-    const nodesToSelect: any[] = [];
-
-    children.forEach((child:any) => {
-        const childAbsPos = child.getAbsolutePosition(layer);
-        child.draggable(true);
-        child.moveTo(layer);
-        child.position(childAbsPos);
-        child.scale(group.scale());
-        child.rotation(group.rotation());
-        nodesToSelect.push(child);
-    });
-    
-    group.destroy();
-    layer.draw();
-    
-    setMultiSelectMode(true);
-    setSelectedNodes(nodesToSelect);
-    updateLayers();
-    forceRecord(); // Manually record after state
-  }, [selectedNodes, updateLayers, setMultiSelectMode, setSelectedNodes, forceRecord]);
+  }, [
+    selectedNodes,
+    canvasRef,
+    attachDoubleClick,
+    setMultiSelectMode,
+    setSelectedNodes,
+    updateLayers,
+    runAsSingleHistoryStep,
+  ]);
 
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
@@ -386,10 +455,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     selectedNodes,
     setSelectedNodes,
   });
-  
-  const {
-    handleAddOrUpdateText,
-  } = useTextHandler({
+
+  const { handleAddOrUpdateText } = useTextHandler({
     canvasRef,
     updateLayers,
     deselectNode: deselectNodes,
@@ -401,344 +468,451 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setTextDialogOpen,
   });
 
-  const {
-    handleAddShape,
-    handleUpdateShape,
-  } = useShapeHandler({
+  const { handleAddShape, handleUpdateShape } = useShapeHandler({
     canvasRef,
     updateLayers,
     setSelectedNodes,
     attachDoubleClick: attachDoubleClick,
     editingShapeNode,
     setEditingShapeNode,
+    forceRecord,
   });
 
-  const {
-    handleAddFrame,
-    handleUpdateFrame,
-  } = useFrameHandler({
+  const { handleAddFrame, handleUpdateFrame } = useFrameHandler({
     canvasRef,
     updateLayers,
     setSelectedNodes,
     attachDoubleClick: attachDoubleClick,
   });
 
+  // -----------------------
+  // Image add from computer
+  // -----------------------
   const addImageFromComputer = useCallback(() => {
     const imageFileInput = document.createElement('input');
     imageFileInput.type = 'file';
-    imageFileInput.accept = "image/png, image/jpeg,_jpg, image/gif, image/svg+xml";
+    imageFileInput.accept = 'image/png, image/jpeg,_jpg, image/gif, image/svg+xml';
 
     imageFileInput.onchange = () => {
-        if (imageFileInput.files && imageFileInput.files.length > 0) {
-            const file = imageFileInput.files[0];
-            const reader = new FileReader();
-            reader.onloadstart = () => setIsLoading(true);
-            reader.onload = (e) => {
-                window.Konva.Image.fromURL(e.target!.result, (img: any) => {
-                    if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
-                    const { stage, layer } = canvasRef.current;
-                    const MAX_WIDTH = stage.width() * 0.8;
-                    const MAX_HEIGHT = stage.height() * 0.8;
-                    const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
-                    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      if (imageFileInput.files && imageFileInput.files.length > 0) {
+        const file = imageFileInput.files[0];
+        const reader = new FileReader();
 
-                    img.setAttrs({
-                        id: uniqueId,
-                        x: (stage.width() - img.width() * scale) / 2,
-                        y: (stage.height() - img.height() * scale) / 2,
-                        scaleX: scale,
-                        scaleY: scale,
-                        name: 'image',
-                        draggable: true,
-                    });
-                    attachDoubleClick(img);
-                    layer.add(img);
-                    updateLayers();
-                    setSelectedNodes([img]);
-                    layer.draw();
-                    setIsLoading(false);
-                });
-            };
-            reader.onerror = () => setIsLoading(false);
-            reader.readAsDataURL(file);
-        }
-        imageFileInput.value = '';
+        reader.onloadstart = () => setIsLoading(true);
+        reader.onload = (e) => {
+          window.Konva.Image.fromURL(e.target!.result as string, (img: any) => {
+            if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
+            const { stage, layer } = canvasRef.current;
+
+            const MAX_WIDTH = stage.width() * 0.8;
+            const MAX_HEIGHT = stage.height() * 0.8;
+            const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
+
+            const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            img.setAttrs({
+              id: uniqueId,
+              x: (stage.width() - img.width() * scale) / 2,
+              y: (stage.height() - img.height() * scale) / 2,
+              scaleX: scale,
+              scaleY: scale,
+              name: 'image',
+              draggable: true,
+            });
+
+            attachDoubleClick(img);
+            layer.add(img);
+            updateLayers();
+            setSelectedNodes([img]);
+            layer.draw();
+            setIsLoading(false);
+
+            // Record the add explicitly so the baseline is correct
+            forceRecord();
+          });
+        };
+        reader.onerror = () => setIsLoading(false);
+        reader.readAsDataURL(file);
+      }
+      imageFileInput.value = '';
     };
+
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick]);
+  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, forceRecord]);
 
-  const handleSelectItem = useCallback((itemType: string) => {
-    setAddItemDialogOpen(false);
-    deselectNodes();
+  // -----------------------
+  // Item chooser
+  // -----------------------
+  const handleSelectItem = useCallback(
+    (itemType: string) => {
+      setAddItemDialogOpen(false);
+      deselectNodes();
+      if (!canvasRef.current) return;
 
-    if (!canvasRef.current) return;
-
-    switch (itemType) {
-      case 'text':
-        setEditingTextNode(null);
-        setTextDialogOpen(true);
-        break;
-      case 'shape':
-        setEditingShapeNode(null);
-        setShapeDialogOpen(true);
-        break;
-      case 'image':
-        addImageFromComputer();
-        break;
-      case 'frame':
-        setEditingFrameNode(null);
-        setFrameDialogOpen(true);
-        break;
-      case 'mask':
-        setEditingMaskNode(null);
-        setMaskDialogOpen(true);
-        break;
-      default:
-        break;
-    }
-  }, [deselectNodes, addImageFromComputer]);
-
-  const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
-    const { layer } = canvasRef.current;
-
-    const node = layer.findOne(`#${nodeId}`);
-    if (!node) return;
-    
-    if (action === 'up') {
-      node.moveUp();
-    } else if (action === 'down') {
-      if (node.getZIndex() > 1) {
-        node.moveDown();
+      switch (itemType) {
+        case 'text':
+          setEditingTextNode(null);
+          setTextDialogOpen(true);
+          break;
+        case 'shape':
+          setEditingShapeNode(null);
+          setShapeDialogOpen(true);
+          break;
+        case 'image':
+          addImageFromComputer();
+          break;
+        case 'frame':
+          setEditingFrameNode(null);
+          setFrameDialogOpen(true);
+          break;
+        case 'mask':
+          setEditingMaskNode(null);
+          setMaskDialogOpen(true);
+          break;
+        default:
+          break;
       }
-    }
-    
-    updateLayers();
-    layer.batchDraw();
-  }, [updateLayers]);
-  
-  const handleAlign = useCallback((position: string) => {
-    if (selectedNodes.length === 0 || !canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
+    },
+    [deselectNodes, addImageFromComputer]
+  );
 
-    selectedNodes.forEach(node => {
-      const box = node.getClientRect();
-      let newX, newY;
+  // -----------------------
+  // Z-index move
+  // -----------------------
+  const handleMoveNode = useCallback(
+    (action: 'up' | 'down', nodeId: string) => {
+      if (!canvasRef.current?.layer) return;
+      const { layer } = canvasRef.current;
 
-      switch(position) {
+      const node = layer.findOne(`#${nodeId}`);
+      if (!node) return;
+      if (isNodeLocked(node)) return;
+
+      if (action === 'up') {
+        node.moveUp();
+      } else if (action === 'down') {
+        if (node.getZIndex() > 1) {
+          node.moveDown();
+        }
+      }
+
+      updateLayers();
+      layer.batchDraw();
+      // Record z-index change
+      forceRecord();
+    },
+    [updateLayers, forceRecord, isNodeLocked]
+  );
+
+  // -----------------------
+  // Align
+  // -----------------------
+  const handleAlign = useCallback(
+    (position: string) => {
+      if (!canvasRef.current?.stage) return;
+
+      const nodes = getUnlocked(selectedNodes);
+      if (nodes.length === 0) return;
+
+      const stage = canvasRef.current.stage;
+      nodes.forEach((node) => {
+        const box = node.getClientRect();
+        let newX: number | undefined,
+          newY: number | undefined;
+
+        switch (position) {
           case 'top':
-              newY = node.y() - box.y;
-              node.y(newY);
-              break;
+            newY = node.y() - box.y;
+            node.y(newY);
+            break;
           case 'left':
-              newX = node.x() - box.x;
-              node.x(newX);
-              break;
+            newX = node.x() - box.x;
+            node.x(newX);
+            break;
           case 'center':
-              newX = node.x() + (stage.width() / 2 - (box.x + box.width / 2));
-              newY = node.y() + (stage.height() / 2 - (box.y + box.height / 2));
-              node.x(newX);
-              node.y(newY);
-              break;
+            newX = node.x() + (stage.width() / 2 - (box.x + box.width / 2));
+            newY = node.y() + (stage.height() / 2 - (box.y + box.height / 2));
+            node.x(newX);
+            node.y(newY);
+            break;
           case 'right':
-              newX = node.x() + (stage.width() - (box.x + box.width));
-              node.x(newX);
-              break;
+            newX = node.x() + (stage.width() - (box.x + box.width));
+            node.x(newX);
+            break;
           case 'bottom':
-              newY = node.y() - (box.y + box.height - stage.height());
-              node.y(newY);
-              break;
+            newY = node.y() - (box.y + box.height - stage.height());
+            node.y(newY);
+            break;
+        }
+      });
+
+      canvasRef.current?.layer?.draw?.();
+      // Record alignment change
+      forceRecord();
+    },
+    [selectedNodes, forceRecord, getUnlocked]
+  );
+
+  // -----------------------
+  // Opacity
+  // -----------------------
+  const handleOpacityChange = useCallback(
+    (opacity: number) => {
+      const nodes = getUnlocked(selectedNodes);
+      if (nodes.length === 0) return;
+
+      nodes.forEach((node) => {
+        node.opacity(opacity);
+      });
+
+      canvasRef.current?.layer?.draw?.();
+      // Record opacity change
+      forceRecord();
+    },
+    [selectedNodes, forceRecord, getUnlocked]
+  );
+
+  // -----------------------
+  // Flip
+  // -----------------------
+  const handleFlip = useCallback(
+    (direction: 'horizontal' | 'vertical') => {
+      const layer = canvasRef.current?.layer;
+      if (!layer) return;
+
+      const nodes = getUnlocked(selectedNodes);
+      if (nodes.length === 0) return;
+
+      nodes.forEach((node) => {
+        const box = node.getClientRect();
+
+        if (direction === 'horizontal') {
+          node.scaleX(node.scaleX() * -1);
+        } else {
+          node.scaleY(node.scaleY() * -1);
+        }
+
+        // Re-center after flip to maintain position
+        const newBox = node.getClientRect();
+        const deltaX = (box.x + box.width / 2) - (newBox.x + newBox.width / 2);
+        const deltaY = (box.y + box.height / 2) - (newBox.y + newBox.height / 2);
+        node.x(node.x() + deltaX);
+        node.y(node.y() + deltaY);
+      });
+
+      layer.batchDraw();
+      // Record flip change
+      forceRecord();
+    },
+    [selectedNodes, forceRecord, getUnlocked]
+  );
+
+  // -----------------------
+  // Zoom (stage)
+  // -----------------------
+  const handleZoom = useCallback(
+    (direction: 'in' | 'out') => {
+      if (!canvasRef.current?.stage) return;
+      const stage = canvasRef.current.stage;
+
+      const scaleBy = 1.1;
+      const oldScale = stage.scaleX();
+      let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+
+      if (direction === 'out' && newScale < initialScale) {
+        newScale = initialScale;
       }
-    });
-    
-    if (canvasRef.current?.layer) canvasRef.current.layer.draw();
-  }, [selectedNodes]);
-  
-  const handleOpacityChange = useCallback((opacity: number) => {
-    if (selectedNodes.length === 0) return;
-    selectedNodes.forEach(node => {
-      node.opacity(opacity);
-    });
-    if (canvasRef.current?.layer) {
-      canvasRef.current.layer.draw();
-    }
-  }, [selectedNodes]);
 
-  const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
-    if (selectedNodes.length === 0) return;
-    const layer = canvasRef.current?.layer;
-    if (!layer) return;
-  
-    selectedNodes.forEach(node => {
-      const box = node.getClientRect();
-      
-      if (direction === 'horizontal') {
-        node.scaleX(node.scaleX() * -1);
-      } else {
-        node.scaleY(node.scaleY() * -1);
-      }
+      const [originalWidth, originalHeight] = canvasSize.split('x').map(Number);
+      const PIXELS_PER_POINT = 0.35;
+      const unscaledWidth = originalWidth * PIXELS_PER_POINT;
+      const unscaledHeight = originalHeight * PIXELS_PER_POINT;
 
-      // Re-center after flip to maintain position
-      const newBox = node.getClientRect();
-      const deltaX = (box.x + box.width / 2) - (newBox.x + newBox.width / 2);
-      const deltaY = (box.y + box.height / 2) - (newBox.y + newBox.height / 2);
-      node.x(node.x() + deltaX);
-      node.y(node.y() + deltaY);
-    });
-  
-    layer.batchDraw();
-  }, [selectedNodes]);
+      stage.width(unscaledWidth * newScale);
+      stage.height(unscaledHeight * newScale);
+      stage.scale({ x: newScale, y: newScale });
+      stage.draw();
+      // (Not recorded by default; make it undoable if desired)
+    },
+    [initialScale, canvasSize]
+  );
 
-  const handleZoom = useCallback((direction: 'in' | 'out') => {
-    if (!canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
-    const scaleBy = 1.1;
-    const oldScale = stage.scaleX();
+  // -----------------------
+  // Color update
+  // -----------------------
+  const handleColorUpdate = useCallback(
+    (config: any) => {
+      const nodes = getUnlocked(selectedNodes);
+      if (nodes.length === 0) return;
 
-    let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    if (direction === 'out' && newScale < initialScale) {
-      newScale = initialScale;
-    }
-    
-    const [originalWidth, originalHeight] = canvasSize.split('x').map(Number);
-    const PIXELS_PER_POINT = 0.35;
-    const unscaledWidth = originalWidth * PIXELS_PER_POINT;
-    const unscaledHeight = originalHeight * PIXELS_PER_POINT;
-    
-    stage.width(unscaledWidth * newScale);
-    stage.height(unscaledHeight * newScale);
-    stage.scale({ x: newScale, y: newScale });
-    stage.draw();
-  }, [initialScale, canvasSize]);
+      nodes.forEach((node) => {
+        if (node.hasName('group')) {
+          node.find('*').forEach((child: any) => {
+            if (isNodeLocked(child)) return;
 
-  const handleColorUpdate = useCallback((config: any) => {
-    if (selectedNodes.length === 0) return;
-  
-    selectedNodes.forEach(node => {
-      if (node.hasName('group')) {
-        node.find('*').forEach((child: any) => {
-          const childUsesStroke = (
-            child.name() === 'shape' && 
-            (child.getAttr('data-type') === 'line' || 
-             child.getAttr('data-type') === 'arrow' || 
-             child.getAttr('data-type') === 'curve')
-          ) || child.name() === 'frame';
-          
-          child.setAttrs({
+            const childUsesStroke =
+              (child.name() === 'shape' &&
+                (child.getAttr('data-type') === 'line' ||
+                  child.getAttr('data-type') === 'arrow' ||
+                  child.getAttr('data-type') === 'curve')) ||
+              child.name() === 'frame';
+
+            child.setAttrs({
+              'data-is-gradient': config.isGradient,
+              'data-solid-color': config.solidColor,
+              'data-color-stops': config.colorStops,
+              'data-gradient-direction': config.gradientDirection,
+            });
+
+            if (childUsesStroke) {
+              applyStroke(child, config);
+            } else {
+              applyFill(child, config);
+            }
+          });
+        } else {
+          const nodeType = node.name();
+          const shapeType = node.getAttr('data-type');
+          const usesStroke =
+            (nodeType === 'shape' &&
+              (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) ||
+            nodeType === 'frame';
+
+          node.setAttrs({
             'data-is-gradient': config.isGradient,
             'data-solid-color': config.solidColor,
             'data-color-stops': config.colorStops,
             'data-gradient-direction': config.gradientDirection,
           });
-          
-          if (childUsesStroke) {
-            applyStroke(child, config);
-          } else {
-            applyFill(child, config);
-          }
-        });
-      } else {
-        const nodeType = node.name();
-        const shapeType = node.getAttr('data-type');
-        const usesStroke = (
-          nodeType === 'shape' && 
-          (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')
-        ) || nodeType === 'frame';
-        
-        node.setAttrs({
-          'data-is-gradient': config.isGradient,
-          'data-solid-color': config.solidColor,
-          'data-color-stops': config.colorStops,
-          'data-gradient-direction': config.gradientDirection,
-        });
-        
-        if (usesStroke) {
-          applyStroke(node, config);
-        } else {
-          applyFill(node, config);
-        }
-      }
-    });
-  
-    canvasRef.current?.layer.draw();
-  }, [selectedNodes, applyFill, applyStroke, canvasRef]);
 
-  const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
+          if (usesStroke) {
+            applyStroke(node, config);
+          } else {
+            applyFill(node, config);
+          }
+        }
+      });
+
+      canvasRef.current?.layer.draw();
+      // Make color changes undoable
+      forceRecord();
+    },
+    [selectedNodes, applyFill, applyStroke, canvasRef, forceRecord, getUnlocked, isNodeLocked]
+  );
+
+  // -----------------------
+  // Mask image controls
+  // -----------------------
+  const handleMaskImageZoom = useCallback(
+    (direction: 'in' | 'out') => {
       if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
       const selectedNode = selectedNodes[0];
+      if (isNodeLocked(selectedNode)) return;
+
       const image = selectedNode.findOne('.mask-image');
       if (!image) return;
-  
+
       const scaleBy = 1.1;
       const oldScale = image.scaleX();
       const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-  
       image.scale({ x: newScale, y: newScale });
+
       canvasRef.current?.layer.batchDraw();
-  }, [selectedNodes]);
-  
+      // Record mask image zoom
+      forceRecord();
+    },
+    [selectedNodes, forceRecord, isNodeLocked]
+  );
+
   const handleMaskImageReset = useCallback(() => {
+    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
+    const selectedNode = selectedNodes[0];
+    if (isNodeLocked(selectedNode)) return;
+
+    const image = selectedNode.findOne('.mask-image');
+    if (!image) return;
+
+    const maskWidth = selectedNode.width();
+    const maskHeight = selectedNode.height();
+
+    const imgWidth = image.getAttr('data-original-width');
+    const imgHeight = image.getAttr('data-original-height');
+    if (!imgWidth || !imgHeight) return;
+
+    const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
+    image.position({ x: 0, y: 0 });
+    image.scale({ x: scale, y: scale });
+
+    canvasRef.current?.layer.batchDraw();
+    // Record mask image reset
+    forceRecord();
+  }, [selectedNodes, forceRecord, isNodeLocked]);
+
+  const handleMaskImagePan = useCallback(
+    (direction: 'up' | 'down' | 'left' | 'right') => {
       if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
       const selectedNode = selectedNodes[0];
+      if (isNodeLocked(selectedNode)) return;
+
       const image = selectedNode.findOne('.mask-image');
       if (!image) return;
 
-      const maskWidth = selectedNode.width();
-      const maskHeight = selectedNode.height();
-      const imgWidth = image.getAttr('data-original-width');
-      const imgHeight = image.getAttr('data-original-height');
-
-      if (!imgWidth || !imgHeight) return;
-
-      const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-      
-      image.position({ x: 0, y: 0 });
-      image.scale({ x: scale, y: scale });
-
-      canvasRef.current?.layer.batchDraw();
-  }, [selectedNodes]);
-
-  const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-      if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
-      const selectedNode = selectedNodes[0];
-      const image = selectedNode.findOne('.mask-image');
-      if (!image) return;
-  
       const panAmount = 10;
       const currentPos = image.position();
       let newPos = { ...currentPos };
-  
+
       switch (direction) {
-        case 'up': newPos.y -= panAmount; break;
-        case 'down': newPos.y += panAmount; break;
-        case 'left': newPos.x -= panAmount; break;
-        case 'right': newPos.x += panAmount; break;
+        case 'up':
+          newPos.y -= panAmount;
+          break;
+        case 'down':
+          newPos.y += panAmount;
+          break;
+        case 'left':
+          newPos.x -= panAmount;
+          break;
+        case 'right':
+          newPos.x += panAmount;
+          break;
       }
-  
+
       const boundFunc = image.getAttr('dragBoundFunc');
       if (boundFunc) {
-          newPos = boundFunc.call(image, newPos);
+        newPos = boundFunc.call(image, newPos);
       }
-  
+
       image.position(newPos);
       canvasRef.current?.layer.batchDraw();
-  }, [selectedNodes]);
+      // Record mask image pan
+      forceRecord();
+    },
+    [selectedNodes, forceRecord, isNodeLocked]
+  );
 
+  // -----------------------
+  // Delete
+  // -----------------------
   const handleDelete = useCallback(() => {
-    if (selectedNodes.length === 0) return;
+    const nodes = getUnlocked(selectedNodes);
+    if (nodes.length === 0) return;
 
-    selectedNodes.forEach(node => node.destroy());
-    
+    // Before delete
+    forceRecord();
+    nodes.forEach((node) => node.destroy());
     deselectNodes();
     updateLayers();
-  }, [selectedNodes, deselectNodes, updateLayers]);
+    // After delete
+    forceRecord();
+  }, [selectedNodes, deselectNodes, updateLayers, forceRecord, getUnlocked]);
 
+  // -----------------------
+  // Save (export)
+  // -----------------------
   const handleSave = useCallback(() => {
     if (!canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
-
     deselectNodes();
-    const dataURL = stage.toDataURL({ mimeType: "image/png", quality: 1 });
+
+    const dataURL = stage.toDataURL({ mimeType: 'image/png', quality: 1 });
     const link = document.createElement('a');
     link.download = 'konva-design.png';
     link.href = dataURL;
@@ -747,59 +921,161 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     document.body.removeChild(link);
   }, [deselectNodes]);
 
+  // -----------------------
+  // Background fill updates
+  // -----------------------
   useEffect(() => {
-      if (canvasRef.current?.background && isCanvasReady) {
-        const backgroundRect = canvasRef.current.background;
-        const layer = canvasRef.current.layer;
+    if (canvasRef.current?.background && isCanvasReady) {
+      const backgroundRect = canvasRef.current.background;
+      const layer = canvasRef.current.layer;
 
-        backgroundRect.fill(null);
-        backgroundRect.fillLinearGradientColorStops(null);
-        backgroundRect.fillRadialGradientColorStops(null);
-    
-        if (backgroundColor.isGradient) {
-            const { width, height } = backgroundRect.getClientRect();
-            const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-    
-            if (backgroundColor.gradientDirection === 'radial') {
-                backgroundRect.fillPriority('radial-gradient');
-                backgroundRect.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
-                backgroundRect.fillRadialGradientStartRadius(0);
-                backgroundRect.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
-                backgroundRect.fillRadialGradientEndRadius(Math.max(width, height) / 2);
-                backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
-            } else {
-                backgroundRect.fillPriority('linear-gradient');
-                let start = { x: 0, y: 0 };
-                let end = { x: 0, y: 0 };
-    
-                switch (backgroundColor.gradientDirection) {
-                    case 'top-to-bottom': end = { x: 0, y: height }; break;
-                    case 'left-to-right': end = { x: width, y: 0 }; break;
-                    case 'diagonal-tl-br': end = { x: width, y: height }; break;
-                    case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-                }
-                backgroundRect.fillLinearGradientStartPoint(start);
-                backgroundRect.fillLinearGradientEndPoint(end);
-                backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
-            }
+      backgroundRect.fill(null);
+      backgroundRect.fillLinearGradientColorStops(null);
+      backgroundRect.fillRadialGradientColorStops(null);
+
+      if (backgroundColor.isGradient) {
+        const { width, height } = backgroundRect.getClientRect();
+        const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
+
+        if (backgroundColor.gradientDirection === 'radial') {
+          backgroundRect.fillPriority('radial-gradient');
+          backgroundRect.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
+          backgroundRect.fillRadialGradientStartRadius(0);
+          backgroundRect.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
+          backgroundRect.fillRadialGradientEndRadius(Math.max(width, height) / 2);
+          backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
         } else {
-            backgroundRect.fillPriority('color');
-            backgroundRect.fill(backgroundColor.solidColor);
+          backgroundRect.fillPriority('linear-gradient');
+          let start = { x: 0, y: 0 };
+          let end = { x: 0, y: 0 };
+
+          switch (backgroundColor.gradientDirection) {
+            case 'top-to-bottom':
+              end = { x: 0, y: height };
+              break;
+            case 'left-to-right':
+              end = { x: width, y: 0 };
+              break;
+            case 'diagonal-tl-br':
+              end = { x: width, y: height };
+              break;
+            case 'diagonal-tr-bl':
+              start = { x: width, y: 0 };
+              end = { x: 0, y: height };
+              break;
+          }
+
+          backgroundRect.fillLinearGradientStartPoint(start);
+          backgroundRect.fillLinearGradientEndPoint(end);
+          backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
         }
-    
-        if (layer) {
-            layer.draw();
-        }
+      } else {
+        backgroundRect.fillPriority('color');
+        backgroundRect.fill(backgroundColor.solidColor);
       }
+
+      if (layer) {
+        layer.draw();
+      }
+    }
   }, [backgroundColor, isCanvasReady]);
 
+  // -----------------------
+  // Update konvaObjects when selection changes
+  // -----------------------
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
-    const children = canvasRef.current.layer.getChildren((n: any) => n.name() !== 'background' && !n.hasName('Transformer'));
-    const newChildren = Array.from(children || []);
-    setKonvaObjects(newChildren);
+    const layer = canvasRef.current.layer;
+
+    const children = layer.getChildren((n: any) => {
+      const className = n?.getClassName?.() ?? '';
+      const isTransformer = className === 'Transformer' || n?.hasName?.('Transformer');
+      const isBackground = n?.name?.() === 'background';
+      const hasId = !!n?.id?.();
+      return hasId && !isTransformer && !isBackground;
+    });
+
+    setKonvaObjects(Array.from(children ?? []));
   }, [selectedNodes]);
-  
+
+  // =========================================================
+  // 🔒 LOCK-AWARE UNDO/REDO
+  // =========================================================
+  type LockedSnapshot = {
+    id: string;
+    className: string;
+    attrs: any;
+    parentId?: string;
+    zIndex?: number;
+  };
+
+  const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
+    const layer = canvasRef.current?.layer;
+    if (!layer) return [];
+
+    // Find ALL locked nodes on the canvas (not just selection)
+    const locked: any[] = layer.find((n: any) => n.getAttr && n.getAttr('isLocked'));
+
+    return locked.map((n: any) => ({
+      id: n.id?.() || '',
+      className: n.getClassName?.() || 'Group',
+      attrs: { ...n.getAttrs?.() },
+      parentId: n.getParent?.()?.id?.(),
+      zIndex: n.getZIndex?.(),
+    }));
+  }, []);
+
+  const restoreLockedNodes = useCallback((snapshots: LockedSnapshot[]) => {
+    const layer = canvasRef.current?.layer;
+    if (!layer) return;
+
+    snapshots.forEach((s) => {
+      let target: any = layer.findOne(`#${s.id}`);
+
+      if (target) {
+        // Node exists after undo/redo; ensure its state is exactly as before
+        target.setAttrs(s.attrs);
+        if (typeof s.zIndex === 'number') {
+          try {
+            target.setZIndex(s.zIndex);
+          } catch {
+            /* ignore */
+          }
+        }
+      } else {
+        // Node was removed by history restore: re-create and re-attach
+        const Ctor = (window.Konva as any)[s.className] || window.Konva.Group;
+        const node = new Ctor(s.attrs);
+
+        // Try to attach to original parent; fallback to layer
+        const parent =
+          (s.parentId && (layer.findOne(`#${s.parentId}`) as any)) || layer;
+        parent.add(node);
+      }
+    });
+
+    layer.batchDraw();
+  }, []);
+
+  const undo = useCallback(() => {
+    const lockedBefore = snapshotLockedNodes();
+    // Run original undo
+    undoBase();
+    // Restore locked nodes exactly as they were
+    restoreLockedNodes(lockedBefore);
+  }, [undoBase, snapshotLockedNodes, restoreLockedNodes]);
+
+  const redo = useCallback(() => {
+    const lockedBefore = snapshotLockedNodes();
+    // Run original redo
+    redoBase();
+    // Restore locked nodes exactly as they were
+    restoreLockedNodes(lockedBefore);
+  }, [redoBase, snapshotLockedNodes, restoreLockedNodes]);
+
+  // -----------------------
+  // Context value
+  // -----------------------
   const value: CanvasContextType = {
     canvasRef,
     konvaObjects,
@@ -816,6 +1092,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setBackgroundColor,
     isLoading,
     setIsLoading,
+
     isAddItemDialogOpen,
     setAddItemDialogOpen,
     isShapeDialogOpen,
@@ -826,6 +1103,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setFrameDialogOpen,
     isMaskDialogOpen,
     setMaskDialogOpen,
+
     editingShapeNode,
     setEditingShapeNode,
     editingFrameNode,
@@ -834,6 +1112,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingMaskNode,
     editingTextNode,
     setEditingTextNode,
+
     updateLayers,
     deselectNodes,
     handleSave,
@@ -856,22 +1135,27 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleMaskImageReset,
     handleMaskImagePan,
     handleZoom,
+
     setInitialScale,
+
+    // ⬇️ Provide lock-aware undo/redo
     undo,
     redo,
     canUndo,
     canRedo,
+
     handleGroup,
     handleUngroup,
     handleDelete,
+
     forceRecord,
+
+    // 🔒 Expose lock to consumers
+    isSelectionLocked,
+    toggleLock,
   };
 
-  return (
-    <CanvasContext.Provider value={value}>
-      {children}
-    </CanvasContext.Provider>
-  );
+  return <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
 };
 
 export const useCanvas = (): CanvasContextType => {

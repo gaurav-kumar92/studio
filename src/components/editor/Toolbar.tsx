@@ -1,16 +1,15 @@
-
 'use client';
 
 import React from 'react';
-import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save } from 'lucide-react';
+import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
 
 const Toolbar = () => {
-  const { 
-    setAddItemDialogOpen, 
-    deselectNodes, 
+  const {
+    setAddItemDialogOpen,
+    deselectNodes,
     selectedNodes,
     handleSave,
     handleZoom,
@@ -19,16 +18,23 @@ const Toolbar = () => {
     canUndo,
     canRedo,
     handleDelete,
+    isSelectionLocked,
+    isAnySelectedLocked, // 👈 get this from context
+    toggleLock,
   } = useCanvas();
 
+  const hasSelection = selectedNodes.length > 0;
 
   return (
-    <div className="toolbar">
+    <div className="toolbar" onClick={(e) => e.stopPropagation()}>
+      {/* Add / Insert */}
       <div className="toolbar-section">
-      
-        <Button 
-          variant="default" 
-          size="sm" 
+        <Button
+          variant="default"
+          size="sm"
+          blockCanvasEvents
+          aria-label="Add"
+          title="Add"
           onClick={() => {
             setAddItemDialogOpen(true);
             deselectNodes();
@@ -37,42 +43,118 @@ const Toolbar = () => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
       <Separator orientation="vertical" />
 
+      {/* Delete */}
       <div className="toolbar-section">
         <Button
-          variant={selectedNodes.length > 0 ? "destructive" : "ghost"}
+          variant={hasSelection ? 'destructive' : 'ghost'}
           size="icon"
-          disabled={selectedNodes.length === 0}
+          disabled={!hasSelection}
+          blockCanvasEvents
+          aria-label="Delete selected"
+          title={hasSelection ? 'Delete selected' : 'Nothing selected'}
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+
       <Separator orientation="vertical" />
 
+      {/* Lock / Unlock */}
       <div className="toolbar-section">
-        <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasSelection}
+          blockCanvasEvents
+          aria-label={isSelectionLocked ? 'Unlock selected' : 'Lock selected'}
+          title={
+            isSelectionLocked
+              ? 'Unlock selected (all selected are locked)'
+              : isAnySelectedLocked
+              ? 'Some selected are locked'
+              : 'Lock selected'
+          }
+          onClick={toggleLock}
+          className={
+            isAnySelectedLocked
+              ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
+              : undefined
+          }
+        >
+          {isSelectionLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      <Separator orientation="vertical" />
+
+      {/* Undo / Redo */}
+      <div className="toolbar-section">
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!canUndo}
+          blockCanvasEvents
+          aria-label="Undo"
+          title={canUndo ? 'Undo' : 'Nothing to undo'}
+          onClick={undo}
+        >
           <Undo className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo}>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!canRedo}
+          blockCanvasEvents
+          aria-label="Redo"
+          title={canRedo ? 'Redo' : 'Nothing to redo'}
+          onClick={redo}
+        >
           <Redo className="h-4 w-4" />
         </Button>
       </div>
+
       <Separator orientation="vertical" />
 
+      {/* Zoom */}
       <div className="toolbar-section">
-        <Button variant="ghost" size="icon" onClick={() => handleZoom('in')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          blockCanvasEvents
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => handleZoom('in')}
+        >
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleZoom('out')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          blockCanvasEvents
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => handleZoom('out')}
+        >
           <ZoomOut className="h-4 w-4" />
         </Button>
       </div>
+
       <Separator orientation="vertical" />
 
+      {/* Save / Export */}
       <div className="toolbar-section">
-        <Button variant="default" size="sm" onClick={handleSave}>
+        <Button
+          variant="default"
+          size="sm"
+          blockCanvasEvents
+          aria-label="Save"
+          title="Save"
+          onClick={handleSave}
+        >
           <Save className="h-4 w-4" />
         </Button>
       </div>

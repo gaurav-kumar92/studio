@@ -1,274 +1,359 @@
-// NEW FILE: src/hooks/useCanvasChangeTracker.ts
-// This automatically tracks ALL canvas changes globally
-
+// src/hooks/useCanvasChangeTracker.ts
 'use client';
-
 import { useEffect, useRef, useCallback } from 'react';
 import { useHistory } from './useHistory';
 
+type AddedDeletedNode = { id: string; json: any };
+type UpdatedNode = { id: string; attrs: any };
+type BatchCommand = {
+  type: 'BATCH';
+  added: AddedDeletedNode[];
+  deleted: AddedDeletedNode[];
+  updatedBefore: UpdatedNode[];
+  updatedAfter: UpdatedNode[];
+};
+
+type Command =
+  | { type: 'ADD'; after: AddedDeletedNode[] }
+  | { type: 'DELETE'; before: AddedDeletedNode[] }
+  | { type: 'UPDATE'; before: UpdatedNode[]; after: UpdatedNode[] }
+  | BatchCommand;
+
+// ----------------------- utils
+const deepcopy = <T,>(v: T): T =>
+  typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
+
+const normalizeRectScale = (node: any, attrs: any) => {
+  // Optional normalization for Rect: bake scale into width/height to avoid compounding
+  if (node?.getClassName?.() === 'Rect') {
+    const sx = typeof attrs.scaleX === 'number' ? attrs.scaleX : 1;
+    const sy = typeof attrs.scaleY === 'number' ? attrs.scaleY : 1;
+    if (typeof attrs.width === 'number') attrs.width = Math.max(1, attrs.width * sx);
+    if (typeof attrs.height === 'number') attrs.height = Math.max(1, attrs.height * sy);
+    attrs.scaleX = 1;
+    attrs.scaleY = 1;
+  }
+  return attrs;
+};
+
+const getPlainAttrs = (node: any) => {
+  const attrs = deepcopy(node?.getAttrs?.() ?? {});
+  return normalizeRectScale(node, attrs);
+};
+
+const invert = (cmd: Command): Command => {
+  switch (cmd.type) {
+    case 'ADD':
+      return { type: 'DELETE', before: deepcopy(cmd.after ?? []) };
+    case 'DELETE':
+      return { type: 'ADD', after: deepcopy(cmd.before ?? []) };
+    case 'UPDATE':
+      return {
+        type: 'UPDATE',
+        before: deepcopy(cmd.after ?? []),
+        after: deepcopy(cmd.before ?? []),
+      };
+    case 'BATCH':
+      return {
+        type: 'BATCH',
+        added: deepcopy(cmd.deleted ?? []),
+        deleted: deepcopy(cmd.added ?? []),
+        updatedBefore: deepcopy(cmd.updatedAfter ?? []),
+        updatedAfter: deepcopy(cmd.updatedBefore ?? []),
+      };
+  }
+};
+
+// ----------------------- hook
 export const useCanvasChangeTracker = (
   canvasRef: React.RefObject<{ stage: any; layer: any }>,
   isCanvasReady: boolean
 ) => {
-  const { record, undo: historyUndo, redo: historyRedo, canUndo, canRedo } = useHistory(30);
+  // Your useHistory returns the original command; we will invert for Undo in this hook.
+  const { record, undo: historyUndo, redo: historyRedo, canUndo, canRedo } =
+    useHistory<Command>(30);
+
   const isRestoringRef = useRef(false);
   const snapshotRef = useRef<Map<string, any>>(new Map());
   const changeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Take a snapshot of current canvas state
+  // Store "before" attrs for transforms by id
+  const transformStartRef = useRef<Map<string, UpdatedNode>>(new Map());
+
+  const isRealSnapshotNode = useCallback((node: any) => {
+    const className =
+      typeof node?.getClassName === 'function' ? node.getClassName() : '';
+    const isTransformer =
+      className === 'Transformer' || node?.hasName?.('Transformer');
+    const isBackground = node?.name?.() === 'background';
+    const hasId = typeof node?.id === 'function' && !!node.id();
+    return hasId && !isTransformer && !isBackground;
+  }, []);
+
   const takeSnapshot = useCallback(() => {
-    if (!canvasRef.current?.layer) return new Map();
-    
+    if (!canvasRef.current?.layer) return new Map<string, any>();
     const layer = canvasRef.current.layer;
     const snapshot = new Map<string, any>();
-    
-    layer.getChildren((node: any) => {
-      if (node.name() === 'background' || node.hasName('Transformer')) return false;
-      return true;
-    }).forEach((node: any) => {
-      snapshot.set(node.id(), {
-        id: node.id(),
-        config: node.toObject(),
+    layer
+      .getChildren((node: any) => isRealSnapshotNode(node))
+      .forEach((node: any) => {
+        snapshot.set(node.id(), {
+          id: node.id(),
+          className: node.getClassName?.(),
+          attrs: deepcopy(node.getAttrs?.() ?? {}),
+          json: node.toObject(), // full Konva JSON (safe to recreate)
+        });
       });
-    });
-    
     return snapshot;
-  }, [canvasRef]);
+  }, [canvasRef, isRealSnapshotNode]);
 
-  // Detect changes between two snapshots
-  const detectChanges = useCallback((oldSnapshot: Map<string, any>, newSnapshot: Map<string, any>) => {
-    const added: any[] = [];
-    const deleted: any[] = [];
-    const updated: any[] = [];
+  // ---------- structural diff (keep this for true ADD/DELETE changes)
+  const detectChanges = useCallback((oldSnap: Map<string, any>, newSnap: Map<string, any>) => {
+    const added: AddedDeletedNode[] = [];
+    const deleted: AddedDeletedNode[] = [];
+    const updated: Array<{ before: UpdatedNode; after: UpdatedNode }> = [];
 
-    // Find added and updated nodes
-    newSnapshot.forEach((newNode, id) => {
-      const oldNode = oldSnapshot.get(id);
+    newSnap.forEach((newNode: any, id: string) => {
+      const oldNode = oldSnap.get(id);
       if (!oldNode) {
-        // Node was added
-        added.push(newNode);
+        added.push({ id: newNode.id, json: newNode.json });
       } else {
-        // Check if node was updated
-        const oldConfig = JSON.stringify(oldNode.config);
-        const newConfig = JSON.stringify(newNode.config);
-        if (oldConfig !== newConfig) {
+        const oldAttrs = JSON.stringify(oldNode.attrs ?? {});
+        const newAttrs = JSON.stringify(newNode.attrs ?? {});
+        if (oldAttrs !== newAttrs) {
           updated.push({
-            before: oldNode,
-            after: newNode,
+            before: { id: oldNode.id, attrs: oldNode.attrs },
+            after: { id: newNode.id, attrs: newNode.attrs },
           });
         }
       }
     });
 
-    // Find deleted nodes
-    oldSnapshot.forEach((oldNode, id) => {
-      if (!newSnapshot.has(id)) {
-        deleted.push(oldNode);
+    oldSnap.forEach((oldNode: any, id: string) => {
+      if (!newSnap.has(id)) {
+        deleted.push({ id: oldNode.id, json: oldNode.json });
       }
     });
 
     return { added, deleted, updated };
   }, []);
 
-  // Record changes after canvas modifications
   const recordChanges = useCallback(() => {
     if (isRestoringRef.current) return;
-    
-    const currentSnapshot = takeSnapshot();
-    const changes = detectChanges(snapshotRef.current, currentSnapshot);
+    const current = takeSnapshot();
+    const diff = detectChanges(snapshotRef.current, current);
 
-    // Record ADD commands
-    if (changes.added.length > 0) {
-      record({
-        type: 'ADD',
-        after: changes.added,
-      });
-      console.log('📝 Recorded ADD:', changes.added.length, 'nodes');
-    }
+    // We only record ADD/DELETE here. UPDATEs from transforms will be recorded explicitly.
+    if (diff.added.length > 0) record({ type: 'ADD', after: diff.added });
+    if (diff.deleted.length > 0) record({ type: 'DELETE', before: diff.deleted });
 
-    // Record DELETE commands
-    if (changes.deleted.length > 0) {
-      record({
-        type: 'DELETE',
-        before: changes.deleted,
-      });
-      console.log('📝 Recorded DELETE:', changes.deleted.length, 'nodes');
-    }
-
-    // Record UPDATE commands
-    if (changes.updated.length > 0) {
-      record({
-        type: 'UPDATE',
-        before: changes.updated.map(u => u.before),
-        after: changes.updated.map(u => u.after),
-      });
-      console.log('📝 Recorded UPDATE:', changes.updated.length, 'nodes');
-    }
-
-    // Update snapshot for next comparison
-    snapshotRef.current = currentSnapshot;
+    snapshotRef.current = current;
   }, [takeSnapshot, detectChanges, record]);
 
-  // Debounced change detection
+  // ---------- schedule structural detection (not for transforms)
   const scheduleChangeDetection = useCallback(() => {
-    if (changeTimeoutRef.current) {
-      clearTimeout(changeTimeoutRef.current);
-    }
-    
-    changeTimeoutRef.current = setTimeout(() => {
-      recordChanges();
-    }, 300); // Wait 300ms after last change
+    if (changeTimeoutRef.current) clearTimeout(changeTimeoutRef.current);
+    changeTimeoutRef.current = setTimeout(recordChanges, 300);
   }, [recordChanges]);
 
-  // Undo implementation
+  // ---------- explicit transform capture
+  const handleTransformStart = useCallback((e: any) => {
+    if (!e?.target) return;
+    const node = e.target;
+    if (!isRealSnapshotNode(node)) return;
+
+    const id = node.id();
+    const beforeAttrs = getPlainAttrs(node);
+    transformStartRef.current.set(id, { id, attrs: beforeAttrs });
+  }, [isRealSnapshotNode]);
+
+  const handleTransformEnd = useCallback((e: any) => {
+    if (!e?.target) return;
+    const node = e.target;
+    if (!isRealSnapshotNode(node)) return;
+
+    const id = node.id();
+    const before = transformStartRef.current.get(id);
+    if (!before) return; // no paired start; do nothing
+
+    const afterAttrs = getPlainAttrs(node);
+
+    // Record single UPDATE for this interaction
+    record({
+      type: 'UPDATE',
+      before: [deepcopy(before)],
+      after: [{ id, attrs: afterAttrs }],
+    });
+
+    // clear and refresh baseline snapshot
+    transformStartRef.current.delete(id);
+    snapshotRef.current = takeSnapshot();
+  }, [record, isRealSnapshotNode, takeSnapshot]);
+
+  // ---------- apply forward (used for redo and for undo after invert)
+  const applyForward = useCallback((layer: any, command: Command) => {
+    const KONVA = (window as any)?.Konva;
+
+    switch (command.type) {
+      case 'ADD': {
+        command.after?.forEach(({ id, json }) => {
+          // replace if exists (avoid duplicates)
+          const existing = layer.findOne(`#${id}`);
+          if (existing) existing.destroy();
+          const node = KONVA?.Node?.create ? KONVA.Node.create(json) : null;
+          if (node) layer.add(node);
+        });
+        break;
+      }
+      case 'DELETE': {
+        command.before?.forEach(({ id }) => {
+          layer.findOne(`#${id}`)?.destroy();
+        });
+        break;
+      }
+      case 'UPDATE': {
+        command.after?.forEach(({ id, attrs }) => {
+          const node = layer.findOne(`#${id}`);
+          if (node) node.setAttrs(attrs);
+        });
+        break;
+      }
+      case 'BATCH': {
+        command.added?.forEach(({ id, json }) => {
+          const existing = layer.findOne(`#${id}`);
+          if (existing) existing.destroy();
+          const node = KONVA?.Node?.create ? KONVA.Node.create(json) : null;
+          if (node) layer.add(node);
+        });
+        command.deleted?.forEach(({ id }) => {
+          layer.findOne(`#${id}`)?.destroy();
+        });
+        command.updatedAfter?.forEach(({ id, attrs }) => {
+          const node = layer.findOne(`#${id}`);
+          if (node) node.setAttrs(attrs);
+        });
+        break;
+      }
+    }
+    layer.batchDraw();
+  }, []);
+
+  // ---------- UNDO/REDO (invert for Undo, forward for Redo)
   const undo = useCallback(() => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
-    const command = historyUndo();
-    if (!command) return;
+    const original = historyUndo(); // original command
+    if (!original) return;
 
-    console.log('⏮️ UNDO:', command.type);
     isRestoringRef.current = true;
-
     try {
-      if (command.type === 'ADD') {
-        // Remove added nodes
-        command.after?.forEach(nodeData => {
-          const node = layer.findOne(`#${nodeData.id}`);
-          node?.destroy();
-        });
-      } else if (command.type === 'DELETE') {
-        // Restore deleted nodes
-        command.before?.forEach(nodeData => {
-          const node = window.Konva.Node.create(nodeData.config);
-          layer.add(node);
-        });
-      } else if (command.type === 'UPDATE') {
-        // Restore previous state
-        command.before?.forEach(nodeData => {
-          const node = layer.findOne(`#${nodeData.id}`);
-          if (node) {
-            node.setAttrs(nodeData.config);
-          }
-        });
-      }
-
-      layer.batchDraw();
-      
-      // Update snapshot after undo
+      const inverted = invert(original);
+      applyForward(layer, inverted);
+    } finally {
       setTimeout(() => {
         snapshotRef.current = takeSnapshot();
         isRestoringRef.current = false;
-      }, 100);
-    } catch (error) {
-      console.error('Undo error:', error);
-      isRestoringRef.current = false;
+        canvasRef.current?.stage?.fire('history:applied');
+      }, 60);
     }
-  }, [historyUndo, canvasRef, takeSnapshot]);
+  }, [canvasRef, historyUndo, takeSnapshot, applyForward]);
 
-  // Redo implementation
   const redo = useCallback(() => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
-    const command = historyRedo();
-    if (!command) return;
+    const cmd = historyRedo(); // original forward command
+    if (!cmd) return;
 
-    console.log('⏭️ REDO:', command.type);
     isRestoringRef.current = true;
-
     try {
-      if (command.type === 'ADD') {
-        // Re-add nodes
-        command.after?.forEach(nodeData => {
-          const node = window.Konva.Node.create(nodeData.config);
-          layer.add(node);
-        });
-      } else if (command.type === 'DELETE') {
-        // Re-delete nodes
-        command.before?.forEach(nodeData => {
-          const node = layer.findOne(`#${nodeData.id}`);
-          node?.destroy();
-        });
-      } else if (command.type === 'UPDATE') {
-        // Apply new state
-        command.after?.forEach(nodeData => {
-          const node = layer.findOne(`#${nodeData.id}`);
-          if (node) {
-            node.setAttrs(nodeData.config);
-          }
-        });
-      }
-
-      layer.batchDraw();
-      
-      // Update snapshot after redo
+      applyForward(layer, cmd);
+    } finally {
       setTimeout(() => {
         snapshotRef.current = takeSnapshot();
         isRestoringRef.current = false;
-      }, 100);
-    } catch (error) {
-      console.error('Redo error:', error);
-      isRestoringRef.current = false;
+        canvasRef.current?.stage?.fire('history:applied');
+      }, 60);
     }
-  }, [historyRedo, canvasRef, takeSnapshot]);
+  }, [canvasRef, historyRedo, takeSnapshot, applyForward]);
 
-  // Setup global event listeners
+  // ---------- wiring
   useEffect(() => {
-    if (!isCanvasReady || !canvasRef.current?.stage) return;
+    if (!isCanvasReady || !canvasRef.current?.stage || !canvasRef.current?.layer) return;
 
     const stage = canvasRef.current.stage;
     const layer = canvasRef.current.layer;
 
-    // Take initial snapshot
+    // baseline
     snapshotRef.current = takeSnapshot();
 
-    // Listen to ALL events that modify the canvas
-    const events = [
-      'dragend',           // Drag objects
-      'transformend',      // Scale/rotate
-      'contentChange',     // Content modified
-    ];
+    // Listen to transform/drag start/end for explicit UPDATEs
+    stage.on('transformstart', handleTransformStart);
+    stage.on('dragstart', handleTransformStart);
 
-    const handleChange = () => {
-      scheduleChangeDetection();
-    };
+    // IMPORTANT: we handle transform/drag *end* explicitly,
+    // so we DO NOT trigger snapshot-diff from these events anymore.
+    stage.on('transformend', handleTransformEnd);
+    stage.on('dragend', handleTransformEnd);
 
-    // Attach to stage (catches all events)
-    events.forEach(event => {
-      stage.on(event, handleChange);
-    });
-
-    // Also listen to layer node changes
-    const observer = new MutationObserver(() => {
-      scheduleChangeDetection();
-    });
-
-    // Monitor layer for child additions/removals
+    // Still watch for structural add/remove via polling
     const checkForChanges = setInterval(() => {
-      const currentCount = layer.getChildren().length;
-      const snapshotCount = snapshotRef.current.size;
-      
-      if (currentCount !== snapshotCount) {
-        scheduleChangeDetection();
+      const count = layer.getChildren((n: any) => isRealSnapshotNode(n)).length;
+      if (count !== snapshotRef.current.size) {
+        // now run only ADD/DELETE detection
+        recordChanges();
       }
     }, 500);
 
     return () => {
-      events.forEach(event => {
-        stage.off(event, handleChange);
-      });
+      stage.off('transformstart', handleTransformStart);
+      stage.off('dragstart', handleTransformStart);
+      stage.off('transformend', handleTransformEnd);
+      stage.off('dragend', handleTransformEnd);
       clearInterval(checkForChanges);
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-      }
+      if (changeTimeoutRef.current) clearTimeout(changeTimeoutRef.current);
     };
-  }, [isCanvasReady, canvasRef, takeSnapshot, scheduleChangeDetection]);
+  }, [
+    isCanvasReady,
+    canvasRef,
+    takeSnapshot,
+    handleTransformStart,
+    handleTransformEnd,
+    isRealSnapshotNode,
+    recordChanges,
+  ]);
 
   return {
     undo,
     redo,
     canUndo,
     canRedo,
-    forceRecord: recordChanges, // Manual trigger if needed
+    // still expose these in case you need to force structural records
+    forceRecord: recordChanges,
+    runAsSingleHistoryStep: (mutate: () => void) => {
+      // keep your existing batch helper if you use it elsewhere
+      if (!canvasRef.current?.layer) return;
+      const before = takeSnapshot();
+      isRestoringRef.current = true;
+      try {
+        mutate();
+      } finally {
+        const after = takeSnapshot();
+        isRestoringRef.current = false;
+
+        const diff = detectChanges(before, after);
+        const batch: BatchCommand = {
+          type: 'BATCH',
+          added: diff.added,
+          deleted: diff.deleted,
+          updatedBefore: diff.updated.map((u) => u.before),
+          updatedAfter: diff.updated.map((u) => u.after),
+        };
+
+        if (batch.added.length || batch.deleted.length || batch.updatedBefore.length) {
+          record(batch);
+        }
+        snapshotRef.current = after;
+      }
+    },
   };
 };

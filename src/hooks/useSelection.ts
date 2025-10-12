@@ -1,171 +1,338 @@
+'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
 
 type UseSelectionProps = {
   isCanvasReady: boolean;
-  canvasRef: React.RefObject<{ stage: any; layer: any; }>;
+  canvasRef: React.RefObject<{ stage: any; layer: any }>;
   isMultiSelectMode: boolean;
   selectedNodes: any[];
-  setSelectedNodes: (nodes: any[]) => void;
+  setSelectedNodes: Dispatch<SetStateAction<any[]>>;
 };
 
-export function useSelection({
+export const useSelection = ({
   isCanvasReady,
   canvasRef,
   isMultiSelectMode,
   selectedNodes,
   setSelectedNodes,
-}: UseSelectionProps) {
+}: UseSelectionProps) => {
+  const selectionRectRef = useRef<any>(null);
+  const selectionStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const transformersRef = useRef<any[]>([]);
-  const selectionBoxRef = useRef<any>();
+  // Pool of per-node Transformers (one per selected top-level node)
+  const transformersRef = useRef<Map<number, any>>(new Map());
 
   useEffect(() => {
-    if (!isCanvasReady || !canvasRef.current?.stage || !window.Konva) return;
+    if (!isCanvasReady || !canvasRef.current?.stage || !canvasRef.current?.layer) return;
 
     const stage = canvasRef.current.stage;
+    const layer = canvasRef.current.layer;
 
-    // Create selection box
-    selectionBoxRef.current = new window.Konva.Rect({
-        fill: 'rgba(0,0,255,0.1)',
+    // ---------- one-time marquee rectangle ----------
+    if (!selectionRectRef.current) {
+      const rect = new window.Konva.Rect({
+        name: 'selection-rect',
         visible: false,
-    });
-    canvasRef.current.layer.add(selectionBoxRef.current);
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        fill: 'rgba(168, 85, 247, 0.15)',
+        stroke: '#a855f7',
+        dash: [4, 3],
+        listening: false,
+        hitGraphEnabled: false,
+      });
+      layer.add(rect);
+      selectionRectRef.current = rect;
+      layer.draw();
+    }
+    const rect = selectionRectRef.current;
 
-    let x1: number, y1: number, x2: number, y2: number;
-    stage.on('mousedown.selection touchstart.selection', (e: any) => {
-        // do nothing if we mousedown on any shape
-        if (e.target !== stage) {
-            return;
-        }
-        e.evt.preventDefault();
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
-        x1 = pos.x;
-        y1 = pos.y;
-        x2 = pos.x;
-        y2 = pos.y;
+    // ---------- helpers ----------
+    const isTransformer = (node: any) => {
+      const cn = node?.getClassName?.() ?? '';
+      return cn === 'Transformer' || node?.hasName?.('Transformer');
+    };
+    const isBackgroundTarget = (t: any) => t === stage || t?.name?.() === 'background';
 
-        selectionBoxRef.current.visible(true);
-        selectionBoxRef.current.width(0);
-        selectionBoxRef.current.height(0);
-    });
+    // Find nearest ancestor that is a 'group' (if any)
+    const getGroupRoot = (node: any): any | null => {
+      let n = node;
+      while (n?.parent) {
+        if (n?.hasName?.('group')) return n;
+        n = n.parent;
+      }
+      return null;
+    };
 
-    stage.on('mousemove.selection touchmove.selection', (e: any) => {
-        // do nothing if we didn't start dragging from stage
-        if (!selectionBoxRef.current.visible()) {
-            return;
-        }
-        e.evt.preventDefault();
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
-        x2 = pos.x;
-        y2 = pos.y;
+    // Promote a clicked child to its selectable root.
+    // IMPORTANT: group root takes precedence — members of a group cannot be selected individually.
+    const getSelectableRoot = (node: any) => {
+      if (!node) return null;
+      if (isTransformer(node) || node?.name?.() === 'background') return null;
 
-        selectionBoxRef.current.setAttrs({
-            x: Math.min(x1, x2),
-            y: Math.min(y1, y2),
-            width: Math.abs(x2 - x1),
-            height: Math.abs(y2 - y1),
-        });
-    });
+      // If inside a group, always resolve to the group root
+      const groupRoot = getGroupRoot(node);
+      if (groupRoot) return groupRoot;
 
-    stage.on('mouseup.selection touchend.selection', (e: any) => {
-        // do nothing if we didn't start dragging from stage
-        if (!selectionBoxRef.current.visible()) {
-            return;
-        }
-        e.evt.preventDefault();
-        // update visibility in timeout to avoid checking logic in click event
-        setTimeout(() => {
-            selectionBoxRef.current.visible(false);
-        });
-
-        const shapes = stage.find('.shape, .textGroup, .image, .frame, .mask, .group, .circularText');
-        const box = selectionBoxRef.current.getClientRect();
-        const selected = shapes.filter((shape: any) =>
-            window.Konva.Util.haveIntersection(box, shape.getClientRect())
-        );
-        setSelectedNodes(selected);
-    });
-
-    const handleStageClick = (e: any) => {
-      // if we are selecting with rect, do nothing
-      if (selectionBoxRef.current.visible()) {
-          return;
+      // Otherwise walk up to a known selectable container/primitive
+      let n = node;
+      while (n?.parent) {
+        const name = n?.name?.();
+        const className = n?.getClassName?.();
+        const isSelectable =
+          n?.hasName?.('textGroup') ||
+          n?.hasName?.('circularText') ||
+          n?.hasName?.('mask') ||
+          name === 'shape' ||
+          name === 'image' ||
+          name === 'frame' ||
+          className === 'Image' ||
+          className === 'Rect' ||
+          className === 'Circle' ||
+          className === 'Line' ||
+          className === 'RegularPolygon' ||
+          className === 'Star' ||
+          className === 'Path';
+        if (isSelectable) break;
+        n = n.parent;
       }
 
-      // if click on empty area - remove all selections
-      if (e.target === stage) {
+      if (!n?.id?.()) return null;
+      if (isTransformer(n) || n?.name?.() === 'background') return null;
+      return n;
+    };
+
+    // Coalesce a list of nodes to canonical selection:
+    // 1) Replace any node that is inside a group by the group root.
+    // 2) Replace child primitives by their selectable root.
+    // 3) Deduplicate by internal _id.
+    const canonicalizeSelection = (nodes: any[]): any[] => {
+      const byId = new Map<number, any>();
+      nodes.forEach((node) => {
+        const root = getSelectableRoot(node);
+        if (root) byId.set(root._id, root);
+      });
+      return Array.from(byId.values());
+    };
+
+    // ---------- marquee handlers ----------
+    const begin = (e: any) => {
+      if (!isMultiSelectMode) return;
+      if (!isBackgroundTarget(e.target)) return;
+
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      selectionStartRef.current = pos;
+      rect.setAttrs({ visible: true, x: pos.x, y: pos.y, width: 0, height: 0 });
+      layer.batchDraw();
+    };
+
+    const update = () => {
+      if (!isMultiSelectMode) return;
+      const start = selectionStartRef.current;
+      if (!start) return;
+
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const x = Math.min(start.x, pos.x);
+      const y = Math.min(start.y, pos.y);
+      const w = Math.abs(pos.x - start.x);
+      const h = Math.abs(pos.y - start.y);
+
+      rect.setAttrs({ x, y, width: w, height: h, visible: true });
+      layer.batchDraw();
+    };
+
+    const finish = () => {
+      // Always hide marquee
+      selectionStartRef.current = null;
+      rect.visible(false);
+      layer.batchDraw();
+
+      if (!isMultiSelectMode) return;
+
+      const box = rect.getClientRect();
+
+      // Raw candidates from hit graph
+      const raw = layer
+        .find((node: any) => {
+          if (node === rect) return false;
+          if (!node.visible?.()) return false;
+          if (isTransformer(node)) return false;
+          if (node?.name?.() === 'background') return false;
+          if (!node?.id?.()) return false;
+          return true;
+        })
+        .filter((node: any) => {
+          const r = node.getClientRect();
+          return (
+            r.x >= box.x &&
+            r.y >= box.y &&
+            r.x + r.width <= box.x + box.width &&
+            r.y + r.height <= box.y + box.height
+          );
+        });
+
+      // Canonicalize to group roots / selectable roots and dedupe
+      const canonical = canonicalizeSelection(raw);
+      setSelectedNodes(canonical);
+    };
+
+    const cancel = () => {
+      selectionStartRef.current = null;
+      if (rect.visible()) {
+        rect.visible(false);
+        layer.batchDraw();
+      }
+    };
+
+    // ---------- single click/tap selection ----------
+    const handleClick = (e: any) => {
+      const t = e?.target;
+
+      if (isBackgroundTarget(t)) {
+        // Click on blank canvas: clear selection
         setSelectedNodes([]);
         return;
       }
 
-      // do nothing if clicked NOT on our shapes
-      const isShape = e.target.hasName('shape') || e.target.hasName('textGroup') || e.target.hasName('image') || e.target.hasName('frame') || e.target.hasName('mask') || e.target.hasName('group') || e.target.hasName('circularText');
-      if (!isShape && !(e.target.parent?.hasName('textGroup') || e.target.parent?.hasName('mask') || e.target.parent?.hasName('group') || e.target.parent?.hasName('circularText'))) {
-        return;
-      }
-      
-      let node = e.target;
-      if (e.target.parent?.hasName('textGroup') || e.target.parent?.hasName('mask') || e.target.parent?.hasName('group') || e.target.parent?.hasName('circularText')) {
-        node = e.target.parent;
-      }
-      
-      const isSelected = selectedNodes.some(n => n.id() === node.id());
-      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey || isMultiSelectMode;
+      const root = getSelectableRoot(t);
+      if (!root) return;
 
-      if (!metaPressed) {
-        setSelectedNodes([node]);
+      if (isMultiSelectMode) {
+        // Dedup across selections; clicking another member of the same group still resolves to the group.
+        const exists = selectedNodes.some((n) => n?._id === root._id);
+        if (!exists) setSelectedNodes([...selectedNodes, root]);
+        // (Optional toggle off) else setSelectedNodes(selectedNodes.filter(n => n._id !== root._id));
       } else {
-        if (isSelected) {
-            setSelectedNodes(selectedNodes.filter(n => n.id() !== node.id()));
-        } else {
-            setSelectedNodes([...selectedNodes, node]);
-        }
+        setSelectedNodes([root]);
       }
     };
 
-    stage.on('click.selection tap.selection', handleStageClick);
+    // ---------- wire events ----------
+    stage.on('mousedown touchstart', begin);
+    stage.on('mousemove touchmove', update);
+    stage.on('mouseup touchend', finish);
+    stage.on('contentMouseup contentTouchend', finish);
+    stage.on('dragstart', cancel);
+    stage.on('click tap', handleClick);
 
-    return () => {
-      stage.off('click.selection tap.selection mousedown.selection touchstart.selection mousemove.selection touchmove.selection mouseup.selection touchend.selection');
-    };
+    const contentEl = stage.getContent();
+    const onLeave = () => cancel();
+    contentEl.addEventListener('mouseleave', onLeave);
 
-  }, [isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes]);
-
-  useEffect(() => {
-    if (!canvasRef.current?.layer || !window.Konva) return;
-    const layer = canvasRef.current.layer;
-
-    transformersRef.current.forEach(tr => tr.destroy());
-    transformersRef.current = [];
-
-    selectedNodes.forEach(node => {
-      const tr = new window.Konva.Transformer({
-        nodes: [node],
-        name: 'Transformer',
-        keepRatio: true,
-        rotateEnabled: true,
-        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-        boundBoxFunc: (oldBox: any, newBox: any) => {
-          if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
-            return oldBox;
-          }
-          return newBox;
-        },
-      });
-
-      layer.add(tr);
-      transformersRef.current.push(tr);
-      
+    
+const onHistoryApplied = () => {
+  // 1) Drop transformers whose node is gone
+  const pool = transformersRef.current;
+  pool.forEach((tr, key) => {
+    const node = tr.nodes()?.[0];
+    if (!node || !node.getStage || !node.getStage()) {
+      tr.destroy();
+      pool.delete(key);
+    }
     });
     
-    layer.batchDraw();
+  setSelectedNodes(prev =>(
+    prev || []).filter(n => n && typeof n.getStage === 'function' && !!n.getStage()));
+  layer.batchDraw();
+};
+stage.on('history:applied', onHistoryApplied);
+
+
 
     return () => {
-      transformersRef.current.forEach(tr => tr.destroy());
-      transformersRef.current = [];
+      stage.off('mousedown touchstart', begin);
+      stage.off('mousemove touchmove', update);
+      stage.off('mouseup touchend', finish);
+      stage.off('contentMouseup contentTouchend', finish);
+      stage.off('dragstart', cancel);
+      stage.off('click tap', handleClick);
+      stage.off('history:applied', onHistoryApplied);
+      contentEl.removeEventListener('mouseleave', onLeave);
     };
+  }, [
+    isCanvasReady,
+    canvasRef,
+    isMultiSelectMode,
+    selectedNodes,
+    setSelectedNodes,
+  ]);
+
+  // ---------- maintain per-root Transformers (one per selected top-level node) ----------
+  useEffect(() => {
+    if (!canvasRef.current?.layer) return;
+
+    const layer = canvasRef.current.layer;
+    const pool = transformersRef.current;
+
+    // Helper: ensure the list contains only top-level canonical roots (e.g., groups, not members)
+    const onlyTopLevel = (nodes: any[]): any[] => {
+      const byId = new Map<number, any>();
+      nodes.forEach((n) => {
+        if (!n || !n.getStage || !n.getStage()) return;
+        // If a node has an ancestor group, assume selection already holds the group root (from click/marquee canonicalization)
+        byId.set(n._id, n);
+      });
+      return Array.from(byId.values());
+    };
+
+    const targets = onlyTopLevel(selectedNodes || []).filter(node => !node.getAttr('isLocked'));
+
+    if (targets.length === 0) {
+      // Clear all transformers
+      pool.forEach((tr) => tr.destroy());
+      pool.clear();
+      layer.batchDraw();
+      return;
+    }
+
+    // Remove transformers for nodes no longer selected/attached
+    pool.forEach((tr, key) => {
+      const still = targets.find((n) => n && n._id === key && n.getStage && n.getStage());
+      if (!still) {
+        tr.destroy();
+        pool.delete(key);
+      }
+    });
+
+    // Ensure one transformer per selected top-level node
+    targets.forEach((node) => {
+      const key = node._id as number;
+      let tr = pool.get(key);
+      if (!tr) {
+        tr = new window.Konva.Transformer({
+          name: 'Transformer',  // excluded from history
+          rotateEnabled: true,
+          keepRatio: false,
+          ignoreStroke: true,
+          anchorSize: 8,
+          borderStroke: '#7c3aed',
+          borderStrokeWidth: 1.5,
+          anchorFill: '#a855f7',
+          anchorStroke: '#a855f7',
+          anchorStrokeWidth: 1,
+          enabledAnchors: [
+            'top-left', 'top-center', 'top-right',
+            'middle-left', 'middle-right',
+            'bottom-left', 'bottom-center', 'bottom-right',
+          ],
+        });
+        layer.add(tr);
+        pool.set(key, tr);
+      }
+
+      if (tr.nodes()[0] !== node || tr.nodes().length !== 1) {
+        tr.nodes([node]);
+      }
+      tr.visible(true);
+    });
+
+    layer.batchDraw();
   }, [selectedNodes, canvasRef]);
-}
+};
