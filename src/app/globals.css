@@ -1,10 +1,10 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* --- GLOBAL STYLES & MOBILE-FIRST LAYOUT --- */
 body {
-  font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 @layer base {
@@ -88,17 +88,21 @@ body {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* --- MOBILE-FIRST LAYOUT ADJUSTMENTS --- */
+/* ------------------------------------------------------------------ */
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f3f4f6;
     color: #1f2937;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    /* Changed display to block and removed centering for natural flow */
+    display: block; 
+    /* Removed flex-direction, justify-content, align-items */
     min-height: 100vh;
     margin: 0;
     padding: 1rem;
+    box-sizing: border-box; /* Ensures padding doesn't cause overflow */
 }
 
 #editor-ui {
@@ -107,6 +111,7 @@ body {
     gap: 1.5rem;
     width: 100%;
     max-width: 100%;
+    min-height: auto; /* Allow height to be determined by content */
 }
 
 @media (min-width: 1024px) { /* Apply row layout on larger screens */
@@ -121,19 +126,21 @@ body {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    min-width: 300px; /* Minimum width for the main column */
+    min-width: 0; /* Important for flex items to shrink correctly */
 }
 
 
 .relative-canvas {
     position: relative;
     width: 100%;
+    /* CRITICAL: Constrain container height to screen and allow scrolling for large canvases (A1) */
+    max-height: calc(100vh - 150px); /* Adjust 150px based on toolbar/header height */
     background-color: #e5e7eb;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    overflow: auto;
+    overflow: auto; /* Allows scrolling if canvas is larger than container */
     flex-grow: 1;
     min-height: 300px;
-    padding: 1rem; /* Added padding to ensure the container has space */
+    padding: 1rem;
 }
 
 /* This ensures the canvas itself gets the rounded corners */
@@ -152,15 +159,16 @@ body {
     padding: 1.5rem;
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-height: 50vh; /* Adjust max height for mobile */
+    /* Adjusted max height for mobile to keep canvas visible */
+    max-height: 35vh; 
     display: flex;
     flex-direction: column;
-    flex-shrink: 0; /* Prevent shrinking on flex containers */
+    flex-shrink: 0;
 }
 
 @media (min-width: 1024px) { /* Apply fixed width on larger screens */
     #layers-panel {
-        width: 320px; /* Increased width to accommodate buttons */
+        width: 320px;
         align-self: flex-start;
         max-height: 80vh;
     }
@@ -171,15 +179,15 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    overflow-y: auto; /* Allow scrolling if layers overflow */
+    overflow-y: auto;
     flex-grow: 1;
 }
 
 .layer-item {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space out info and actions */
-    padding: 0.5rem; /* Adjust padding */
+    justify-content: space-between;
+    padding: 0.5rem;
     border: 2px solid transparent;
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
@@ -203,7 +211,7 @@ body {
     display: flex;
     align-items: center;
     flex-grow: 1;
-    overflow: hidden; /* Prevent text overflow issues */
+    overflow: hidden;
 }
 
 
@@ -226,7 +234,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    margin-left: 0.5rem; /* Space between name and buttons */
+    margin-left: 0.5rem;
 }
 
 .layer-action-btn {
@@ -302,7 +310,7 @@ body {
     padding: 1.5rem;
     border-radius: 0.75rem;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    z-index: 51; /* Ensures dialog is on top of its own overlay */
+    z-index: 51;
     text-align: center;
     max-width: 90%;
     position: relative;
@@ -356,13 +364,12 @@ body {
 
 
 .active {
-    background-color: #e0e7ff; /* Light indigo background for active state */
+    background-color: #e0e7ff;
     border-color: #4f46e5;
     color: #4f46e5;
 }
 
 .color-picker-container {
-    /* Ensures the color picker input can be positioned relative to this */
     position: relative;
     display: flex;
     flex-direction: column;
@@ -373,7 +380,7 @@ body {
 .color-picker-container-inline {
     position: relative;
     display: flex;
-    align-items: center; /* Vertically center the items */
+    align-items: center;
     margin-bottom: 1rem;
 }
 
@@ -385,7 +392,6 @@ body {
     height: 100%;
     top: 0;
     left: 0;
-    /* Make the input invisible but clickable */
     opacity: 0;
     cursor: pointer;
 }
@@ -435,13 +441,13 @@ body {
     transform: none;
 }
 .add-item-card[data-item-type="image"]:not(:disabled) svg {
-    color: #3b82f6; /* Example color for enabled image icon */
+    color: #3b82f6;
 }
 .add-item-card[data-item-type="frame"]:not(:disabled) svg {
-    color: #8b5cf6; /* Example color for enabled frame icon */
+    color: #8b5cf6;
 }
 .add-item-card[data-item-type="text"]:not(:disabled) svg {
-    color: #10b981; /* Example color for enabled text icon */
+    color: #10b981;
 }
 
 /* Updated Alignment & Opacity Controls for horizontal layout */
@@ -449,7 +455,7 @@ body {
     background-color: #f3f4f6;
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
-    padding: 0.25rem; /* Make buttons smaller for toolbar */
+    padding: 0.25rem;
     cursor: pointer;
     transition: background-color 0.2s;
     display: flex;
@@ -467,7 +473,7 @@ body {
 }
 
 .align-btn svg {
-    width: 1rem; /* Smaller icons */
+    width: 1rem;
     height: 1rem;
     stroke: #4b5563;
 }
@@ -484,7 +490,7 @@ body {
 }
 
 #opacity-slider {
-    width: 80px; /* Give slider a fixed width */
+    width: 80px;
 }
 
 
@@ -583,4 +589,3 @@ body {
     align-items: center;
     gap: 0.25rem;
 }
-    
