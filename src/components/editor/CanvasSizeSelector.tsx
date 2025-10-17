@@ -9,15 +9,45 @@ type CanvasSizeSelectorProps = {
   onChange: (value: string) => void;
 };
 
+const InstagramIcon = () => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="16" 
+        height="16" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        className="mr-2"
+    >
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+    </svg>
+);
+
+
 const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange }) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[180px] h-8">
+      <SelectTrigger className="w-[220px] h-8">
         <SelectValue placeholder="Select Canvas Size" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="1080x1080">Instagram Post (1080x1080)</SelectItem>
-        <SelectItem value="1080x1920">Instagram Story (1080x1920)</SelectItem>
+        <SelectItem value="1080x1080">
+            <div className="flex items-center">
+                <InstagramIcon />
+                <span>Instagram Post (1080x1080)</span>
+            </div>
+        </SelectItem>
+        <SelectItem value="1080x1920">
+            <div className="flex items-center">
+                <InstagramIcon />
+                <span>Instagram Story (1080x1920)</span>
+            </div>
+        </SelectItem>
         <SelectItem value="500x500">Square (500x500)</SelectItem>
         <SelectItem value="500x500-circle">Circle (500x500)</SelectItem>
         <SelectItem value="375x667">Phone (375x667)</SelectItem>
