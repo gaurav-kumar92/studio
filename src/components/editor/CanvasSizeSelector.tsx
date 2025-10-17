@@ -17,6 +17,7 @@ const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="1080x1080">Instagram Post (1080x1080)</SelectItem>
+        <SelectItem value="1080x1920">Instagram Story (1080x1920)</SelectItem>
         <SelectItem value="500x500">Square (500x500)</SelectItem>
         <SelectItem value="500x500-circle">Circle (500x500)</SelectItem>
         <SelectItem value="375x667">Phone (375x667)</SelectItem>
