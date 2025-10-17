@@ -150,7 +150,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   } = useCanvasChangeTracker(canvasRef, isCanvasReady);
 
   // 🔒 Lock hook — DO NOT pass forceRecord, so lock/unlock is NOT recorded to history
-  const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(selectedNodes /* no forceRecord */);
+  const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(selectedNodes, setSelectedNodes /* no forceRecord */);
 
   // -------------------------------
   // Helpers for lock-aware logic

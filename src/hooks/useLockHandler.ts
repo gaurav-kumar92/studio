@@ -35,6 +35,7 @@ function getTransformerInstance(
 
 export function useLockHandler(
   selectedNodes: KNode[],
+  setSelectedNodes: React.Dispatch<React.SetStateAction<KNode[]>>,
   options?: Options
 ) {
   const {
@@ -105,13 +106,16 @@ export function useLockHandler(
       node.draggable(false);
       if (blockPointer) node.listening(false); // if true, you won't be able to select it
     });
+   // ✅ Force React to re-render and recompute isSelectionLocked
+  setSelectedNodes(prev => [...prev]);
+
 
     configureTransformerUI();
     redrawLayers(selectedNodes);
 
     onLocked?.(selectedNodes); // optional hook for caller (e.g., clear selection)
     forceRecord?.();           // omit if you don’t want lock in history
-  }, [selectedNodes, blockPointer, configureTransformerUI, redrawLayers, onLocked, forceRecord]);
+  }, [selectedNodes, blockPointer, configureTransformerUI, redrawLayers, onLocked, forceRecord, setSelectedNodes]);
 
   const unlock = useCallback(() => {
     if (selectedNodes.length === 0) return;
@@ -121,12 +125,14 @@ export function useLockHandler(
       node.draggable(true);
       node.listening(true);
     });
+     // ✅ Force React to re-render
+  setSelectedNodes(prev => [...prev]);
 
     configureTransformerUI();
     redrawLayers(selectedNodes);
 
     forceRecord?.();           // omit if you don’t want unlock in history
-  }, [selectedNodes, configureTransformerUI, redrawLayers, forceRecord]);
+  }, [selectedNodes, configureTransformerUI, redrawLayers, forceRecord, setSelectedNodes]);
 
   const toggleLock = useCallback(() => {
     if (selectedNodes.length === 0) return;

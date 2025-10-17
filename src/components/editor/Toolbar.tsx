@@ -82,7 +82,7 @@ const Toolbar = () => {
               : undefined
           }
         >
-          {isSelectionLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+          {isSelectionLocked ?<Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
         </Button>
       </div>
 
