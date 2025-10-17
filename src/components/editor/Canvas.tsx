@@ -20,7 +20,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const { setInitialScale, updateLayers } = useCanvas();
+  const { setInitialScale } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -38,12 +38,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer) {
       return;
     }
-    const relativeCanvas = canvasContainer.parentElement;
-    if (!relativeCanvas) return;
-    
+
     let tempStage = stage;
     if (!tempStage) {
-      // Set draggable to false to prevent the stage from moving its position.
       tempStage = new window.Konva.Stage({
         container: 'canvas-container',
         width: 0,
@@ -51,9 +48,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
         draggable: false, 
       });
       setStage(tempStage);
-
-      // No longer need the dragend event listener
-      // tempStage.on('dragend', ...);
 
       const newLayer = new window.Konva.Layer();
       tempStage.add(newLayer);
@@ -66,76 +60,67 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
         height: 0,
         fill: '#ffffff',
         name: 'background',
-        // This is the key change: the background no longer captures events.
         listening: false,
       });
       newLayer.add(newBackground);
       setBackground(newBackground);
-
-      const containerWidth = relativeCanvas.clientWidth;
-      const containerHeight = relativeCanvas.clientHeight;
-      const stageWidth = tempStage.width();
-      const stageHeight = tempStage.height();
-      
-      if (stageWidth > 0 && stageHeight > 0) {
-        const scale = Math.min(containerWidth / stageWidth, containerHeight / stageHeight);
-        tempStage.scale({ x: scale, y: scale });
-        setInitialScale(scale);
-      }
   
       newLayer.draw();
       onReady();
     }
     
-  }, [stage, onReady, setInitialScale]);
+  }, [stage, onReady]);
 
   useEffect(() => {
-    if (!stage || !layer) return;
+    if (!stage || !layer || !background) return;
 
     const canvasContainer = document.getElementById('canvas-container');
-    if (!canvasContainer) {
-      return;
-    }
-    const relativeCanvas = canvasContainer.parentElement;
-    if (!relativeCanvas) return;
+    const relativeCanvas = canvasContainer?.parentElement;
+    if (!canvasContainer || !relativeCanvas) return;
 
-    const PIXELS_PER_POINT = 0.35;
+    const fitStageIntoParent = () => {
+      const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
+      
+      const containerWidth = relativeCanvas.clientWidth;
+      const containerHeight = relativeCanvas.clientHeight;
+      
+      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
 
-    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
-    
-    const newWidth = targetWidth * PIXELS_PER_POINT;
-    const newHeight = targetHeight * PIXELS_PER_POINT;
+      const newWidth = targetWidth * scale;
+      const newHeight = targetHeight * scale;
 
-    // Resize Konva Stage
-    stage.width(newWidth);
-    stage.height(newHeight);
-    
-    // Resize Konva Background Rect
-    const bgRect = stage.findOne('.background');
-    if (bgRect) {
-        bgRect.width(newWidth);
-        bgRect.height(newHeight);
-    }
-    
-    // Resize the container div to match the stage
-    canvasContainer.style.width = `${newWidth}px`;
-    canvasContainer.style.height = `${newHeight}px`;
+      stage.width(newWidth);
+      stage.height(newHeight);
+      
+      background.width(newWidth);
+      background.height(newHeight);
 
-    // Apply or remove circular clipping
-    if (isCircular) {
-      canvasContainer.style.borderRadius = '50%';
-      const radius = Math.min(newWidth, newHeight) / 2;
-      layer.clipFunc((ctx: any) => {
-        ctx.arc(newWidth / 2, newHeight / 2, radius, 0, Math.PI * 2, false);
-      });
-    } else {
-      canvasContainer.style.borderRadius = '0';
-      layer.clipFunc(null);
+      canvasContainer.style.width = `${newWidth}px`;
+      canvasContainer.style.height = `${newHeight}px`;
+
+      if (isCircular) {
+        canvasContainer.style.borderRadius = '50%';
+        const radius = Math.min(newWidth, newHeight) / 2;
+        layer.clipFunc((ctx: any) => {
+          ctx.arc(newWidth / 2, newHeight / 2, radius, 0, Math.PI * 2, false);
+        });
+      } else {
+        canvasContainer.style.borderRadius = '0';
+        layer.clipFunc(null);
+      }
+
+      stage.draw();
+      setInitialScale(scale);
     }
 
-    stage.draw();
+    fitStageIntoParent();
 
-  }, [canvasSize, isCircular, stage, layer]);
+    window.addEventListener('resize', fitStageIntoParent);
+    return () => {
+      window.removeEventListener('resize', fitStageIntoParent);
+    }
+
+  }, [canvasSize, isCircular, stage, layer, background, setInitialScale]);
 
 
   return (
