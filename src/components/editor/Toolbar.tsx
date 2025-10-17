@@ -32,7 +32,6 @@ const Toolbar = () => {
         <Button
           variant="default"
           size="sm"
-          blockCanvasEvents
           aria-label="Add"
           title="Add"
           onClick={() => {
@@ -52,7 +51,6 @@ const Toolbar = () => {
           variant={hasSelection ? 'destructive' : 'ghost'}
           size="icon"
           disabled={!hasSelection}
-          blockCanvasEvents
           aria-label="Delete selected"
           title={hasSelection ? 'Delete selected' : 'Nothing selected'}
           onClick={handleDelete}
@@ -69,7 +67,6 @@ const Toolbar = () => {
           variant="ghost"
           size="icon"
           disabled={!hasSelection}
-          blockCanvasEvents
           aria-label={isSelectionLocked ? 'Unlock selected' : 'Lock selected'}
           title={
             isSelectionLocked
@@ -97,7 +94,6 @@ const Toolbar = () => {
           variant="ghost"
           size="icon"
           disabled={!canUndo}
-          blockCanvasEvents
           aria-label="Undo"
           title={canUndo ? 'Undo' : 'Nothing to undo'}
           onClick={undo}
@@ -108,7 +104,6 @@ const Toolbar = () => {
           variant="ghost"
           size="icon"
           disabled={!canRedo}
-          blockCanvasEvents
           aria-label="Redo"
           title={canRedo ? 'Redo' : 'Nothing to redo'}
           onClick={redo}
@@ -124,7 +119,6 @@ const Toolbar = () => {
         <Button
           variant="ghost"
           size="icon"
-          blockCanvasEvents
           aria-label="Zoom in"
           title="Zoom in"
           onClick={() => handleZoom('in')}
@@ -134,7 +128,6 @@ const Toolbar = () => {
         <Button
           variant="ghost"
           size="icon"
-          blockCanvasEvents
           aria-label="Zoom out"
           title="Zoom out"
           onClick={() => handleZoom('out')}
@@ -150,7 +143,6 @@ const Toolbar = () => {
         <Button
           variant="default"
           size="sm"
-          blockCanvasEvents
           aria-label="Save"
           title="Save"
           onClick={handleSave}

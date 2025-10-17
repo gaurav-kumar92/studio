@@ -39,6 +39,8 @@ type CanvasContextType = {
   setCanvasSize: React.Dispatch<React.SetStateAction<string>>;
   isCanvasReady: boolean;
   setCanvasReady: React.Dispatch<React.SetStateAction<boolean>>;
+  isKonvaReady: boolean;
+  setKonvaReady: React.Dispatch<React.SetStateAction<boolean>>;
   backgroundColor: any;
   setBackgroundColor: React.Dispatch<React.SetStateAction<any>>;
   isLoading: boolean;
@@ -98,6 +100,7 @@ type CanvasContextType = {
 
   // 🔒 Lock API
   isSelectionLocked: boolean;
+  isAnySelectedLocked: boolean;
   toggleLock: () => void;
 };
 
@@ -108,8 +111,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
-  const [canvasSize, setCanvasSize] = useState('842x1191');
+  const [canvasSize, setCanvasSize] = useState('1080x1080');
   const [isCanvasReady, setCanvasReady] = useState(false);
+  const [isKonvaReady, setKonvaReady] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState<any>({
     isGradient: false,
     solidColor: '#ffffff',
@@ -146,7 +150,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   } = useCanvasChangeTracker(canvasRef, isCanvasReady);
 
   // 🔒 Lock hook — DO NOT pass forceRecord, so lock/unlock is NOT recorded to history
-  const { isSelectionLocked, toggleLock } = useLockHandler(selectedNodes /* no forceRecord */);
+  const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(selectedNodes /* no forceRecord */);
 
   // -------------------------------
   // Helpers for lock-aware logic
@@ -717,23 +721,16 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const scaleBy = 1.1;
       const oldScale = stage.scaleX();
       let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+      
+      const newWidth = stage.width() * (newScale / oldScale);
+      const newHeight = stage.height() * (newScale / oldScale);
 
-      if (direction === 'out' && newScale < initialScale) {
-        newScale = initialScale;
-      }
-
-      const [originalWidth, originalHeight] = canvasSize.split('x').map(Number);
-      const PIXELS_PER_POINT = 0.35;
-      const unscaledWidth = originalWidth * PIXELS_PER_POINT;
-      const unscaledHeight = originalHeight * PIXELS_PER_POINT;
-
-      stage.width(unscaledWidth * newScale);
-      stage.height(unscaledHeight * newScale);
+      stage.width(newWidth);
+      stage.height(newHeight);
       stage.scale({ x: newScale, y: newScale });
       stage.draw();
-      // (Not recorded by default; make it undoable if desired)
     },
-    [initialScale, canvasSize]
+    []
   );
 
   // -----------------------
@@ -1088,6 +1085,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setCanvasSize,
     isCanvasReady,
     setCanvasReady,
+    isKonvaReady,
+    setKonvaReady,
     backgroundColor,
     setBackgroundColor,
     isLoading,
@@ -1152,6 +1151,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     // 🔒 Expose lock to consumers
     isSelectionLocked,
+    isAnySelectedLocked,
     toggleLock,
   };
 

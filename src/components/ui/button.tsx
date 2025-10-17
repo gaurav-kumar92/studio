@@ -33,60 +33,26 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  /**
-   * If true, prevents canvas/stage handlers from seeing this interaction
-   * by calling stopPropagation + preventDefault on common pointer events.
-   * Useful for toolbars or controls overlaid on a Konva canvas.
-   */
-  blockCanvasEvents?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant,
-      size,
-      asChild = false,
-      blockCanvasEvents = false,
-      type,
-      onClick,
-      onMouseDown,
-      onMouseUp,
-      onTouchStart,
-      onTouchEnd,
-      ...rest
-    },
-    ref
-  ) => {
+  ({ className, variant, size, asChild = false, type, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
 
-    // Wrapper to stop bubbling to the canvas before calling the user handler.
-    const wrap =
-      <E extends React.SyntheticEvent>(user?: (e: E) => void) =>
-      (e: E) => {
-        if (blockCanvasEvents) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        user?.(e);
-      };
+    const stopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
 
     return (
       <Comp
         ref={ref}
-        type={(type as any) ?? ("button" as any)} // avoid accidental form submits
+        type={(type as any) ?? ("button" as any)}
         className={cn(
           buttonVariants({ variant, size, className }),
           "focus:outline-none active:outline-none active:bg-inherit focus:bg-inherit"
         )}
         style={{ WebkitTapHighlightColor: "transparent" }}
-        onClick={wrap(onClick)}
-        onMouseDown={wrap(onMouseDown)}
-        onMouseUp={wrap(onMouseUp)}
-        onTouchStart={wrap(onTouchStart)}
-        onTouchEnd={wrap(onTouchEnd)}
-        {...rest}
+        onPointerDown={stopPropagation}
+        onTouchStart={stopPropagation}
+        {...props}
       />
     );
   }
