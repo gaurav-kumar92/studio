@@ -575,7 +575,7 @@ body {
 .toolbar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     background-color: #ffffff;
     padding: 0.25rem 0.5rem;
     border-radius: 0.75rem;
@@ -587,5 +587,5 @@ body {
 .toolbar-section {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.125rem;
 }

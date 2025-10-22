@@ -58,19 +58,19 @@ const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange
         <SelectItem value="1080x1080">
             <div className="flex items-center">
                 <InstagramIcon />
-                <span>Instagram Post (1080x1080)</span>
+                <span className="text-xs">Instagram Post (1080x1080)</span>
             </div>
         </SelectItem>
         <SelectItem value="1080x1920">
             <div className="flex items-center">
                 <InstagramIcon />
-                <span>Instagram Story (1080x1920)</span>
+                <span className="text-xs">Instagram Story (1080x1920)</span>
             </div>
         </SelectItem>
         <SelectItem value="1584x396">
-            <div className="flex items-center">
+            <div className="flex items-center">-
                 <LinkedInIcon />
-                <span>LinkedIn Banner (1584x396)</span>
+                <span className="text-xs">LinkedIn Banner (1584x396)</span>
             </div>
         </SelectItem>
         <SelectItem value="500x500">Square (500x500)</SelectItem>

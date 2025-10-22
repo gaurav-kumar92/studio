@@ -45,7 +45,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
         container: 'canvas-container',
         width: 0,
         height: 0,
-        draggable: false, 
+        draggable: false,
       });
       setStage(tempStage);
 
@@ -64,11 +64,10 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
       });
       newLayer.add(newBackground);
       setBackground(newBackground);
-  
+
       newLayer.draw();
       onReady();
     }
-    
   }, [stage, onReady]);
 
   useEffect(() => {
@@ -79,11 +78,12 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
     if (!canvasContainer || !relativeCanvas) return;
 
     const fitStageIntoParent = () => {
+      if (!canvasSize) return;
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
-      
+
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
-      
+
       const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
 
       const newWidth = targetWidth * scale;
@@ -91,7 +91,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
 
       stage.width(newWidth);
       stage.height(newHeight);
-      
+
       background.width(newWidth);
       background.height(newHeight);
 
@@ -111,23 +111,24 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
 
       stage.draw();
       setInitialScale(scale);
-    }
+    };
 
     fitStageIntoParent();
 
     window.addEventListener('resize', fitStageIntoParent);
     return () => {
       window.removeEventListener('resize', fitStageIntoParent);
-    }
-
+    };
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale]);
-
 
   return (
     <div className="relative-canvas" style={{ display: 'grid' }}>
-      <div id="canvas-container"style={{
-      margin: 'auto',
-    }}></div>
+      <div
+        id="canvas-container"
+        style={{
+          margin: 'auto',
+        }}
+      ></div>
     </div>
   );
 });

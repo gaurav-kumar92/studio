@@ -1,7 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Undo, Redo, ZoomIn, ZoomOut, Plus, Trash2, Save, Lock, Unlock } from 'lucide-react';
+import {
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Plus,
+  Trash2,
+  Save,
+  Lock,
+  Unlock,
+  CopyPlus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
@@ -19,8 +30,9 @@ const Toolbar = () => {
     canRedo,
     handleDelete,
     isSelectionLocked,
-    isAnySelectedLocked, // 👈 get this from context
+    isAnySelectedLocked,
     toggleLock,
+    duplicateCanvas,
   } = useCanvas();
 
   const hasSelection = selectedNodes.length > 0;
@@ -45,7 +57,7 @@ const Toolbar = () => {
 
       <Separator orientation="vertical" />
 
-      {/* Delete */}
+      {/* Delete / Duplicate */}
       <div className="toolbar-section">
         <Button
           variant={hasSelection ? 'destructive' : 'ghost'}
@@ -56,6 +68,15 @@ const Toolbar = () => {
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={duplicateCanvas}
+          aria-label="Duplicate Canvas"
+          title="Duplicate Canvas"
+        >
+          <CopyPlus className="h-4 w-4" />
         </Button>
       </div>
 
@@ -82,7 +103,7 @@ const Toolbar = () => {
               : undefined
           }
         >
-          {isSelectionLocked ?<Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+          {isSelectionLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
         </Button>
       </div>
 
@@ -140,13 +161,7 @@ const Toolbar = () => {
 
       {/* Save / Export */}
       <div className="toolbar-section">
-        <Button
-          variant="default"
-          size="sm"
-          aria-label="Save"
-          title="Save"
-          onClick={handleSave}
-        >
+        <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
           <Save className="h-4 w-4" />
         </Button>
       </div>
