@@ -1,3 +1,4 @@
+
 'use client';
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
@@ -13,14 +14,13 @@ declare global {
 type CanvasProps = {
   canvasSize: string;
   isCircular: boolean;
-  onReady: () => void;
 };
 
-const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }, ref) => {
+const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) => {
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const { setInitialScale } = useCanvas();
+  const { setInitialScale, setCanvasReady } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -66,9 +66,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
       setBackground(newBackground);
 
       newLayer.draw();
-      onReady();
+      setCanvasReady(true);
     }
-  }, [stage, onReady]);
+  }, [stage, setCanvasReady]);
 
   useEffect(() => {
     if (!stage || !layer || !background) return;
@@ -131,5 +131,3 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
-
-    

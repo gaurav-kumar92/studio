@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {
@@ -16,7 +17,6 @@ import { useMaskHandler } from '@/hooks/useMaskHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
-import { useHistory } from '@/hooks/useHistory';
 import { useLockHandler } from '@/hooks/useLockHandler';
 import { Node } from 'konva/lib/Node';
 
@@ -26,20 +26,6 @@ declare global {
     isOpeningFileDialog?: boolean;
   }
 }
-
-// Deep copy utility
-const deepcopy = <T,>(v: T): T =>
-  typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
-
-// Type for a single canvas state
-type CanvasState = {
-  id: string;
-  name: string;
-  canvasSize: string;
-  backgroundColor: any;
-  objects: any[]; // Konva JSON objects
-  history: ReturnType<typeof useHistory>;
-};
 
 type CanvasContextType = {
   canvasRef: React.RefObject<{ stage: any; layer: any; background: any }>;
@@ -74,15 +60,10 @@ type CanvasContextType = {
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
 
-  // Multi-canvas state
-  canvases: CanvasState[];
-  activeCanvasId: string | null;
-  activeCanvas: CanvasState | null;
-  setActiveCanvasId: (id: string) => void;
-  addNewCanvas: () => void;
-  closeCanvas: (id: string) => void;
-  duplicateCanvas: () => void;
-  updateCanvasState: (id: string, updates: Partial<CanvasState>) => void;
+  canvasSize: string;
+  setCanvasSize: (size: string) => void;
+  backgroundColor: any;
+  setBackgroundColor: (color: any) => void;
 
   // Functions
   updateLayers: () => void;
@@ -117,6 +98,7 @@ type CanvasContextType = {
   handleGroup: () => void;
   handleUngroup: () => void;
   handleDelete: () => void;
+  duplicateSelection: () => void;
   forceRecord: () => void;
 
   isSelectionLocked: boolean;
@@ -129,11 +111,8 @@ const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
 
-  // Multi-canvas state
-  const [canvases, setCanvases] = useState<CanvasState[]>([]);
-  const [activeCanvasId, setActiveCanvasId] = useState<string | null>(null);
-
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
+  const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [isKonvaReady, setKonvaReady] = useState(false);
@@ -149,9 +128,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
-  const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
 
-  const activeCanvas = canvases.find((c) => c.id === activeCanvasId) || null;
+  const [canvasSize, setCanvasSizeState] = useState('1080x1080');
+  const [backgroundColor, setBackgroundColorState] = useState({
+    isGradient: false,
+    solidColor: '#ffffff',
+    gradientDirection: 'top-to-bottom',
+    colorStops: [
+      { id: 0, stop: 0, color: '#3b82f6' },
+      { id: 1, stop: 1, color: '#a855f7' },
+    ],
+  });
 
   const {
     undo: undoBase,
@@ -160,11 +147,16 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canRedo,
     forceRecord,
     runAsSingleHistoryStep,
-  } = useCanvasChangeTracker(
-    canvasRef,
-    isCanvasReady && !!activeCanvas,
-    activeCanvas?.id || null
-  );
+  } = useCanvasChangeTracker(canvasRef, isCanvasReady);
+
+  const setCanvasSize = (size: string) => {
+    setCanvasSizeState(size);
+    forceRecord();
+  };
+  const setBackgroundColor = (color: any) => {
+    setBackgroundColorState(color);
+    forceRecord();
+  };
 
   const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(
     selectedNodes,
@@ -190,106 +182,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     });
 
     setKonvaObjects(Array.from(children));
-    if (activeCanvasId) {
-      const stageJSON = canvasRef.current.stage.toJSON();
-      const objects = JSON.parse(stageJSON).children[0].children.filter(
-        (c: any) => c.attrs.name !== 'background'
-      );
-      updateCanvasState(activeCanvasId, { objects });
-    }
-
     layer.draw();
-  }, [activeCanvasId]);
-
-  const updateCanvasState = useCallback(
-    (id: string, updates: Partial<Omit<CanvasState, 'id' | 'history'>>) => {
-      setCanvases((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-      );
-    },
-    []
-  );
-
-  const addNewCanvas = useCallback(() => {
-    const newId = `canvas-${Date.now()}`;
-    const newCanvas: CanvasState = {
-      id: newId,
-      name: `Canvas ${canvases.length + 1}`,
-      canvasSize: '1080x1080',
-      backgroundColor: {
-        isGradient: false,
-        solidColor: '#ffffff',
-        gradientDirection: 'top-to-bottom',
-        colorStops: [
-          { id: 0, stop: 0, color: '#3b82f6' },
-          { id: 1, stop: 1, color: '#a855f7' },
-        ],
-      },
-      objects: [],
-      history: { undo: () => null, redo: () => null, record: () => {}, canUndo: false, canRedo: false, clearHistory: () => {} },
-    };
-    setCanvases((prev) => [...prev, newCanvas]);
-    setActiveCanvasId(newId);
-    return newId;
-  }, [canvases.length]);
-
-  const closeCanvas = useCallback((id: string) => {
-    setCanvases((prev) => {
-      const newCanvases = prev.filter((c) => c.id !== id);
-      if (newCanvases.length === 0) {
-        return [];
-      }
-      if (activeCanvasId === id) {
-        setActiveCanvasId(newCanvases[0].id);
-      }
-      return newCanvases;
-    });
-  }, [activeCanvasId]);
-
-  const duplicateCanvas = useCallback(() => {
-    if (!activeCanvas) return;
-    const newId = `canvas-${Date.now()}`;
-    const newCanvas: CanvasState = {
-      ...deepcopy(activeCanvas),
-      id: newId,
-      name: `${activeCanvas.name} Copy`,
-    };
-    setCanvases((prev) => [...prev, newCanvas]);
-    setActiveCanvasId(newId);
-  }, [activeCanvas]);
-
-  useEffect(() => {
-    if (canvases.length === 0 && isCanvasReady) {
-      addNewCanvas();
-    }
-  }, [canvases.length, isCanvasReady, addNewCanvas]);
-
-
-  useEffect(() => {
-    if (activeCanvas && canvasRef.current?.layer && isCanvasReady) {
-      setIsLoading(true);
-      const { layer } = canvasRef.current;
-      layer.destroyChildren(); // Clear previous content
-
-      const bg = new window.Konva.Rect({
-          x: 0, y: 0, fill: '#ffffff', name: 'background', listening: false
-      });
-      layer.add(bg);
-      canvasRef.current.background = bg;
-
-
-      activeCanvas.objects.forEach(objJson => {
-        const node = window.Konva.Node.create(objJson);
-        attachDoubleClick(node);
-        layer.add(node);
-      });
-      
-      updateLayers();
-      setSelectedNodes([]);
-      setIsLoading(false);
-    }
-  }, [activeCanvasId, isCanvasReady]);
-
+  }, []);
 
   const deselectNodes = useCallback(() => {
     setSelectedNodes([]);
@@ -375,12 +269,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     [isNodeLocked]
   );
   
-    const handleDoubleClick = useCallback((node: any) => {
-        const handleNodeDoubleClick = (targetNode: any) => {
-            // Implementation will be provided by useNodeHandlers
-        };
-        handleNodeDoubleClick(node);
-    }, []);
+  const handleDoubleClick = useCallback((node: any) => {
+    const handleNodeDoubleClick = (targetNode: any) => {
+        // Implementation will be provided by useNodeHandlers
+    };
+    handleNodeDoubleClick(node);
+  }, []);
 
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
@@ -465,7 +359,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
-  useSelection({ isCanvasReady: isCanvasReady && !!activeCanvas, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
+  useSelection({ isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
   const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, setTextDialogOpen, forceRecord });
   const { handleAddShape, handleUpdateShape } = useShapeHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick, editingShapeNode, setEditingShapeNode, forceRecord });
   const { handleAddFrame, handleUpdateFrame } = useFrameHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick });
@@ -694,11 +588,40 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     document.body.removeChild(link);
   }, [deselectNodes]);
 
+  const duplicateSelection = useCallback(() => {
+    runAsSingleHistoryStep(() => {
+      if (!canvasRef.current?.layer) return;
+      const layer = canvasRef.current.layer;
+      const newSelection = [];
+  
+      for (const node of selectedNodes) {
+        if (isNodeLocked(node)) {
+          newSelection.push(node);
+          continue;
+        };
+  
+        const clone = node.clone();
+        const pos = node.getAbsolutePosition();
+        clone.setAttrs({
+          id: `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          x: pos.x + 20,
+          y: pos.y + 20,
+        });
+        
+        attachDoubleClick(clone);
+        layer.add(clone);
+        newSelection.push(clone);
+      }
+      
+      setSelectedNodes(newSelection);
+      updateLayers();
+    });
+  }, [selectedNodes, canvasRef, attachDoubleClick, setSelectedNodes, updateLayers, runAsSingleHistoryStep, isNodeLocked]);
+
   useEffect(() => {
-    if (canvasRef.current?.background && isCanvasReady && activeCanvas) {
+    if (canvasRef.current?.background && isCanvasReady) {
       const backgroundRect = canvasRef.current.background;
       const layer = canvasRef.current.layer;
-      const { backgroundColor } = activeCanvas;
 
       backgroundRect.fill(null);
       backgroundRect.fillLinearGradientColorStops(null);
@@ -734,7 +657,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
       if (layer) layer.draw();
     }
-  }, [activeCanvas?.backgroundColor, isCanvasReady]);
+  }, [backgroundColor, isCanvasReady]);
 
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
@@ -748,6 +671,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     });
     setKonvaObjects(Array.from(children ?? []));
   }, [selectedNodes]);
+  
+  useEffect(() => {
+    if (isCanvasReady) {
+      setIsLoading(false);
+    }
+  }, [isCanvasReady])
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
@@ -797,13 +726,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isTextDialogOpen, setTextDialogOpen, isFrameDialogOpen,
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, editingShapeNode, setEditingShapeNode, editingFrameNode,
     setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, setEditingTextNode,
-    canvases, activeCanvasId, activeCanvas, setActiveCanvasId, addNewCanvas, closeCanvas, duplicateCanvas, updateCanvasState,
+    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, setInitialScale,
     undo, redo, canUndo, canRedo,
-    handleGroup, handleUngroup, handleDelete, forceRecord,
+    handleGroup, handleUngroup, handleDelete, duplicateSelection, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
   };
 

@@ -1,3 +1,4 @@
+
 // src/hooks/useCanvasChangeTracker.ts
 'use client';
 import { useEffect, useRef, useCallback } from 'react';

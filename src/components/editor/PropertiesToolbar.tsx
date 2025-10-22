@@ -10,8 +10,10 @@ import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 
 const PropertiesToolbar = () => {
   const {
-    activeCanvas,
-    updateCanvasState,
+    canvasSize,
+    setCanvasSize,
+    backgroundColor,
+    setBackgroundColor,
     selectedNodes,
     handleAlign,
     handleOpacityChange,
@@ -29,20 +31,20 @@ const PropertiesToolbar = () => {
 
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
 
-  if (!activeCanvas) return null;
-
   return (
     <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">
       {/* Canvas Properties Section */}
       <div className="toolbar-section mr-2">
         <CanvasSizeSelector
-          value={activeCanvas.canvasSize}
-          onChange={(value) => updateCanvasState(activeCanvas.id, { canvasSize: value })}
+          value={canvasSize}
+          onChange={setCanvasSize}
         />
+        <div className="ml-2">
         <BackgroundColorPicker
-          value={activeCanvas.backgroundColor}
-          onChange={(value) => updateCanvasState(activeCanvas.id, { backgroundColor: value })}
+          value={backgroundColor}
+          onChange={setBackgroundColor}
         />
+        </div>
       </div>
 
       {/* Conditional Separator and Object Properties */}

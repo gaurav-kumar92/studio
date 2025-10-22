@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -11,7 +12,7 @@ import {
   Save,
   Lock,
   Unlock,
-  CopyPlus,
+  Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -32,7 +33,7 @@ const Toolbar = () => {
     isSelectionLocked,
     isAnySelectedLocked,
     toggleLock,
-    duplicateCanvas,
+    duplicateSelection,
   } = useCanvas();
 
   const hasSelection = selectedNodes.length > 0;
@@ -72,11 +73,12 @@ const Toolbar = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={duplicateCanvas}
-          aria-label="Duplicate Canvas"
-          title="Duplicate Canvas"
+          onClick={duplicateSelection}
+          disabled={!hasSelection}
+          aria-label="Duplicate Selection"
+          title={hasSelection ? "Duplicate Selection" : "Nothing selected"}
         >
-          <CopyPlus className="h-4 w-4" />
+          <Copy className="h-4 w-4" />
         </Button>
       </div>
 

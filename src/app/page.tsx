@@ -13,7 +13,6 @@ import LayersPanel from '@/components/editor/LayersPanel';
 import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
-import CanvasManager from '@/components/editor/CanvasManager';
 
 declare global {
   interface Window {
@@ -24,7 +23,6 @@ declare global {
 function Editor() {
   const {
     canvasRef,
-    activeCanvas,
     isCanvasReady,
     setCanvasReady,
     konvaObjects,
@@ -55,6 +53,7 @@ function Editor() {
     handleSelectItem,
     handleMoveNode,
     isLoading,
+    canvasSize,
   } = useCanvas();
 
   useEffect(() => {
@@ -76,8 +75,8 @@ function Editor() {
     };
   }, [setCanvasReady]);
 
-  const isCircular = activeCanvas?.canvasSize.endsWith('-circle');
-  const sizeString = activeCanvas?.canvasSize.split('-')[0];
+  const isCircular = canvasSize.endsWith('-circle');
+  const sizeString = canvasSize.split('-')[0];
 
   return (
     <>
@@ -85,7 +84,7 @@ function Editor() {
         src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
         strategy="beforeInteractive"
       />
-      {isLoading || !isCanvasReady || !activeCanvas ? (
+      {isLoading || !isCanvasReady ? (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
           <p>Loading Editor...</p>
@@ -96,12 +95,10 @@ function Editor() {
           <div className="editor-main-column">
             <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
             <Toolbar />
-            <CanvasManager />
             <Canvas
               ref={canvasRef}
               canvasSize={sizeString!}
               isCircular={isCircular!}
-              onReady={() => setCanvasReady(true)}
             />
             <PropertiesToolbar />
           </div>
