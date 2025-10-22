@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import Konva from 'konva';
 
-type KNode = Konva.Node;
-type Transformer = Konva.Transformer;
+// Use global Konva types if available, otherwise fallback to any
+type KNode = import('konva/lib/Node').Node;
+type Transformer = import('konva/lib/Transformer').Transformer;
 
 const LOCK_ATTR = 'isLocked';
 
@@ -59,7 +59,7 @@ export function useLockHandler(
   );
 
   const redrawLayers = useCallback((nodes: KNode[]) => {
-    const layers = new Set<Konva.Layer>();
+    const layers = new Set<import('konva/lib/Layer').Layer>();
     nodes.forEach(n => {
       const l = n.getLayer();
       if (l) layers.add(l);

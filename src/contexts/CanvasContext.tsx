@@ -9,7 +9,6 @@ import React, {
   ReactNode,
   useCallback,
 } from 'react';
-import Konva from 'konva';
 import { useTextHandler } from '@/hooks/useTextHandler';
 import { useShapeHandler } from '@/hooks/useShapeHandler';
 import { useFrameHandler } from '@/hooks/useFrameHandler';
@@ -272,7 +271,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const { layer } = canvasRef.current;
       layer.destroyChildren(); // Clear previous content
 
-      const bg = new Konva.Rect({
+      const bg = new window.Konva.Rect({
           x: 0, y: 0, fill: '#ffffff', name: 'background', listening: false
       });
       layer.add(bg);
@@ -280,7 +279,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
 
       activeCanvas.objects.forEach(objJson => {
-        const node = Konva.Node.create(objJson);
+        const node = window.Konva.Node.create(objJson);
         attachDoubleClick(node);
         layer.add(node);
       });
