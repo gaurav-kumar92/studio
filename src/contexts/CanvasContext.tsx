@@ -65,6 +65,8 @@ type CanvasContextType = {
   backgroundColor: any;
   setBackgroundColor: (color: any) => void;
 
+  clipboard: any[];
+
   // Functions
   updateLayers: () => void;
   deselectNodes: () => void;
@@ -98,7 +100,8 @@ type CanvasContextType = {
   handleGroup: () => void;
   handleUngroup: () => void;
   handleDelete: () => void;
-  duplicateSelection: () => void;
+  handleCopy: () => void;
+  handlePaste: () => void;
   forceRecord: () => void;
 
   isSelectionLocked: boolean;
@@ -128,6 +131,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
+  const [clipboard, setClipboard] = useState<any[]>([]);
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
   const [backgroundColor, setBackgroundColorState] = useState({
@@ -588,35 +592,45 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     document.body.removeChild(link);
   }, [deselectNodes]);
 
-  const duplicateSelection = useCallback(() => {
+  const handleCopy = useCallback(() => {
+    const unlockedNodes = getUnlocked(selectedNodes);
+    if (unlockedNodes.length === 0) return;
+    const copied = unlockedNodes.map((node: any) => node.clone());
+    setClipboard(copied);
+  }, [selectedNodes, getUnlocked]);
+
+  const handlePaste = useCallback(() => {
+    if (clipboard.length === 0 || !canvasRef.current?.layer) return;
+  
     runAsSingleHistoryStep(() => {
-      if (!canvasRef.current?.layer) return;
-      const layer = canvasRef.current.layer;
-      const newSelection = [];
+      const layer = canvasRef.current!.layer;
+      const newSelection: Node[] = [];
   
-      for (const node of selectedNodes) {
-        if (isNodeLocked(node)) {
-          newSelection.push(node);
-          continue;
-        };
-  
-        const clone = node.clone();
-        const pos = node.getAbsolutePosition();
-        clone.setAttrs({
-          id: `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          x: pos.x + 20,
-          y: pos.y + 20,
-        });
+      clipboard.forEach((nodeToPaste: any) => {
+        const clone = nodeToPaste.clone();
         
+        // Ensure the clone gets a new, unique ID
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}-${newSelection.length}`;
+        clone.setAttrs({
+          id: uniqueId,
+          x: clone.x() + 20,
+          y: clone.y() + 20,
+        });
+  
+        // Re-attach interaction handlers
         attachDoubleClick(clone);
+  
         layer.add(clone);
         newSelection.push(clone);
-      }
-      
+      });
+  
+      // Update UI
+      layer.batchDraw();
       setSelectedNodes(newSelection);
       updateLayers();
     });
-  }, [selectedNodes, canvasRef, attachDoubleClick, setSelectedNodes, updateLayers, runAsSingleHistoryStep, isNodeLocked]);
+  }, [clipboard, canvasRef, attachDoubleClick, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+
 
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
@@ -726,13 +740,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isTextDialogOpen, setTextDialogOpen, isFrameDialogOpen,
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, editingShapeNode, setEditingShapeNode, editingFrameNode,
     setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, setEditingTextNode,
-    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor,
+    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, setInitialScale,
     undo, redo, canUndo, canRedo,
-    handleGroup, handleUngroup, handleDelete, duplicateSelection, forceRecord,
+    handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
   };
 

@@ -13,6 +13,7 @@ import {
   Lock,
   Unlock,
   Copy,
+  ClipboardPaste,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -33,10 +34,13 @@ const Toolbar = () => {
     isSelectionLocked,
     isAnySelectedLocked,
     toggleLock,
-    duplicateSelection,
+    handleCopy,
+    handlePaste,
+    clipboard,
   } = useCanvas();
 
   const hasSelection = selectedNodes.length > 0;
+  const canPaste = clipboard.length > 0;
 
   return (
     <div className="toolbar" onClick={(e) => e.stopPropagation()}>
@@ -58,7 +62,7 @@ const Toolbar = () => {
 
       <Separator orientation="vertical" />
 
-      {/* Delete / Duplicate */}
+      {/* Delete / Copy / Paste */}
       <div className="toolbar-section">
         <Button
           variant={hasSelection ? 'destructive' : 'ghost'}
@@ -73,12 +77,22 @@ const Toolbar = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={duplicateSelection}
+          onClick={handleCopy}
           disabled={!hasSelection}
-          aria-label="Duplicate Selection"
-          title={hasSelection ? "Duplicate Selection" : "Nothing selected"}
+          aria-label="Copy Selection"
+          title={hasSelection ? "Copy Selection" : "Nothing selected"}
         >
           <Copy className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePaste}
+          disabled={!canPaste}
+          aria-label="Paste"
+          title={canPaste ? "Paste" : "Clipboard is empty"}
+        >
+          <ClipboardPaste className="h-4 w-4" />
         </Button>
       </div>
 
