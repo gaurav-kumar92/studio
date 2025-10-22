@@ -122,13 +122,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale]);
 
   return (
-    <div className="relative-canvas" style={{ display: 'grid' }}>
-      <div
-        id="canvas-container"
-        style={{
-          margin: 'auto',
-        }}
-      ></div>
+    <div className="relative-canvas">
+      <div id="canvas-container"></div>
     </div>
   );
 });
@@ -136,3 +131,5 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, onReady }
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
+
+    
