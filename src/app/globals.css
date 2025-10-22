@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -152,7 +153,8 @@ body {
 }
 
 #canvas-container {
-    /* margin: 0 auto; This rule is removed */
+    /* The canvas container itself is now positioned by its parent */
+    /* This allows the Konva stage to be centered correctly */
 }
 
 /* --- Layers Panel --- */
@@ -585,6 +587,8 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 1rem;
     align-self: center;
+    height: auto;
+    flex-wrap: wrap;
 }
 
 .toolbar-section {

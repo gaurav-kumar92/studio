@@ -30,6 +30,7 @@ const Toolbar = () => {
     redo,
     canUndo,
     canRedo,
+    canZoomOut,
     handleDelete,
     isSelectionLocked,
     isAnySelectedLocked,
@@ -43,8 +44,8 @@ const Toolbar = () => {
   const canPaste = clipboard.length > 0;
 
   return (
-    <div className="toolbar" onClick={(e) => e.stopPropagation()}>
-      {/* Add / Insert */}
+    <div className="toolbar flex-col items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+      {/* Top Row: Add, Zoom, Save */}
       <div className="toolbar-section">
         <Button
           variant="default"
@@ -58,74 +59,33 @@ const Toolbar = () => {
         >
           <Plus className="h-4 w-4" />
         </Button>
-      </div>
-
-      <Separator orientation="vertical" />
-
-      {/* Delete / Copy / Paste */}
-      <div className="toolbar-section">
+        <Separator orientation="vertical" />
         <Button
-          variant={hasSelection ? 'destructive' : 'ghost'}
+          variant="ghost"
           size="icon"
-          disabled={!hasSelection}
-          aria-label="Delete selected"
-          title={hasSelection ? 'Delete selected' : 'Nothing selected'}
-          onClick={handleDelete}
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => handleZoom('in')}
         >
-          <Trash2 className="h-4 w-4" />
+          <ZoomIn className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleCopy}
-          disabled={!hasSelection}
-          aria-label="Copy Selection"
-          title={hasSelection ? "Copy Selection" : "Nothing selected"}
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => handleZoom('out')}
+          disabled={!canZoomOut}
         >
-          <Copy className="h-4 w-4" />
+          <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePaste}
-          disabled={!canPaste}
-          aria-label="Paste"
-          title={canPaste ? "Paste" : "Clipboard is empty"}
-        >
-          <ClipboardPaste className="h-4 w-4" />
+        <Separator orientation="vertical" />
+        <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
+          <Save className="h-4 w-4" />
         </Button>
       </div>
 
-      <Separator orientation="vertical" />
-
-      {/* Lock / Unlock */}
-      <div className="toolbar-section">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!hasSelection}
-          aria-label={isSelectionLocked ? 'Unlock selected' : 'Lock selected'}
-          title={
-            isSelectionLocked
-              ? 'Unlock selected (all selected are locked)'
-              : isAnySelectedLocked
-              ? 'Some selected are locked'
-              : 'Lock selected'
-          }
-          onClick={toggleLock}
-          className={
-            isAnySelectedLocked
-              ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
-              : undefined
-          }
-        >
-          {isSelectionLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-        </Button>
-      </div>
-
-      <Separator orientation="vertical" />
-
-      {/* Undo / Redo */}
+      {/* Bottom Row: History, Edit */}
       <div className="toolbar-section">
         <Button
           variant="ghost"
@@ -147,38 +107,58 @@ const Toolbar = () => {
         >
           <Redo className="h-4 w-4" />
         </Button>
-      </div>
-
-      <Separator orientation="vertical" />
-
-      {/* Zoom */}
-      <div className="toolbar-section">
+        <Separator orientation="vertical" />
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Zoom in"
-          title="Zoom in"
-          onClick={() => handleZoom('in')}
+          onClick={handleCopy}
+          disabled={!hasSelection}
+          aria-label="Copy Selection"
+          title={hasSelection ? "Copy Selection" : "Nothing selected"}
         >
-          <ZoomIn className="h-4 w-4" />
+          <Copy className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Zoom out"
-          title="Zoom out"
-          onClick={() => handleZoom('out')}
+          onClick={handlePaste}
+          disabled={!canPaste}
+          aria-label="Paste"
+          title={canPaste ? "Paste" : "Clipboard is empty"}
         >
-          <ZoomOut className="h-4 w-4" />
+          <ClipboardPaste className="h-4 w-4" />
         </Button>
-      </div>
-
-      <Separator orientation="vertical" />
-
-      {/* Save / Export */}
-      <div className="toolbar-section">
-        <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
-          <Save className="h-4 w-4" />
+        <Separator orientation="vertical" />
+         <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasSelection}
+          aria-label={isSelectionLocked ? 'Unlock selected' : 'Lock selected'}
+          title={
+            isSelectionLocked
+              ? 'Unlock selected (all selected are locked)'
+              : isAnySelectedLocked
+              ? 'Some selected are locked'
+              : 'Lock selected'
+          }
+          onClick={toggleLock}
+          className={
+            isAnySelectedLocked
+              ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
+              : undefined
+          }
+        >
+          {isSelectionLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant={hasSelection ? 'destructive' : 'ghost'}
+          size="icon"
+          disabled={!hasSelection}
+          aria-label="Delete selected"
+          title={hasSelection ? 'Delete selected' : 'Nothing selected'}
+          onClick={handleDelete}
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </div>

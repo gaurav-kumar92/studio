@@ -92,6 +92,8 @@ type CanvasContextType = {
   handleZoom: (direction: 'in' | 'out') => void;
 
   setInitialScale: React.Dispatch<React.SetStateAction<number>>;
+  setCurrentScale: React.Dispatch<React.SetStateAction<number>>;
+  canZoomOut: boolean;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -120,6 +122,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [isKonvaReady, setKonvaReady] = useState(false);
   const [initialScale, setInitialScale] = useState(1);
+  const [currentScale, setCurrentScale] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
@@ -476,19 +479,64 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
-  const handleZoom = useCallback((direction: 'in' | 'out') => {
-    if (!canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
-    const scaleBy = 1.1;
-    const oldScale = stage.scaleX();
-    let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    const newWidth = stage.width() * (newScale / oldScale);
-    const newHeight = stage.height() * (newScale / oldScale);
-    stage.width(newWidth);
-    stage.height(newHeight);
-    stage.scale({ x: newScale, y: newScale });
-    stage.draw();
-  }, []);
+  const handleZoom = useCallback(
+    (direction: 'in' | 'out') => {
+      const stage = canvasRef.current?.stage;
+      if (!stage) return;
+  
+      const scaleBy = 1.1;
+      const oldScale = stage.scaleX();
+      let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+  
+      // Prevent zooming out too far
+      if (direction === 'out' && newScale < initialScale) {
+        newScale = initialScale;
+      }
+  
+      // Get the center point of the visible stage
+      const stageBox = stage.container().getBoundingClientRect();
+      const center = {
+        x: stageBox.width / 2,
+        y: stageBox.height / 2,
+      };
+  
+      // Transform to stage coordinates
+      const mousePointTo = {
+        x: (center.x - stage.x()) / oldScale,
+        y: (center.y - stage.y()) / oldScale,
+      };
+  
+      // Update scale
+      stage.scale({ x: newScale, y: newScale });
+  
+      // Reposition to zoom towards the center
+      const newPos = {
+        x: center.x - mousePointTo.x * newScale,
+        y: center.y - mousePointTo.y * newScale,
+      };
+      stage.position(newPos);
+  
+      setCurrentScale(newScale);
+      stage.batchDraw();
+    },
+    [initialScale]
+  );
+  
+  const canZoomOut = currentScale > initialScale;
+
+  useEffect(() => {
+    const stage = canvasRef.current?.stage;
+    if (!stage) return;
+  
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const direction = e.deltaY > 0 ? 'out' : 'in';
+      handleZoom(direction);
+    };
+  
+    stage.container().addEventListener('wheel', handleWheel);
+    return () => stage.container().removeEventListener('wheel', handleWheel);
+  }, [handleZoom]);
 
   const handleColorUpdate = useCallback((config: any) => {
     const nodes = getUnlocked(selectedNodes);
@@ -745,6 +793,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, setInitialScale,
+    setCurrentScale, canZoomOut,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,

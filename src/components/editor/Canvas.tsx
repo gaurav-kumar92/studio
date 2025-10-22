@@ -20,7 +20,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const { setInitialScale, setCanvasReady } = useCanvas();
+  const { setInitialScale, setCanvasReady, setCurrentScale } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -39,13 +39,15 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       return;
     }
 
-    let tempStage = stage;
-    if (!tempStage) {
-      tempStage = new window.Konva.Stage({
+    // Ensure we don't re-initialize
+    if (!stage) {
+      const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
+      
+      let tempStage = new window.Konva.Stage({
         container: 'canvas-container',
-        width: 0,
-        height: 0,
-        draggable: false,
+        width: targetWidth, // Use full size initially
+        height: targetHeight,
+        draggable: false, // Draggable is now controlled by spacebar
       });
       setStage(tempStage);
 
@@ -56,8 +58,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       const newBackground = new window.Konva.Rect({
         x: 0,
         y: 0,
-        width: 0,
-        height: 0,
+        width: targetWidth,
+        height: targetHeight,
         fill: '#ffffff',
         name: 'background',
         listening: false,
@@ -68,7 +70,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       newLayer.draw();
       setCanvasReady(true);
     }
-  }, [stage, setCanvasReady]);
+  }, [stage, setCanvasReady, canvasSize]);
 
   useEffect(() => {
     if (!stage || !layer || !background) return;
@@ -78,52 +80,56 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     if (!canvasContainer || !relativeCanvas) return;
 
     const fitStageIntoParent = () => {
-      if (!canvasSize) return;
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
+      // Use the clientWidth/Height of the container where the canvas should fit
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
+      
+      const scale = Math.min(
+        (containerWidth / targetWidth) * 0.95, 
+        (containerHeight / targetHeight) * 0.95
+      );
 
-      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
+      const stageWidth = targetWidth * scale;
+      const stageHeight = targetHeight * scale;
 
-      const newWidth = targetWidth * scale;
-      const newHeight = targetHeight * scale;
+      stage.width(stageWidth);
+      stage.height(stageHeight);
+      stage.scale({ x: scale, y: scale });
+      
+      const stageX = (containerWidth - stageWidth) / 2;
+      const stageY = (containerHeight - stageHeight) / 2;
+      stage.position({ x: stageX, y: stageY });
 
-      stage.width(newWidth);
-      stage.height(newHeight);
-
-      background.width(newWidth);
-      background.height(newHeight);
-
-      canvasContainer.style.width = `${newWidth}px`;
-      canvasContainer.style.height = `${newHeight}px`;
-
+      // The background Rect should cover the original unscaled area
+      background.width(targetWidth);
+      background.height(targetHeight);
+      
       if (isCircular) {
-        canvasContainer.style.borderRadius = '50%';
-        const radius = Math.min(newWidth, newHeight) / 2;
+        const radius = Math.min(targetWidth, targetHeight) / 2;
         layer.clipFunc((ctx: any) => {
-          ctx.arc(newWidth / 2, newHeight / 2, radius, 0, Math.PI * 2, false);
+          ctx.arc(targetWidth / 2, targetHeight / 2, radius, 0, Math.PI * 2, false);
         });
       } else {
-        canvasContainer.style.borderRadius = '0';
         layer.clipFunc(null);
       }
-
+      
       stage.draw();
+      
       setInitialScale(scale);
+      setCurrentScale(scale);
     };
 
     fitStageIntoParent();
-
-    window.addEventListener('resize', fitStageIntoParent);
-    return () => {
-      window.removeEventListener('resize', fitStageIntoParent);
-    };
-  }, [canvasSize, isCircular, stage, layer, background, setInitialScale]);
+    
+    // We only want this to run when the canvas size changes.
+    // We REMOVED the resize observer to prevent it from conflicting with manual zoom.
+  }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
   return (
     <div className="relative-canvas">
-      <div id="canvas-container"></div>
+      <div id="canvas-container" className="absolute"></div>
     </div>
   );
 });
