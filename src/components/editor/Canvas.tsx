@@ -45,7 +45,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       
       let tempStage = new window.Konva.Stage({
         container: 'canvas-container',
-        width: targetWidth, // Use full size initially
+        width: targetWidth,
         height: targetHeight,
         draggable: false, // Draggable is now controlled by spacebar
       });
@@ -82,7 +82,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     const fitStageIntoParent = () => {
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
-      // Use the clientWidth/Height of the container where the canvas should fit
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
       
@@ -100,8 +99,10 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       
       const stageX = (containerWidth - stageWidth) / 2;
       const stageY = (containerHeight - stageHeight) / 2;
-      stage.position({ x: stageX, y: stageY });
-
+      
+      // Set the position of the canvas container, not the stage itself
+      canvasContainer.style.transform = `translate(${stageX}px, ${stageY}px)`;
+      
       // The background Rect should cover the original unscaled area
       background.width(targetWidth);
       background.height(targetHeight);
@@ -124,12 +125,11 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     fitStageIntoParent();
     
     // We only want this to run when the canvas size changes.
-    // We REMOVED the resize observer to prevent it from conflicting with manual zoom.
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
   return (
     <div className="relative-canvas">
-      <div id="canvas-container" className="absolute"></div>
+      <div id="canvas-container" style={{ position: 'absolute' }}></div>
     </div>
   );
 });
