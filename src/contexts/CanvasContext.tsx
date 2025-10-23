@@ -481,43 +481,25 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const handleZoom = useCallback(
     (direction: 'in' | 'out') => {
-      const stage = canvasRef.current?.stage;
-      if (!stage) return;
+      const canvasContainer = document.getElementById('canvas-container');
+      if (!canvasContainer) return;
+  
+      const transform = window.getComputedStyle(canvasContainer).transform;
+      let oldScale = 1;
+      if (transform && transform !== 'none') {
+        const matrix = new DOMMatrix(transform);
+        oldScale = matrix.a;
+      }
   
       const scaleBy = 1.1;
-      const oldScale = stage.scaleX();
       let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
   
-      // Prevent zooming out too far
       if (direction === 'out' && newScale < initialScale) {
         newScale = initialScale;
       }
   
-      // Get the center point of the visible stage
-      const stageBox = stage.container().getBoundingClientRect();
-      const center = {
-        x: stageBox.width / 2,
-        y: stageBox.height / 2,
-      };
-  
-      // Transform to stage coordinates
-      const mousePointTo = {
-        x: (center.x - stage.x()) / oldScale,
-        y: (center.y - stage.y()) / oldScale,
-      };
-  
-      // Update scale
-      stage.scale({ x: newScale, y: newScale });
-  
-      // Reposition to zoom towards the center
-      const newPos = {
-        x: center.x - mousePointTo.x * newScale,
-        y: center.y - mousePointTo.y * newScale,
-      };
-      stage.position(newPos);
-  
+      canvasContainer.style.transform = `scale(${newScale})`;
       setCurrentScale(newScale);
-      stage.batchDraw();
     },
     [initialScale]
   );
@@ -534,8 +516,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       handleZoom(direction);
     };
   
-    stage.container().addEventListener('wheel', handleWheel);
-    return () => stage.container().removeEventListener('wheel', handleWheel);
+    const container = stage.container();
+    container.addEventListener('wheel', handleWheel);
+    return () => container.removeEventListener('wheel', handleWheel);
   }, [handleZoom]);
 
   const handleColorUpdate = useCallback((config: any) => {
