@@ -2,17 +2,19 @@
 'use client';
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 type ClipartDialogProps = {
     isOpen: boolean;
     onClose: () => void;
-    onAddClipart: (svgString: string) => void;
+    onAddClipart: (pathData: string) => void;
 };
 
 const cliparts = [
     {
         name: 'Smiley Face',
-        svg: '<svg viewBox="0 0 200 200" width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="80" stroke="black" stroke-width="3" fill="yellow" /><circle cx="65" cy="80" r="10" fill="black" /><circle cx="135" cy="80" r="10" fill="black" /><path d="M 65 120 Q 100 150, 135 120" fill="none" stroke="black" stroke-width="3" /></svg>'
+        pathData: 'M100,20 C44.77,20 0,64.77 0,120 C0,175.23 44.77,220 100,220 C155.23,220 200,175.23 200,120 C200,64.77 155.23,20 100,20 Z M65,80 C73.28,80 80,86.72 80,95 C80,103.28 73.28,110 65,110 C56.72,110 50,103.28 50,95 C50,86.72 56.72,80 65,80 Z M135,80 C143.28,80 150,86.72 150,95 C150,103.28 143.28,110 135,110 C126.72,110 120,103.28 120,95 C120,86.72 126.72,80 135,80 Z M150,140 C150,167.61 127.61,190 100,190 C72.39,190 50,167.61 50,140 L150,140 Z',
+        viewBox: '0 0 200 200'
     }
 ];
 
@@ -21,8 +23,8 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
         return null;
     }
 
-    const handleClipartSelect = (svgString: string) => {
-        onAddClipart(svgString);
+    const handleClipartSelect = (pathData: string) => {
+        onAddClipart(pathData);
         onClose();
     };
 
@@ -35,17 +37,20 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
                     {cliparts.map((clipart, index) => (
                         <button
                             key={index}
-                            className="shape-btn p-4"
+                            className="shape-btn p-4 flex items-center justify-center"
                             title={clipart.name}
-                            onClick={() => handleClipartSelect(clipart.svg)}
-                            dangerouslySetInnerHTML={{ __html: clipart.svg }}
-                        />
+                            onClick={() => handleClipartSelect(clipart.pathData)}
+                        >
+                           <svg viewBox={clipart.viewBox} width="50" height="50">
+                                <path d={clipart.pathData} fill="currentColor" />
+                           </svg>
+                        </button>
                     ))}
                 </div>
                 <div className="dialog-actions flex justify-end gap-2 mt-4 flex-shrink-0">
-                    <button className="dialog-button dialog-button-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Cancel
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
