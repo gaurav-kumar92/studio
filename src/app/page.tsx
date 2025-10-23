@@ -13,6 +13,7 @@ import LayersPanel from '@/components/editor/LayersPanel';
 import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
+import ClipartDialog from '@/components/editor/ClipartDialog';
 
 declare global {
   interface Window {
@@ -39,6 +40,8 @@ function Editor() {
     setFrameDialogOpen,
     isMaskDialogOpen,
     setMaskDialogOpen,
+    isClipartDialogOpen,
+    setClipartDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -50,6 +53,7 @@ function Editor() {
     handleUpdateFrame,
     handleAddMask,
     handleUpdateMask,
+    handleAddClipart,
     handleSelectItem,
     handleMoveNode,
     isLoading,
@@ -159,6 +163,12 @@ function Editor() {
             onAddMask={handleAddMask}
             onUpdateMask={handleUpdateMask}
             editingNode={editingMaskNode}
+          />
+
+          <ClipartDialog
+            isOpen={isClipartDialogOpen}
+            onClose={() => setClipartDialogOpen(false)}
+            onAddClipart={handleAddClipart}
           />
         </div>
       </main>

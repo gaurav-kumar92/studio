@@ -14,6 +14,7 @@ import { useTextHandler } from '@/hooks/useTextHandler';
 import { useShapeHandler } from '@/hooks/useShapeHandler';
 import { useFrameHandler } from '@/hooks/useFrameHandler';
 import { useMaskHandler } from '@/hooks/useMaskHandler';
+import { useClipartHandler } from '@/hooks/useClipartHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
@@ -52,6 +53,8 @@ type CanvasContextType = {
   setFrameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isMaskDialogOpen: boolean;
   setMaskDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isClipartDialogOpen: boolean;
+  setClipartDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingShapeNode: any;
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
@@ -86,6 +89,7 @@ type CanvasContextType = {
   handleUpdateFrame: (attrs: any) => void;
   handleAddMask: (config: any) => void;
   handleUpdateMask: (attrs: any) => void;
+  handleAddClipart: (svgString: string) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
@@ -137,6 +141,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
   const [isMaskDialogOpen, setMaskDialogOpen] = useState(false);
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
+  const [isClipartDialogOpen, setClipartDialogOpen] = useState(false);
   const [clipboard, setClipboard] = useState<any[]>([]);
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
@@ -328,7 +333,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
   const nodeHandlers = useNodeHandlers({ setEditingTextNode, setTextDialogOpen, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
   const { handleAnimationChange, playAllAnimations } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
-  
+  const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+
   const handleDoubleClickRef = useRef(handleDoubleClick);
   handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
   
@@ -421,9 +427,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'image': addImageFromComputer(); break;
       case 'frame': setEditingFrameNode(null); setFrameDialogOpen(true); break;
       case 'mask': setEditingMaskNode(null); setMaskDialogOpen(true); break;
+      case 'clipart': setClipartDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, setTextDialogOpen, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setEditingTextNode, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, setTextDialogOpen, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setEditingTextNode, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
@@ -774,12 +781,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isTextDialogOpen, setTextDialogOpen, isFrameDialogOpen,
-    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, editingShapeNode, setEditingShapeNode, editingFrameNode,
-    setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, setEditingTextNode,
+    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, editingShapeNode, 
+    setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
+    setEditingTextNode,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
-    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, addImageToMask, handleMaskImageZoom,
+    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, handleAnimationChange, playAllAnimations,
      setInitialScale,
     setCurrentScale, canZoomOut,
