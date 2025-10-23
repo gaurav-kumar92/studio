@@ -19,37 +19,57 @@ export const useClipartHandler = ({
     forceRecord,
 }: UseClipartHandlerProps) => {
 
-    const handleAddClipart = useCallback((pathData: string) => {
+    const handleAddClipart = useCallback((parts: { [key: string]: string }) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
         
         const { stage, layer } = canvasRef.current;
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         
-        const path = new window.Konva.Path({
+        const group = new window.Konva.Group({
             id: uniqueId,
-            data: pathData,
             x: stage.width() / 4,
             y: stage.height() / 4,
-            fill: '#3b82f6',
             draggable: true,
             name: 'clipart',
             scale: { x: 0.5, y: 0.5 }
         });
-        
-        // Center the shape before adding
-        const bounds = path.getClientRect({ skipTransform: true });
-        path.offsetX(bounds.width / 2);
-        path.offsetY(bounds.height / 2);
 
-        path.setAttrs({
+        const face = new window.Konva.Path({
+            data: parts.face,
+            fill: '#3b82f6',
+            name: 'clipart-face',
+        });
+        const leftEye = new window.Konva.Path({
+            data: parts.leftEye,
+            fill: 'black',
+            name: 'clipart-leftEye',
+        });
+        const rightEye = new window.Konva.Path({
+            data: parts.rightEye,
+            fill: 'black',
+            name: 'clipart-rightEye',
+        });
+        const mouth = new window.Konva.Path({
+            data: parts.mouth,
+            fill: 'black',
+            name: 'clipart-mouth',
+        });
+
+        group.add(face, leftEye, rightEye, mouth);
+
+        const bounds = group.getClientRect({ skipTransform: true });
+        group.offsetX(bounds.width / 2);
+        group.offsetY(bounds.height / 2);
+
+        group.setAttrs({
             'data-is-gradient': false,
             'data-solid-color': '#3b82f6',
         });
 
-        attachDoubleClick(path);
-        layer.add(path);
+        attachDoubleClick(group);
+        layer.add(group);
         updateLayers();
-        setSelectedNodes([path]);
+        setSelectedNodes([group]);
         layer.draw();
         forceRecord?.();
 

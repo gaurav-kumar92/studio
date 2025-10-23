@@ -7,14 +7,19 @@ import { Button } from '@/components/ui/button';
 type ClipartDialogProps = {
     isOpen: boolean;
     onClose: () => void;
-    onAddClipart: (pathData: string) => void;
+    onAddClipart: (parts: { [key: string]: string }) => void;
 };
 
 const cliparts = [
     {
         name: 'Smiley Face',
-        pathData: 'M100,20 C44.77,20 0,64.77 0,120 C0,175.23 44.77,220 100,220 C155.23,220 200,175.23 200,120 C200,64.77 155.23,20 100,20 Z M65,80 C73.28,80 80,86.72 80,95 C80,103.28 73.28,110 65,110 C56.72,110 50,103.28 50,95 C50,86.72 56.72,80 65,80 Z M135,80 C143.28,80 150,86.72 150,95 C150,103.28 143.28,110 135,110 C126.72,110 120,103.28 120,95 C120,86.72 126.72,80 135,80 Z M150,140 C150,167.61 127.61,190 100,190 C72.39,190 50,167.61 50,140 L150,140 Z',
-        viewBox: '0 0 200 200'
+        viewBox: '0 0 200 200',
+        parts: {
+            face: 'M100 20C44.77 20 0 64.77 0 120s44.77 100 100 100 100-44.77 100-100S155.23 20 100 20z',
+            leftEye: 'M65 80c8.28 0 15 6.72 15 15s-6.72 15-15 15-15-6.72-15-15 6.72-15 15-15z',
+            rightEye: 'M135 80c8.28 0 15 6.72 15 15s-6.72 15-15 15-15-6.72-15-15 6.72-15 15-15z',
+            mouth: 'M50 140c0 27.61 22.39 50 50 50s50-22.39 50-50H50z'
+        }
     }
 ];
 
@@ -23,8 +28,8 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
         return null;
     }
 
-    const handleClipartSelect = (pathData: string) => {
-        onAddClipart(pathData);
+    const handleClipartSelect = (parts: { [key: string]: string }) => {
+        onAddClipart(parts);
         onClose();
     };
 
@@ -39,10 +44,13 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
                             key={index}
                             className="shape-btn p-4 flex items-center justify-center"
                             title={clipart.name}
-                            onClick={() => handleClipartSelect(clipart.pathData)}
+                            onClick={() => handleClipartSelect(clipart.parts)}
                         >
                            <svg viewBox={clipart.viewBox} width="50" height="50">
-                                <path d={clipart.pathData} fill="currentColor" />
+                                <path d={clipart.parts.face} fill="#3b82f6" />
+                                <path d={clipart.parts.leftEye} fill="black" />
+                                <path d={clipart.parts.rightEye} fill="black" />
+                                <path d={clipart.parts.mouth} fill="black" />
                            </svg>
                         </button>
                     ))}
