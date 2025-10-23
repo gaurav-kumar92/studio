@@ -97,6 +97,7 @@ type CanvasContextType = {
   handleZoom: (direction: 'in' | 'out') => void;
   handleAnimationChange: (animation: any) => void;
   playAllAnimations: () => void;
+  handleClipartPartColorChange: (partName: string, color: string) => void;
 
   setInitialScale: React.Dispatch<React.SetStateAction<number>>;
   setCurrentScale: React.Dispatch<React.SetStateAction<number>>;
@@ -565,6 +566,28 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef.current?.layer.draw();
     forceRecord?.();
   }, [selectedNodes, applyFill, applyStroke, canvasRef, forceRecord, getUnlocked, isNodeLocked]);
+  
+  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
+    const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
+    if (!clipartNode || isNodeLocked(clipartNode)) return;
+
+    let partsToUpdate;
+    if (partName === 'eyes') {
+        partsToUpdate = clipartNode.find('.clipart-leftEye, .clipart-rightEye');
+    } else {
+        partsToUpdate = clipartNode.find(`.clipart-${partName}`);
+    }
+
+    if (partsToUpdate.length > 0) {
+        partsToUpdate.forEach((part: any) => {
+            part.fill(color);
+            part.setAttr(`data-${partName}-color`, color);
+        });
+        canvasRef.current?.layer.draw();
+        forceRecord?.();
+    }
+}, [selectedNodes, isNodeLocked, forceRecord, canvasRef]);
+
 
   const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
     if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
@@ -797,6 +820,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, handleAnimationChange, playAllAnimations,
+    handleClipartPartColorChange,
      setInitialScale,
     setCurrentScale, canZoomOut,
     undo, redo, canUndo, canRedo,

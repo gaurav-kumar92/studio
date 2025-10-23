@@ -3,11 +3,12 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import AnimationPanel from './AnimationPanel';
+import ClipartPropertiesPanel from './ClipartPropertiesPanel';
 
 type ObjectPropertiesPanelProps = {
   selectedNodes: any[];
@@ -23,6 +24,7 @@ type ObjectPropertiesPanelProps = {
   onGroup: () => void;
   onUngroup: () => void;
   onAnimationChange: (animation: any) => void;
+  onClipartPartColorChange: (partName: string, color: string) => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -39,6 +41,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onGroup,
   onUngroup,
   onAnimationChange,
+  onClipartPartColorChange,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -62,7 +65,8 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
-  const canHaveColor = selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('clipart'));
+  const isClipart = selectedNodes.length === 1 && selectedNode.hasName('clipart');
+  const canHaveColor = selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame'));
   const isLineOrCurve = selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
   const isMask = selectedNodes.length === 1 && selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
@@ -117,6 +121,22 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
                 selectedNode={selectedNode}
                 onColorChange={onColorChange}
                 isStroke={isLineOrCurve}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {isClipart && (
+         <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8">
+              <Palette className="h-4 w-4 mr-2" /> Colors
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent>
+            <ClipartPropertiesPanel 
+                selectedNode={selectedNode}
+                onColorChange={onClipartPartColorChange}
             />
           </PopoverContent>
         </Popover>

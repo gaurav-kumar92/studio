@@ -28,6 +28,7 @@ const PropertiesToolbar = () => {
     handleUngroup,
     setSelectedNodes,
     handleAnimationChange,
+    handleClipartPartColorChange,
   } = useCanvas();
 
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
@@ -64,6 +65,7 @@ const PropertiesToolbar = () => {
               onMaskImagePan={handleMaskImagePan}
               isMultiSelectMode={isMultiSelectMode}
               onAnimationChange={handleAnimationChange}
+              onClipartPartColorChange={handleClipartPartColorChange}
               onMultiSelectToggle={() => {
                 const newMode = !isMultiSelectMode;
                 setMultiSelectMode(newMode);
