@@ -89,19 +89,13 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
         (containerWidth / targetWidth) * 0.95, 
         (containerHeight / targetHeight) * 0.95
       );
-
-      const stageWidth = targetWidth * scale;
-      const stageHeight = targetHeight * scale;
-
-      stage.width(stageWidth);
-      stage.height(stageHeight);
-      stage.scale({ x: scale, y: scale });
       
-      const stageX = (containerWidth - stageWidth) / 2;
-      const stageY = (containerHeight - stageHeight) / 2;
+      // Set the stage to the canvas's actual dimensions
+      stage.width(targetWidth);
+      stage.height(targetHeight);
       
-      // Set the position of the canvas container, not the stage itself
-      canvasContainer.style.transform = `translate(${stageX}px, ${stageY}px)`;
+      // Use CSS transform to scale the container, which centers it via flexbox
+      canvasContainer.style.transform = `scale(${scale})`;
       
       // The background Rect should cover the original unscaled area
       background.width(targetWidth);
@@ -129,7 +123,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
   return (
     <div className="relative-canvas">
-      <div id="canvas-container" style={{ position: 'absolute' }}></div>
+      <div id="canvas-container"></div>
     </div>
   );
 });
