@@ -207,12 +207,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const applyFill = useCallback(
     (node: any, config: any) => {
       if (isNodeLocked(node)) return;
-      const targetNodes =
-        node.hasName('textGroup') || node.hasName('circularText')
-          ? node.find('.mainChar, .text, Text')
-          : [node];
+      let targetNodes;
+
+      if (node.hasName('clipart')) {
+          targetNodes = node.find('.clipart-face');
+      } else if (node.hasName('textGroup') || node.hasName('circularText')) {
+          targetNodes = node.find('.mainChar, .text, Text');
+      } else {
+          targetNodes = [node];
+      }
+
       targetNodes.forEach((n: any) => {
         if (isNodeLocked(n)) return;
+        if (typeof n.fill !== 'function') return;
+
         n.fill(null);
         n.fillLinearGradientColorStops([]);
         n.fillRadialGradientColorStops([]);
@@ -441,7 +449,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     else if (action === 'down' && node.getZIndex() > 1) node.moveDown();
     updateLayers();
     layer.batchDraw();
-    forceRecord();
+    forceRecord?.();
   }, [updateLayers, forceRecord, isNodeLocked]);
 
   const handleAlign = useCallback((position: string) => {
@@ -461,7 +469,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     canvasRef.current?.layer?.draw?.();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
   const handleOpacityChange = useCallback((opacity: number) => {
@@ -469,7 +477,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (nodes.length === 0) return;
     nodes.forEach((node) => node.opacity(opacity));
     canvasRef.current?.layer?.draw?.();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
@@ -488,7 +496,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       node.y(node.y() + deltaY);
     });
     layer.batchDraw();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
   const handleZoom = useCallback(
@@ -555,7 +563,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     canvasRef.current?.layer.draw();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, applyFill, applyStroke, canvasRef, forceRecord, getUnlocked, isNodeLocked]);
 
   const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
@@ -569,7 +577,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
     image.scale({ x: newScale, y: newScale });
     canvasRef.current?.layer.batchDraw();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, isNodeLocked]);
 
   const handleMaskImageReset = useCallback(() => {
@@ -587,7 +595,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     image.position({ x: 0, y: 0 });
     image.scale({ x: scale, y: scale });
     canvasRef.current?.layer.batchDraw();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, isNodeLocked]);
 
   const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -609,17 +617,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (boundFunc) newPos = boundFunc.call(image, newPos);
     image.position(newPos);
     canvasRef.current?.layer.batchDraw();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, forceRecord, isNodeLocked]);
 
   const handleDelete = useCallback(() => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
-    forceRecord();
+    forceRecord?.();
     nodes.forEach((node) => node.destroy());
     deselectNodes();
     updateLayers();
-    forceRecord();
+    forceRecord?.();
   }, [selectedNodes, deselectNodes, updateLayers, forceRecord, getUnlocked]);
 
   const handleSave = useCallback(() => {
@@ -806,3 +814,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
