@@ -3,10 +3,11 @@
 
 import React, { useEffect } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
+import AnimationPanel from './AnimationPanel';
 
 type ObjectPropertiesPanelProps = {
   selectedNodes: any[];
@@ -21,6 +22,7 @@ type ObjectPropertiesPanelProps = {
   onMultiSelectToggle: () => void;
   onGroup: () => void;
   onUngroup: () => void;
+  onAnimationChange: (animation: any) => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -36,6 +38,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onMultiSelectToggle,
   onGroup,
   onUngroup,
+  onAnimationChange,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -59,7 +62,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
-  const canHaveColor = selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame'));
+  const canHaveColor = selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('clipart'));
   const isLineOrCurve = selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
   const isMask = selectedNodes.length === 1 && selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
@@ -149,6 +152,19 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           <button onClick={() => onFlip('vertical')} className="align-btn text-xs px-2 h-auto py-1">Flip V</button>
        </div>
       
+       <Separator orientation="vertical" />
+       
+       <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8">
+              <Sparkles className="h-4 w-4 mr-2" /> Animate
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent>
+            <AnimationPanel selectedNode={selectedNode} onAnimationChange={onAnimationChange} />
+          </PopoverContent>
+        </Popover>
+
       {isMask && maskHasImage && (
         <>
           <Separator orientation="vertical" />
@@ -179,5 +195,3 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 };
 
 export default ObjectPropertiesPanel;
-
-    

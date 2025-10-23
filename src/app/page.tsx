@@ -13,6 +13,7 @@ import LayersPanel from '@/components/editor/LayersPanel';
 import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
+import ClipartDialog from '@/components/editor/ClipartDialog';
 
 declare global {
   interface Window {
@@ -54,6 +55,9 @@ function Editor() {
     handleMoveNode,
     isLoading,
     canvasSize,
+    isClipartDialogOpen,
+    setClipartDialogOpen,
+    handleAddClipart,
   } = useCanvas();
 
   useEffect(() => {
@@ -128,6 +132,12 @@ function Editor() {
             isOpen={isAddItemDialogOpen}
             onClose={() => setAddItemDialogOpen(false)}
             onSelectItem={handleSelectItem}
+          />
+
+          <ClipartDialog
+            isOpen={isClipartDialogOpen}
+            onClose={() => setClipartDialogOpen(false)}
+            onSelectClipart={handleAddClipart}
           />
 
           <TextDialog

@@ -40,6 +40,7 @@ export const useNodeHandlers = ({
                 setShapeDialogOpen(true);
                 break;
             case 'image':
+            case 'clipart':
                 // Standalone image replacement logic
                 const imageFileInput = document.createElement('input');
                 imageFileInput.type = 'file';
@@ -93,7 +94,7 @@ export const useNodeHandlers = ({
         node.on('dblclick dbltap', () => {
             let targetNode = node;
             // This logic is important for grouped objects like masks or text
-            if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup')) {
+            if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('clipart')) {
                 targetNode = node.parent;
             }
             handleDoubleClick(targetNode);
@@ -103,6 +104,3 @@ export const useNodeHandlers = ({
 
     return { handleDoubleClick, attachDoubleClick };
 };
-
-
-    

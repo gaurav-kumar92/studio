@@ -27,6 +27,7 @@ const PropertiesToolbar = () => {
     handleGroup,
     handleUngroup,
     setSelectedNodes,
+    handleAnimationChange,
   } = useCanvas();
 
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
@@ -62,6 +63,7 @@ const PropertiesToolbar = () => {
               onMaskImageReset={handleMaskImageReset}
               onMaskImagePan={handleMaskImagePan}
               isMultiSelectMode={isMultiSelectMode}
+              onAnimationChange={handleAnimationChange}
               onMultiSelectToggle={() => {
                 const newMode = !isMultiSelectMode;
                 setMultiSelectMode(newMode);
