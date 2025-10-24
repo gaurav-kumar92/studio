@@ -910,68 +910,95 @@ const handleBackgroundImageReset = useCallback(() => {
     setKonvaObjects(Array.from(children ?? []));
   }, [selectedNodes]);
   
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (e.touches.length > 1) { // Don't pan if multi-touch (pinch)
-        setIsPanning(false);
-        return;
-    }
-    
-    // Do not pan if a transformer is being interacted with
-    const target = (e.target as HTMLElement)?.parentElement;
-    if (target && target.classList.contains('konvajs-content')) {
-        const konvaNode = (e.target as any)?._konvaNode;
-        if (konvaNode && (konvaNode.getClassName() === 'Transformer' || konvaNode.getParent()?.getClassName() === 'Transformer')) {
-            setIsPanning(false);
-            return;
-        }
-    }
-
-    const touch = e.touches[0];
-    if (!touch) return;
-    setIsPanning(true);
-    setLastTouch({ x: touch.clientX, y: touch.clientY });
-    e.preventDefault();
-  }, []);
-
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPanning || !lastTouch || e.touches.length > 1) return;
-
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    const dx = touch.clientX - lastTouch.x;
-    const dy = touch.clientY - lastTouch.y;
-
-    setCanvasPosition((prev) => ({
-      x: prev.x + dx,
-      y: prev.y + dy,
-    }));
-
-    setLastTouch({ x: touch.clientX, y: touch.clientY });
-    e.preventDefault();
-  }, [isPanning, lastTouch]);
-
-  const handleTouchEnd = useCallback(() => {
-    setIsPanning(false);
-    setLastTouch(null);
-  }, []);
-
   useEffect(() => {
     const container = document.getElementById('canvas-wrapper');
-    if (!container || !isCanvasReady) return;
+    const stage = canvasRef.current?.stage;
+    if (!container || !stage || !isCanvasReady) return;
   
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('touchcancel', handleTouchEnd);
+    const getStagePointerFromTouch = (touch: Touch | undefined) => {
+      if (!touch) return null;
+      const rect = container.getBoundingClientRect();
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+    };
+  
+    const onTouchStart = (e: TouchEvent) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const touch = e.touches[0];
+      const pointer = getStagePointerFromTouch(touch);
+      if (!pointer) return;
+  
+      const konvaTarget = stage.getIntersection(pointer);
+  
+      if (konvaTarget && konvaTarget !== stage && (!konvaTarget.name || konvaTarget.name() !== 'background')) {
+        setIsPanning(false);
+        setLastTouch(null);
+        return;
+      }
+  
+      setIsPanning(true);
+      setLastTouch({ x: touch.clientX, y: touch.clientY });
+    };
+  
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isPanning || !lastTouch || !e.touches || e.touches.length === 0) return;
+      const touch = e.touches[0];
+  
+      e.preventDefault();
+  
+      const dx = touch.clientX - lastTouch.x;
+      const dy = touch.clientY - lastTouch.y;
+  
+      const stageWidth = stage.width() * canvasScale;
+      const stageHeight = stage.height() * canvasScale;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+  
+      setCanvasPosition((prev) => {
+        let newX = prev.x + dx;
+        let newY = prev.y + dy;
+  
+        const minX = containerWidth - stageWidth;
+        const minY = containerHeight - stageHeight;
+  
+        if (stageWidth <= containerWidth) {
+          newX = Math.round((containerWidth - stageWidth) / 2);
+        } else {
+          newX = Math.min(0, Math.max(newX, minX));
+        }
+  
+        if (stageHeight <= containerHeight) {
+          newY = Math.round((containerHeight - stageHeight) / 2);
+        } else {
+          newY = Math.min(0, Math.max(newY, minY));
+        }
+  
+        return { x: newX, y: newY };
+      });
+  
+      setLastTouch({ x: touch.clientX, y: touch.clientY });
+    };
+  
+    const onTouchEnd = () => {
+      setIsPanning(false);
+      setLastTouch(null);
+    };
+  
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd);
+    container.addEventListener('touchcancel', onTouchEnd);
   
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [isCanvasReady, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [isCanvasReady, canvasScale, isPanning, lastTouch, setCanvasPosition, canvasRef]);
+  
 
   useEffect(() => {
     if (isCanvasReady) {
