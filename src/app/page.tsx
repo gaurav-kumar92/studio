@@ -79,7 +79,11 @@ function Editor() {
       ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
-          <h1 className="text-2xl font-bold text-center my-2">CHITRA</h1>
+          <h1 className="text-4xl font-bold text-center my-4">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+              CHITRA
+            </span>
+          </h1>
           <Toolbar />
           <Canvas
             ref={canvasRef}
