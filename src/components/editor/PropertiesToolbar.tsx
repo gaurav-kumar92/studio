@@ -37,7 +37,7 @@ const PropertiesToolbar = () => {
   return (
     <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">
       {/* Canvas Properties Section */}
-      <div className="toolbar-section mr-2">
+      <div className="toolbar-section flex-wrap justify-center mr-2">
         <CanvasSizeSelector
           value={canvasSize}
           onChange={setCanvasSize}
@@ -89,3 +89,5 @@ const PropertiesToolbar = () => {
 };
 
 export default PropertiesToolbar;
+
+    
