@@ -9,6 +9,7 @@ type UseClipartHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
     forceRecord?: () => void;
+    clipartData?: { defaultColors?: { [key: string]: string } };
 };
 
 export const useClipartHandler = ({
@@ -17,9 +18,10 @@ export const useClipartHandler = ({
     setSelectedNodes,
     attachDoubleClick,
     forceRecord,
+    clipartData,
 }: UseClipartHandlerProps) => {
 
-    const handleAddClipart = useCallback((parts: { [key: string]: string }) => {
+    const handleAddClipart = useCallback((clipart: { parts: { [key: string]: string }, defaultColors: { [key: string]: string } }) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
         
         const { stage, layer } = canvasRef.current;
@@ -33,38 +35,19 @@ export const useClipartHandler = ({
             name: 'clipart',
             scale: { x: 0.5, y: 0.5 }
         });
-
-        const face = new window.Konva.Path({
-            data: parts.face,
-            fill: '#3b82f6',
-            name: 'clipart-face',
+        
+        Object.entries(clipart.parts).forEach(([partName, pathData]) => {
+            const part = new window.Konva.Path({
+                data: pathData,
+                fill: clipart.defaultColors?.[partName] || 'black',
+                name: `clipart-${partName}`,
+            });
+            group.add(part);
         });
-        const leftEye = new window.Konva.Path({
-            data: parts.leftEye,
-            fill: 'black',
-            name: 'clipart-leftEye',
-        });
-        const rightEye = new window.Konva.Path({
-            data: parts.rightEye,
-            fill: 'black',
-            name: 'clipart-rightEye',
-        });
-        const mouth = new window.Konva.Path({
-            data: parts.mouth,
-            fill: 'black',
-            name: 'clipart-mouth',
-        });
-
-        group.add(face, leftEye, rightEye, mouth);
 
         const bounds = group.getClientRect({ skipTransform: true });
         group.offsetX(bounds.width / 2);
         group.offsetY(bounds.height / 2);
-
-        group.setAttrs({
-            'data-is-gradient': false,
-            'data-solid-color': '#3b82f6',
-        });
 
         attachDoubleClick(group);
         layer.add(group);

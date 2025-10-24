@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 type ClipartDialogProps = {
     isOpen: boolean;
     onClose: () => void;
-    onAddClipart: (parts: { [key: string]: string }) => void;
+    onAddClipart: (clipart: { parts: { [key: string]: string }, defaultColors: { [key: string]: string } }) => void;
 };
 
 const cliparts = [
@@ -295,7 +295,7 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
     }
 
     const handleClipartSelect = (clipart: (typeof cliparts)[0]) => {
-        onAddClipart(clipart.parts);
+        onAddClipart({ parts: clipart.parts, defaultColors: clipart.defaultColors });
         onClose();
     };
 

@@ -89,7 +89,7 @@ type CanvasContextType = {
   handleUpdateFrame: (attrs: any) => void;
   handleAddMask: (config: any) => void;
   handleUpdateMask: (attrs: any) => void;
-  handleAddClipart: (parts: { [key: string]: string; }) => void;
+  handleAddClipart: (clipart: { parts: { [key: string]: string; }; defaultColors: { [key: string]: string; }; }) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
@@ -211,7 +211,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       let targetNodes;
 
       if (node.hasName('clipart')) {
-          targetNodes = node.find('.clipart-face');
+          targetNodes = node.find('.clipart-face, .clipart-shape');
       } else if (node.hasName('textGroup') || node.hasName('circularText')) {
           targetNodes = node.find('.mainChar, .text, Text');
       } else {
