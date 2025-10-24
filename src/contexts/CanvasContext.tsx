@@ -427,27 +427,39 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
-    if (selectedNodes.length !== 1 || !group.hasName('group') || group.getAttr('isLocked') || !canvasRef.current?.layer) return;
+    if (selectedNodes.length !== 1 || !(group.hasName('group') || group.hasName('clipart')) || group.getAttr('isLocked') || !canvasRef.current?.layer) return;
     runAsSingleHistoryStep(() => {
-      const layer = canvasRef.current!.layer;
-      const children = group.getChildren().slice();
-      const nodesToSelect: Node[] = [];
-      children.forEach((child: Node) => {
-        const childAbsPos = child.getAbsolutePosition(layer);
-        child.draggable(true);
-        child.moveTo(layer);
-        child.position(childAbsPos);
-        child.scale(group.scale());
-        child.rotation(group.rotation());
-        nodesToSelect.push(child);
-      });
-      group.destroy();
-      layer.draw();
-      setMultiSelectMode(true);
-      setSelectedNodes(nodesToSelect);
-      updateLayers();
+        const layer = canvasRef.current!.layer;
+        const children = group.getChildren().slice();
+        const nodesToSelect: Node[] = [];
+        
+        children.forEach((child: Node) => {
+            const absPos = child.getAbsolutePosition();
+            const absScale = child.getAbsoluteScale();
+            const absRotation = child.getAbsoluteRotation();
+
+            child.moveTo(layer);
+            
+            child.setAttrs({
+                x: absPos.x,
+                y: absPos.y,
+                scaleX: absScale.x,
+                scaleY: absScale.y,
+                rotation: absRotation,
+                draggable: true
+            });
+            
+            nodesToSelect.push(child);
+        });
+
+        group.destroy();
+        layer.batchDraw();
+        
+        setMultiSelectMode(true);
+        setSelectedNodes(nodesToSelect);
+        updateLayers();
     });
-  }, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+}, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
 
   const attachDoubleClick = useCallback((node: Node) => {
     node.on('dblclick dbltap', () => {
@@ -479,33 +491,52 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const handleGroup = useCallback(() => {
     const processNodes = selectedNodes.filter((node) => !node.getAttr('isLocked'));
     if (processNodes.length < 2 || !canvasRef.current?.layer) return;
+    
     runAsSingleHistoryStep(() => {
-      const layer = canvasRef.current!.layer;
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      processNodes.forEach((node) => {
-        const box = node.getClientRect({ skipTransform: false });
-        minX = Math.min(minX, box.x);
-        minY = Math.min(minY, box.y);
-        maxX = Math.max(maxX, box.x + box.width);
-        maxY = Math.max(maxY, box.y + box.height);
-      });
-      const groupRect = { x: minX, y: minY };
-      const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const newGroup = new window.Konva.Group({ id: uniqueId, draggable: true, name: 'group', x: groupRect.x, y: groupRect.y });
-      attachDoubleClick(newGroup as unknown as Node);
-      layer.add(newGroup);
-      processNodes.forEach((node) => {
-        const nodeAbsPos = node.getAbsolutePosition();
-        node.draggable(false);
-        node.moveTo(newGroup);
-        node.position({ x: nodeAbsPos.x - groupRect.x, y: nodeAbsPos.y - groupRect.y });
-      });
-      layer.draw();
-      setMultiSelectMode(false);
-      setSelectedNodes([newGroup]);
-      updateLayers();
+        const layer = canvasRef.current!.layer;
+        
+        // Find bounding box of all nodes
+        let clientRects = processNodes.map(node => node.getClientRect());
+        const box = clientRects.reduce((acc, rect) => {
+            return {
+                x: Math.min(acc.x, rect.x),
+                y: Math.min(acc.y, rect.y),
+                width: Math.max(acc.x + acc.width, rect.x + rect.width) - Math.min(acc.x, rect.x),
+                height: Math.max(acc.y + acc.height, rect.y + rect.height) - Math.min(acc.y, rect.y),
+            };
+        });
+
+        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const newGroup = new window.Konva.Group({
+            id: uniqueId,
+            draggable: true,
+            name: 'group',
+            x: box.x,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+        });
+
+        attachDoubleClick(newGroup as unknown as Node);
+        layer.add(newGroup);
+
+        processNodes.forEach((node) => {
+            const nodeAbsPos = node.absolutePosition();
+            node.draggable(false);
+            node.moveTo(newGroup);
+            node.absolutePosition({
+                x: nodeAbsPos.x,
+                y: nodeAbsPos.y
+            });
+        });
+
+        layer.draw();
+        setMultiSelectMode(false);
+        setSelectedNodes([newGroup]);
+        updateLayers();
     });
-  }, [selectedNodes, canvasRef, attachDoubleClick, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+}, [selectedNodes, canvasRef, attachDoubleClick, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+
 
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
