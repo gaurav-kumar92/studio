@@ -9,7 +9,6 @@ type UseClipartHandlerProps = {
     setSelectedNodes: (nodes: any[]) => void;
     attachDoubleClick: (node: any) => void;
     forceRecord?: () => void;
-    clipartData?: { defaultColors?: { [key: string]: string } };
 };
 
 export const useClipartHandler = ({
@@ -18,7 +17,6 @@ export const useClipartHandler = ({
     setSelectedNodes,
     attachDoubleClick,
     forceRecord,
-    clipartData,
 }: UseClipartHandlerProps) => {
 
     const handleAddClipart = useCallback((clipart: { parts: { [key: string]: string }, defaultColors: { [key: string]: string } }) => {
@@ -33,7 +31,7 @@ export const useClipartHandler = ({
             y: stage.height() / 4,
             draggable: true,
             name: 'clipart',
-            scale: { x: 0.5, y: 0.5 }
+            scale: { x: 1.5, y: 1.5 }
         });
         
         Object.entries(clipart.parts).forEach(([partName, pathData]) => {
