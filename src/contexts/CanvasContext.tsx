@@ -140,18 +140,6 @@ type CanvasContextType = {
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
-function getBoundingBoxOfNodes(nodes: any[]) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    nodes.forEach((n) => {
-      const rect = n.getClientRect({ skipShadow: true, skipStroke: true });
-      minX = Math.min(minX, rect.x);
-      minY = Math.min(minY, rect.y);
-      maxX = Math.max(maxX, rect.x + rect.width);
-      maxY = Math.max(maxY, rect.y + rect.height);
-    });
-    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-}
-
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
 
@@ -446,53 +434,64 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       return;
   
     runAsSingleHistoryStep(() => {
-        const layer = canvasRef.current!.layer;
-    
-        // Create a temporary group (not yet added)
-        const group = new window.Konva.Group({
-          name: 'group',
-          draggable: true,
-        });
-    
-        // Get absolute bounding box of all nodes
-        const box = getBoundingBoxOfNodes(selectedNodes);
-    
-        // Place the group at the bounding box origin
-        group.position({ x: box.x, y: box.y });
-        layer.add(group);
-    
-        // For each node, calculate its absolute position and make it relative to group
-        selectedNodes.forEach((node) => {
-          const absPos = node.getAbsolutePosition();
-          node.moveTo(group);
-    
-          // Compute relative position within group
-          node.position({
-            x: absPos.x - box.x,
-            y: absPos.y - box.y,
-          });
-        });
-    
-        layer.batchDraw();
-    
-        setSelectedNodes([group]);
-        setMultiSelectMode(false);
-        updateLayers();
+      const layer = canvasRef.current!.layer;
+  
+      // Compute min/max from absolute positions (not clientRect)
+      let minX = Infinity,
+        minY = Infinity;
+      selectedNodes.forEach((node) => {
+        const pos = node.getAbsolutePosition();
+        minX = Math.min(minX, pos.x);
+        minY = Math.min(minY, pos.y);
       });
-  }, [selectedNodes, canvasRef, runAsSingleHistoryStep, setSelectedNodes, setMultiSelectMode, updateLayers]);
-
+  
+      // Create group
+      const group = new window.Konva.Group({
+        name: 'group',
+        draggable: true,
+        x: minX,
+        y: minY,
+      });
+  
+      layer.add(group);
+  
+      // Move children relative to group
+      selectedNodes.forEach((node) => {
+        const absPos = node.getAbsolutePosition();
+        node.moveTo(group);
+        node.position({
+          x: absPos.x - minX,
+          y: absPos.y - minY,
+        });
+      });
+  
+      layer.batchDraw();
+  
+      setSelectedNodes([group]);
+      setMultiSelectMode(false);
+      updateLayers();
+    });
+  }, [
+    selectedNodes,
+    canvasRef,
+    runAsSingleHistoryStep,
+    setSelectedNodes,
+    setMultiSelectMode,
+    updateLayers,
+  ]);
+  
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
     if (
       selectedNodes.length !== 1 ||
       !(group.hasName('group') || group.hasName('clipart')) ||
-      group.getAttr('isLocked') ||
-      !canvasRef.current?.layer
+      group.getAttr('isLocked')
     )
       return;
   
     runAsSingleHistoryStep(() => {
-      const layer = canvasRef.current!.layer;
+      // Ensure layer is correct and visible
+      const layer = canvasRef.current?.layer ?? group.getLayer();
       const children = group.getChildren().slice();
       const nodesToSelect: Node[] = [];
   
@@ -511,7 +510,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setSelectedNodes(nodesToSelect);
       updateLayers();
     });
-  }, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+  }, [
+    selectedNodes,
+    canvasRef,
+    setMultiSelectMode,
+    setSelectedNodes,
+    updateLayers,
+    runAsSingleHistoryStep,
+  ]);
 
 
   const attachDoubleClick = useCallback((node: Node) => {
