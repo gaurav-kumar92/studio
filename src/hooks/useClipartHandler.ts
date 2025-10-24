@@ -21,10 +21,10 @@ export const useClipartHandler = ({
 
     const handleAddClipart = useCallback((clipart: { parts: { [key: string]: string }, defaultColors: { [key: string]: string } }) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
-        
+
         const { stage, layer } = canvasRef.current;
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        
+
         const group = new window.Konva.Group({
             id: uniqueId,
             x: stage.width() / 2,
@@ -32,7 +32,7 @@ export const useClipartHandler = ({
             draggable: true,
             name: 'clipart',
         });
-        
+
         Object.entries(clipart.parts).forEach(([partName, pathData]) => {
             const part = new window.Konva.Path({
                 data: pathData,
@@ -41,17 +41,20 @@ export const useClipartHandler = ({
             });
             group.add(part);
         });
-        
-        // After adding all parts, get the bounding box.
+
+        // Compute bounding box (untransformed)
         const bounds = group.getClientRect({ skipTransform: true });
-        
-        // Set the offset to the center of the bounding box, as per the user's explicit instructions.
-        group.setAttrs({
-            width: bounds.width,
-            height: bounds.height,
-            offsetX: bounds.width / 2,
-            offsetY: bounds.height / 2,
-        });
+
+        // Shift offset to center
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+
+        group.offsetX(centerX);
+        group.offsetY(centerY);
+
+        // Reposition to visually stay centered on canvas
+        group.x(stage.width() / 2);
+        group.y(stage.height() / 2);
 
         attachDoubleClick(group);
         layer.add(group);
