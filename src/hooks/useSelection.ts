@@ -71,21 +71,26 @@ export const useSelection = ({
     const getSelectableRoot = (node: any) => {
       if (!node) return null;
       if (isTransformer(node) || node?.name?.() === 'background') return null;
-  
+    
       let n = node;
       while (n?.parent) {
           const name = n?.name?.();
           const hasName = n?.hasName?.(name);
           const className = n?.getClassName?.();
-  
-          // Check for top-level selectable groups/containers first
+    
+          // IMPORTANT: Check if parent is a group first (before checking the node itself)
+          if (n.parent && n.parent.hasName?.('group')) {
+              return n.parent;  // Return the parent group, not the child
+          }
+    
+          // Check for top-level selectable groups/containers
           if (
               hasName &&
               (name === 'group' || name === 'textGroup' || name === 'circularText' || name === 'mask' || name === 'clipart')
           ) {
               return n;
           }
-  
+    
           // Then check for individual selectable shapes/images if not in a group
           if (
               !n.parent || (n.parent && n.parent === layer) // is a direct child of the layer
@@ -109,10 +114,10 @@ export const useSelection = ({
           
           n = n.parent;
       }
-  
+    
       if (!n || !n.id?.() || n === layer || n === stage) return null;
       return n;
-  };
+    };
 
     // Coalesce a list of nodes to canonical selection:
     // 1) Replace any node that is inside a group by the group root.

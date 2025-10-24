@@ -449,14 +449,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Create group at the top-left of the bounding box
+    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const group = new window.Konva.Group({
+      id: uniqueId,
       name: 'group',
       draggable: true,
       x: minX,
       y: minY,
     });
-
+    group.listening(true);
     layer.add(group);
+    attachDoubleClick(group);  
 
     // Move children to group with positions relative to group's origin
     selectedNodes.forEach((node) => {
@@ -475,7 +478,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         x: box.x - minX - offsetX,
         y: box.y - minY - offsetY,
       });
+      node.draggable(false);
+      
     });
+    // IMPORTANT: Set offset to center after children are added
+    const groupBox = group.getClientRect({ skipTransform: true });
+    group.offsetX(groupBox.width / 2);
+    group.offsetY(groupBox.height / 2);
+    group.x(minX + groupBox.width / 2);
+    group.y(minY + groupBox.height / 2);
 
     layer.batchDraw();
 
@@ -516,6 +527,7 @@ const handleUngroup = useCallback(() => {
       // Restore the absolute position AFTER moving
       child.setAbsolutePosition(absPos);
       child.draggable(true);
+      child.listening(true);
       
       nodesToSelect.push(child);
     });
