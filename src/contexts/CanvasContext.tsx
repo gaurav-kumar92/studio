@@ -140,6 +140,18 @@ type CanvasContextType = {
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
+function getBoundingBoxOfNodes(nodes: any[]) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach((n) => {
+      const box = n.getClientRect({ skipShadow: true, skipStroke: true });
+      minX = Math.min(minX, box.x);
+      minY = Math.min(minY, box.y);
+      maxX = Math.max(maxX, box.x + box.width);
+      maxY = Math.max(maxY, box.y + box.height);
+    });
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }
+
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
 
@@ -425,6 +437,60 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleNodeDoubleClick(node);
   }, []);
 
+  const handleGroup = useCallback(() => {
+    if (
+      selectedNodes.length < 2 ||
+      selectedNodes.some((node) => node.getAttr('isLocked')) ||
+      !canvasRef.current?.layer
+    ) return;
+  
+    runAsSingleHistoryStep(() => {
+      const layer = canvasRef.current!.layer;
+  
+      // Create new group
+      const group = new window.Konva.Group({
+        name: 'group',
+        draggable: true,
+      });
+  
+      // Find bounding box for all selected nodes
+      const box = getBoundingBoxOfNodes(selectedNodes);
+  
+      // Add group at (0,0) so absolute transforms remain valid
+      layer.add(group);
+  
+      selectedNodes.forEach((node) => {
+        // Get absolute transform before moving
+        const absPos = node.getAbsolutePosition();
+  
+        // Move node into group
+        node.moveTo(group);
+  
+        // Convert absolute → relative coordinates
+        const relPos = {
+          x: absPos.x - box.x,
+          y: absPos.y - box.y,
+        };
+  
+        node.setAttrs({
+          x: relPos.x,
+          y: relPos.y,
+        });
+      });
+  
+      // Move group to bounding box position
+      group.position({ x: box.x, y: box.y });
+  
+      // Redraw
+      layer.batchDraw();
+  
+      // Update selection
+      setSelectedNodes([group]);
+      setMultiSelectMode(false);
+      updateLayers();
+    });
+  }, [selectedNodes, canvasRef, runAsSingleHistoryStep, setSelectedNodes, setMultiSelectMode, updateLayers]);
+
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
     if (
@@ -441,10 +507,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const nodesToSelect: Node[] = [];
   
       children.forEach((child: Node) => {
-        const absTransform = child.getAbsoluteTransform();
+        // Compute absolute position before moving out
+        const absTransform = child.getAbsoluteTransform().decompose();
+  
+        // Move to layer
         child.moveTo(layer);
-        const { x, y, scaleX, scaleY, rotation } = absTransform.decompose();
-        child.setAttrs({ x, y, scaleX, scaleY, rotation, draggable: true });
+  
+        // Apply absolute coordinates directly
+        child.setAttrs({
+          x: absTransform.x,
+          y: absTransform.y,
+          scaleX: absTransform.scaleX,
+          scaleY: absTransform.scaleY,
+          rotation: absTransform.rotation,
+          draggable: true,
+        });
+  
         nodesToSelect.push(child);
       });
   
@@ -456,6 +534,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       updateLayers();
     });
   }, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+
 
   const attachDoubleClick = useCallback((node: Node) => {
     node.on('dblclick dbltap', () => {
@@ -484,60 +563,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     (handleDoubleClick as any).dependencies = [nodeHandlers.handleDoubleClick];
   }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
-  const handleGroup = useCallback(() => {
-    const processNodes = selectedNodes.filter((node) => !node.getAttr('isLocked'));
-    if (processNodes.length < 2 || !canvasRef.current?.layer) return;
-    
-    runAsSingleHistoryStep(() => {
-        const layer = canvasRef.current!.layer;
-        
-        const box = processNodes.reduce((acc, node) => {
-          const nodeBox = node.getClientRect();
-          if (!acc) return nodeBox;
-          return {
-            x: Math.min(acc.x, nodeBox.x),
-            y: Math.min(acc.y, nodeBox.y),
-            width: Math.max(acc.x + acc.width, nodeBox.x + nodeBox.width) - Math.min(acc.x, nodeBox.x),
-            height: Math.max(acc.y + acc.height, nodeBox.y + nodeBox.height) - Math.min(acc.y, nodeBox.y),
-          };
-        }, null);
-
-        if (!box) return;
-
-        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const newGroup = new window.Konva.Group({
-            id: uniqueId,
-            draggable: true,
-            name: 'group',
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-        });
-
-        attachDoubleClick(newGroup as unknown as Node);
-        layer.add(newGroup);
-
-        processNodes.forEach((node) => {
-            const transform = node.getAbsoluteTransform();
-            node.moveTo(newGroup);
-            const invertedGroupTransform = newGroup.getAbsoluteTransform().copy().invert();
-            const finalTransform = invertedGroupTransform.multiply(transform);
-
-            node.setAttrs({
-                ...finalTransform.decompose(),
-                draggable: false,
-            });
-        });
-
-        layer.draw();
-        setMultiSelectMode(false);
-        setSelectedNodes([newGroup]);
-        updateLayers();
-    });
-}, [selectedNodes, canvasRef, attachDoubleClick, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
-
-
+  
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
@@ -1150,6 +1176,8 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
 
     
 
