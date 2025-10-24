@@ -41,20 +41,20 @@ const PropertiesToolbar = () => {
       <div className="flex items-center justify-center gap-2">
         <ZoomControls />
         {backgroundImage && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" title="Edit Background Image">
-                  <Menu size={16} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <BackgroundImagePanel
-                  onZoom={handleBackgroundImageZoom}
-                  onPan={handleBackgroundImagePan}
-                  onReset={handleBackgroundImageReset}
-                />
-              </PopoverContent>
-            </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" title="Edit Background Image">
+                <Menu size={16} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <BackgroundImagePanel
+                onZoom={handleBackgroundImageZoom}
+                onPan={handleBackgroundImagePan}
+                onReset={handleBackgroundImageReset}
+              />
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
