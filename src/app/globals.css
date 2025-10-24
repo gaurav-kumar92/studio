@@ -173,7 +173,7 @@ body {
 
 .relative-canvas {
     position: relative;
-    width: 100%;
+    width: 95%;
     background-color: #e5e7eb;
     overflow: hidden; /* Hide overflow to prevent scrollbars */
     flex: 1;
@@ -627,4 +627,3 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
-
