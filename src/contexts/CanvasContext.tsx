@@ -428,27 +428,23 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
     if (selectedNodes.length !== 1 || !(group.hasName('group') || group.hasName('clipart')) || group.getAttr('isLocked') || !canvasRef.current?.layer) return;
+    
     runAsSingleHistoryStep(() => {
         const layer = canvasRef.current!.layer;
-        const children = group.getChildren().slice();
+        const children = group.getChildren().slice(); // Make a copy
         const nodesToSelect: Node[] = [];
         
         children.forEach((child: Node) => {
-            const absPos = child.getAbsolutePosition();
-            const absScale = child.getAbsoluteScale();
-            const absRotation = child.getAbsoluteRotation();
-
+            const transform = child.getAbsoluteTransform().getMatrix();
             child.moveTo(layer);
-            
+            child.draggable(true);
             child.setAttrs({
-                x: absPos.x,
-                y: absPos.y,
-                scaleX: absScale.x,
-                scaleY: absScale.y,
-                rotation: absRotation,
-                draggable: true
+                x: transform[4],
+                y: transform[5],
+                scaleX: Math.sqrt(transform[0] * transform[0] + transform[1] * transform[1]),
+                scaleY: Math.sqrt(transform[2] * transform[2] + transform[3] * transform[3]),
+                rotation: Math.atan2(transform[1], transform[0]) * (180 / Math.PI),
             });
-            
             nodesToSelect.push(child);
         });
 
@@ -495,16 +491,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     runAsSingleHistoryStep(() => {
         const layer = canvasRef.current!.layer;
         
-        // Find bounding box of all nodes
-        let clientRects = processNodes.map(node => node.getClientRect());
-        const box = clientRects.reduce((acc, rect) => {
-            return {
-                x: Math.min(acc.x, rect.x),
-                y: Math.min(acc.y, rect.y),
-                width: Math.max(acc.x + acc.width, rect.x + rect.width) - Math.min(acc.x, rect.x),
-                height: Math.max(acc.y + acc.height, rect.y + rect.height) - Math.min(acc.y, rect.y),
-            };
-        });
+        const box = window.Konva.Util.getClientRect(processNodes);
 
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const newGroup = new window.Konva.Group({
@@ -521,13 +508,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         layer.add(newGroup);
 
         processNodes.forEach((node) => {
-            const nodeAbsPos = node.absolutePosition();
             node.draggable(false);
             node.moveTo(newGroup);
-            node.absolutePosition({
-                x: nodeAbsPos.x,
-                y: nodeAbsPos.y
-            });
+            node.x(node.x() - box.x);
+            node.y(node.y() - box.y);
         });
 
         layer.draw();
@@ -1059,9 +1043,34 @@ const handleBackgroundImageReset = useCallback(() => {
 
   useEffect(() => {
     if (isCanvasReady && canvasRef.current?.stage) {
-      setIsLoading(false);
       const stage = canvasRef.current.stage;
+      stage.on('dragmove', (e: any) => {
+        const target = e.target;
+        if (target.name() === 'background' || target.name() === 'selection-rect' || target.getClassName() === 'Transformer') {
+          return;
+        }
 
+        const box = target.getClientRect();
+        const stageBox = {
+            width: stage.width(),
+            height: stage.height()
+        };
+
+        const newPos = {
+            x: target.x(),
+            y: target.y()
+        };
+
+        if (box.x < 0) newPos.x = target.x() - box.x;
+        if (box.y < 0) newPos.y = target.y() - box.y;
+        if (box.x + box.width > stageBox.width) newPos.x = target.x() + (stageBox.width - (box.x + box.width));
+        if (box.y + box.height > stageBox.height) newPos.y = target.y() + (stageBox.height - (box.y + box.height));
+
+        target.position(newPos);
+      });
+      
+      setIsLoading(false);
+      
       fitToScreen();
       window.addEventListener('resize', fitToScreen);
 
@@ -1148,3 +1157,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    

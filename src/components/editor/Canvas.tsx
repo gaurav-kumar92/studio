@@ -48,7 +48,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       container: 'canvas-container',
       width: width,
       height: height,
-      draggable: false,
+      draggable: false, // Ensure stage itself isn't draggable
     });
     stageRef.current = stage;
 
@@ -156,3 +156,5 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
+
+    
