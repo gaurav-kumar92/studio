@@ -134,9 +134,7 @@ body {
 .relative-canvas {
     position: relative;
     width: 100%;
-    max-height: calc(100vh - 150px); 
     background-color: #e5e7eb;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: auto;
     flex-grow: 1;
     min-height: 300px;
@@ -145,13 +143,11 @@ body {
     align-items: center;
 }
 
-/* This ensures the canvas itself gets the rounded corners */
 #canvas-container canvas {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 #canvas-container {
-    /* The transform-origin should be center for the translate/scale to work correctly */
     transform-origin: center center;
 }
 
