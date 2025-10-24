@@ -211,7 +211,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       let targetNodes;
 
       if (node.hasName('clipart')) {
-          targetNodes = node.find('.clipart-face, .clipart-shape');
+          targetNodes = node.find('.clipart-face');
       } else if (node.hasName('textGroup') || node.hasName('circularText')) {
           targetNodes = node.find('.mainChar, .text, Text');
       } else {
@@ -526,21 +526,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
   const canZoomOut = currentScale > initialScale;
 
-  useEffect(() => {
-    const stage = canvasRef.current?.stage;
-    if (!stage) return;
-  
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const direction = e.deltaY > 0 ? 'out' : 'in';
-      handleZoom(direction);
-    };
-  
-    const container = stage.container();
-    container.addEventListener('wheel', handleWheel);
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [handleZoom]);
-
   const handleColorUpdate = useCallback((config: any) => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
@@ -763,7 +748,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (isCanvasReady) {
       setIsLoading(false);
     }
-  }, [isCanvasReady])
+  }, [isCanvasReady]);
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
