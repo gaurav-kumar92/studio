@@ -937,26 +937,6 @@ const handleBackgroundImageReset = useCallback(() => {
     const stage = canvasRef.current?.stage;
     if (!container || !stage || !isCanvasReady) return;
   
-    stage.on('dragmove', (e: any) => {
-      const node = e.target;
-      const stageWidth = stage.width();
-      const stageHeight = stage.height();
-    
-      const box = node.getClientRect({ relativeTo: stage });
-      const padding = 0; 
-    
-      let newX = node.x();
-      let newY = node.y();
-    
-      if (box.x < 0) newX -= box.x - padding;
-      if (box.y < 0) newY -= box.y - padding;
-      if (box.x + box.width > stageWidth) newX -= (box.x + box.width) - stageWidth + padding;
-      if (box.y + box.height > stageHeight) newY -= (box.y + box.height) - stageHeight + padding;
-    
-      node.position({ x: newX, y: newY });
-    });
-
-
     const getStagePointerFromTouch = (touch: Touch | undefined) => {
       if (!touch) return null;
       const rect = container.getBoundingClientRect();
@@ -1034,7 +1014,6 @@ const handleBackgroundImageReset = useCallback(() => {
     container.addEventListener('touchcancel', onTouchEnd);
   
     return () => {
-      stage.off('dragmove');
       container.removeEventListener('touchstart', onTouchStart);
       container.removeEventListener('touchmove', onTouchMove);
       container.removeEventListener('touchend', onTouchEnd);
