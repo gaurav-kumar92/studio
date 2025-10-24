@@ -79,6 +79,7 @@ function Editor() {
       ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
+          <h1 className="text-2xl font-bold text-center my-2">CHITRA</h1>
           <Toolbar />
           <Canvas
             ref={canvasRef}
