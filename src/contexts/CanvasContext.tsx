@@ -435,15 +435,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         const nodesToSelect: Node[] = [];
         
         children.forEach((child: Node) => {
-            const transform = child.getAbsoluteTransform().getMatrix();
+            const transform = child.getAbsoluteTransform();
             child.moveTo(layer);
-            child.draggable(true);
             child.setAttrs({
-                x: transform[4],
-                y: transform[5],
-                scaleX: Math.sqrt(transform[0] * transform[0] + transform[1] * transform[1]),
-                scaleY: Math.sqrt(transform[2] * transform[2] + transform[3] * transform[3]),
-                rotation: Math.atan2(transform[1], transform[0]) * (180 / Math.PI),
+                ...transform.decompose(),
+                draggable: true
             });
             nodesToSelect.push(child);
         });
@@ -491,7 +487,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     runAsSingleHistoryStep(() => {
         const layer = canvasRef.current!.layer;
         
-        const box = window.Konva.Util.getClientRect(processNodes);
+        const box = processNodes.reduce((acc, node) => {
+          const nodeBox = node.getClientRect();
+          if (!acc) return nodeBox;
+          return {
+            x: Math.min(acc.x, nodeBox.x),
+            y: Math.min(acc.y, nodeBox.y),
+            width: Math.max(acc.x + acc.width, nodeBox.x + nodeBox.width) - Math.min(acc.x, nodeBox.x),
+            height: Math.max(acc.y + acc.height, nodeBox.y + nodeBox.height) - Math.min(acc.y, nodeBox.y),
+          };
+        }, null);
+
+        if (!box) return;
 
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const newGroup = new window.Konva.Group({
@@ -508,10 +515,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         layer.add(newGroup);
 
         processNodes.forEach((node) => {
-            node.draggable(false);
+            const transform = node.getAbsoluteTransform();
             node.moveTo(newGroup);
-            node.x(node.x() - box.x);
-            node.y(node.y() - box.y);
+            const invertedGroupTransform = newGroup.getAbsoluteTransform().copy().invert();
+            const finalTransform = invertedGroupTransform.multiply(transform);
+
+            node.setAttrs({
+                ...finalTransform.decompose(),
+                draggable: false,
+            });
         });
 
         layer.draw();
@@ -1044,30 +1056,6 @@ const handleBackgroundImageReset = useCallback(() => {
   useEffect(() => {
     if (isCanvasReady && canvasRef.current?.stage) {
       const stage = canvasRef.current.stage;
-      stage.on('dragmove', (e: any) => {
-        const target = e.target;
-        if (target.name() === 'background' || target.name() === 'selection-rect' || target.getClassName() === 'Transformer') {
-          return;
-        }
-
-        const box = target.getClientRect();
-        const stageBox = {
-            width: stage.width(),
-            height: stage.height()
-        };
-
-        const newPos = {
-            x: target.x(),
-            y: target.y()
-        };
-
-        if (box.x < 0) newPos.x = target.x() - box.x;
-        if (box.y < 0) newPos.y = target.y() - box.y;
-        if (box.x + box.width > stageBox.width) newPos.x = target.x() + (stageBox.width - (box.x + box.width));
-        if (box.y + box.height > stageBox.height) newPos.y = target.y() + (stageBox.height - (box.y + box.height));
-
-        target.position(newPos);
-      });
       
       setIsLoading(false);
       
