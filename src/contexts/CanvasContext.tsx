@@ -427,31 +427,47 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
-    if (selectedNodes.length !== 1 || !(group.hasName('group') || group.hasName('clipart')) || group.getAttr('isLocked') || !canvasRef.current?.layer) return;
-    
+    if (
+      selectedNodes.length !== 1 ||
+      !(group.hasName('group') || group.hasName('clipart')) ||
+      group.getAttr('isLocked') ||
+      !canvasRef.current?.layer
+    )
+      return;
+  
     runAsSingleHistoryStep(() => {
-        const layer = canvasRef.current!.layer;
-        const children = group.getChildren().slice(); // Make a copy
-        const nodesToSelect: Node[] = [];
-        
-        children.forEach((child: Node) => {
-            const transform = child.getAbsoluteTransform();
-            child.moveTo(layer);
-            child.setAttrs({
-                ...transform.decompose(),
-                draggable: true
-            });
-            nodesToSelect.push(child);
-        });
-
-        group.destroy();
-        layer.batchDraw();
-        
-        setMultiSelectMode(true);
-        setSelectedNodes(nodesToSelect);
-        updateLayers();
+      const layer = canvasRef.current!.layer;
+      const children = group.getChildren().slice();
+      const nodesToSelect: Node[] = [];
+  
+      children.forEach((child: Node) => {
+        // Save absolute transform
+        const absTransform = child.getAbsoluteTransform();
+  
+        // Move child to layer (removes from group)
+        child.moveTo(layer);
+  
+        // Apply absolute transform correctly
+        const pos = absTransform.getTranslation();
+        const scale = absTransform.getScale();
+        const rotation = absTransform.getRotation();
+  
+        child.position(pos);
+        child.scale(scale);
+        child.rotation(rotation);
+  
+        child.draggable(true);
+        nodesToSelect.push(child);
+      });
+  
+      group.destroy();
+      layer.batchDraw();
+  
+      setMultiSelectMode(true);
+      setSelectedNodes(nodesToSelect);
+      updateLayers();
     });
-}, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
+  }, [selectedNodes, canvasRef, setMultiSelectMode, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
 
   const attachDoubleClick = useCallback((node: Node) => {
     node.on('dblclick dbltap', () => {
