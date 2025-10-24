@@ -37,26 +37,26 @@ const PropertiesToolbar = () => {
   return (
     <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">
       {/* Canvas Properties Section */}
-      <div className="toolbar-section flex-wrap justify-center mr-2">
-        <CanvasSizeSelector
-          value={canvasSize}
-          onChange={setCanvasSize}
-        />
-        <div className="ml-2">
-        <BackgroundColorPicker
-          value={backgroundColor}
-          onChange={setBackgroundColor}
-        />
+      <div className="toolbar-section flex-col md:flex-row flex-wrap justify-center mr-2 gap-2">
+         <div className="flex items-center gap-2">
+          <CanvasSizeSelector
+            value={canvasSize}
+            onChange={setCanvasSize}
+          />
+          <BackgroundColorPicker
+            value={backgroundColor}
+            onChange={setBackgroundColor}
+          />
         </div>
+        <ZoomControls />
       </div>
 
-      <Separator orientation="vertical" />
-      <ZoomControls />
+      <Separator orientation="vertical" className="hidden md:block" />
 
       {/* Conditional Separator and Object Properties */}
       {selectedNode && (
         <>
-          <Separator orientation="vertical" />
+          <Separator orientation="vertical" className="hidden md:block" />
           <div className="toolbar-section flex-wrap justify-center">
             <ObjectPropertiesPanel
               selectedNodes={selectedNodes}

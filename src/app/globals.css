@@ -613,16 +613,25 @@ body {
 /* --- Toolbar Styles --- */
 .toolbar {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     background-color: #ffffff;
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem;
     border-radius: 0.75rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 1rem;
     align-self: center;
     height: auto;
-    flex-wrap: wrap;
+}
+
+@media (min-width: 1024px) {
+    .toolbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+    }
 }
 
 .toolbar-section {
