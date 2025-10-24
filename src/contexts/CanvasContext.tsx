@@ -271,7 +271,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const containerHeight = container.clientHeight - padding;
       const minScale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
       
-      newScale = Math.max(oldScale / scaleby, minScale);
+      newScale = Math.max(oldScale / scaleBy, minScale);
     }
 
     const pointer = pointerPos || {
@@ -1021,13 +1021,12 @@ const handleBackgroundImageReset = useCallback(() => {
   
 
   useEffect(() => {
-    if (isCanvasReady) {
-      setIsLoading(false);
-      fitToScreen();
-      window.addEventListener('resize', fitToScreen);
-
-      if (canvasRef.current?.stage) {
+    if (isCanvasReady && canvasRef.current?.stage) {
         const stage = canvasRef.current.stage;
+
+        fitToScreen();
+        window.addEventListener('resize', fitToScreen);
+
         stage.on('dragmove', (e: any) => {
             const node = e.target;
             const stageWidth = stage.width();
@@ -1044,17 +1043,14 @@ const handleBackgroundImageReset = useCallback(() => {
             
             node.position({ x: newX, y: newY });
         });
-      }
 
-
-      return () => {
-        window.removeEventListener('resize', fitToScreen);
-        if (canvasRef.current?.stage) {
-            canvasRef.current.stage.off('dragmove');
-        }
-      }
+        return () => {
+            window.removeEventListener('resize', fitToScreen);
+            stage.off('dragmove');
+        };
     }
-  }, [isCanvasReady, fitToScreen]);
+}, [isCanvasReady, fitToScreen, canvasRef]);
+
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
