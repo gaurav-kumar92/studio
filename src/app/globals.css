@@ -147,10 +147,11 @@ body {
 #editor-ui {
     display: flex;
     flex-direction: column; /* Default to column for mobile */
-    gap: 1.5rem;
+    gap: 1rem;
     width: 100%;
     max-width: 100%;
     height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
 }
 
 @media (min-width: 1024px) { /* Apply row layout on larger screens */
@@ -626,3 +627,4 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+

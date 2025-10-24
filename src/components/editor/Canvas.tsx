@@ -64,7 +64,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     backgroundRef.current = background;
 
     setCanvasReady(true);
-  }, [canvasSize, setCanvasReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!stageRef.current || !isCircular) {
