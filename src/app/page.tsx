@@ -19,6 +19,7 @@ import ClipartDialog from '@/components/editor/ClipartDialog';
 import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
 import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
 import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
+import BackgroundImagePicker from '@/components/editor/BackgroundImagePicker';
 
 declare global {
   interface Window {
@@ -65,6 +66,7 @@ function Editor() {
     setCanvasSize,
     backgroundColor,
     setBackgroundColor,
+    backgroundImage,
   } = useCanvas();
 
   useEffect(() => {
@@ -109,12 +111,14 @@ function Editor() {
               value={backgroundColor}
               onChange={setBackgroundColor}
             />
+            <BackgroundImagePicker />
           </div>
           <Toolbar />
           <Canvas
             ref={canvasRef}
             canvasSize={sizeString!}
             isCircular={isCircular!}
+            backgroundImage={backgroundImage}
           />
           {editingTextNode && (
             <OnCanvasTextEditor

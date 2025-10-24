@@ -14,9 +14,10 @@ declare global {
 type CanvasProps = {
   canvasSize: string;
   isCircular: boolean;
+  backgroundImage: any;
 };
 
-const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) => {
+const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroundImage }, ref) => {
   const { 
     setCanvasReady, 
     fitToScreen, 
@@ -97,6 +98,27 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       fitToScreen();
     }
   }, [canvasSize, fitToScreen]);
+  
+  useEffect(() => {
+      if (backgroundRef.current) {
+          if (backgroundImage) {
+              const img = new Image();
+              img.src = backgroundImage;
+              img.onload = () => {
+                  backgroundRef.current.fillPatternImage(img);
+                  backgroundRef.current.fillPatternRepeat('no-repeat');
+                  backgroundRef.current.fillPatternScale({ 
+                      x: backgroundRef.current.width() / img.width, 
+                      y: backgroundRef.current.height() / img.height 
+                  });
+                  backgroundRef.current.fill(null);
+                  backgroundRef.current.fillLinearGradientColorStops(null);
+                  backgroundRef.current.fillRadialGradientColorStops(null);
+                  layerRef.current?.draw();
+              };
+          }
+      }
+  }, [backgroundImage]);
 
   return (
     <div className="relative-canvas" id="canvas-wrapper">

@@ -66,6 +66,8 @@ type CanvasContextType = {
   setCanvasSize: (size: string) => void;
   backgroundColor: any;
   setBackgroundColor: (color: any) => void;
+  backgroundImage: string | null;
+  setBackgroundImage: React.Dispatch<React.SetStateAction<string | null>>;
   
   canvasScale: number;
   canvasPosition: { x: number; y: number };
@@ -104,6 +106,7 @@ type CanvasContextType = {
   handleAnimationChange: (animation: any) => void;
   playAllAnimations: () => void;
   handleClipartPartColorChange: (partName: string, color: string) => void;
+  handleSetBackgroundImage: () => void;
 
   undo: () => void;
   redo: () => void;
@@ -159,6 +162,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       { id: 1, stop: 1, color: '#a855f7' },
     ],
   });
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const {
     undo: undoBase,
@@ -175,8 +179,31 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   };
   const setBackgroundColor = (color: any) => {
     setBackgroundColorState(color);
+    if (color.solidColor !== 'transparent' || color.isGradient) {
+        setBackgroundImage(null); // Clear image if a color is set
+    }
     forceRecord();
   };
+
+  const handleSetBackgroundImage = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setBackgroundImage(event.target?.result as string);
+          setBackgroundColorState(prev => ({ ...prev, solidColor: 'transparent', isGradient: false }));
+          forceRecord();
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  }, [forceRecord]);
+
 
   const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(
     selectedNodes,
@@ -753,8 +780,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       backgroundRect.fill(null);
       backgroundRect.fillLinearGradientColorStops(null);
       backgroundRect.fillRadialGradientColorStops(null);
+      backgroundRect.fillPatternImage(null);
 
-      if (backgroundColor.isGradient) {
+      if (backgroundImage) {
+          // background image is handled by Canvas.tsx
+      } else if (backgroundColor.isGradient) {
         const { width, height } = backgroundRect.getClientRect();
         const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
         if (backgroundColor.gradientDirection === 'radial') {
@@ -784,7 +814,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
       if (layer) layer.draw();
     }
-  }, [backgroundColor, isCanvasReady]);
+  }, [backgroundColor, isCanvasReady, backgroundImage]);
 
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
@@ -857,13 +887,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
-    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
+    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
-    handleClipartPartColorChange,
+    handleClipartPartColorChange, handleSetBackgroundImage,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
