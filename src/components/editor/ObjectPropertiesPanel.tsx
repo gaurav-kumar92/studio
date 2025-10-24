@@ -87,7 +87,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
 
   return (
-    <div id="object-properties" className="inline-flex items-center justify-center gap-2 flex-nowrap p-2">
+    <div id="object-properties" className={`inline-flex items-center justify-center gap-2 flex-nowrap p-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
        <Button
           variant={isMultiSelectMode ? "destructive" : "ghost"}
           size="icon"

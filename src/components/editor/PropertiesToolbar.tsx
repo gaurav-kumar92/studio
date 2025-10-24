@@ -11,7 +11,6 @@ import { Button } from '../ui/button';
 import { Menu, RotateCw, Scaling } from 'lucide-react';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
-import { Separator } from '../ui/separator';
 
 const PropertiesToolbar = () => {
   const {
@@ -36,6 +35,7 @@ const PropertiesToolbar = () => {
     handleBackgroundImageZoom,
     handleBackgroundImagePan,
     handleBackgroundImageReset,
+    canvasRef,
   } = useCanvas();
 
   const [scale, setScale] = useState(1);
@@ -45,18 +45,30 @@ const PropertiesToolbar = () => {
   const selectedNode = hasSelection ? selectedNodes[0] : null;
 
   useEffect(() => {
-    if (selectedNode) {
-      setScale(selectedNode.scaleX() ?? 1);
+    if (selectedNode && canvasRef.current?.stage) {
+      const canvasWidth = canvasRef.current.stage.width();
+      const nodeWidth = selectedNode.getClientRect({ skipTransform: false }).width;
+      
+      const currentScale = selectedNode.scaleX();
+      
+      if (nodeWidth > 0 && canvasWidth > 0) {
+        const baseScaleForFullWidth = canvasWidth / nodeWidth;
+        const displayPercent = currentScale / baseScaleForFullWidth;
+        setScale(displayPercent);
+      } else {
+        setScale(1);
+      }
+      
       setRotation(selectedNode.rotation() ?? 0);
     } else {
       setScale(1);
       setRotation(0);
     }
-  }, [selectedNode]);
+  }, [selectedNode, canvasRef]);
 
-  const handleScaleSliderChange = (newScale: number) => {
-    setScale(newScale);
-    handleScaleChange(newScale);
+  const handleScaleSliderChange = (newScalePercent: number) => {
+    setScale(newScalePercent);
+    handleScaleChange(newScalePercent);
   };
   
   const handleRotationSliderChange = (newRotation: number) => {
@@ -91,12 +103,12 @@ const PropertiesToolbar = () => {
             </PopoverTrigger>
             <PopoverContent className="w-48">
                 <div className="flex flex-col gap-2">
-                    <Label htmlFor="scale-slider" className="text-xs">Scale</Label>
+                    <Label htmlFor="scale-slider" className="text-xs">Scale ({Math.round(scale * 100)}%)</Label>
                     <Slider
                         id="scale-slider"
-                        min={0.1}
-                        max={5}
-                        step={0.05}
+                        min={0.01}
+                        max={2}
+                        step={0.01}
                         value={[scale]}
                         onValueChange={(val) => handleScaleSliderChange(val[0])}
                         disabled={!hasSelection}
@@ -111,7 +123,7 @@ const PropertiesToolbar = () => {
             </PopoverTrigger>
             <PopoverContent className="w-48">
                 <div className="flex flex-col gap-2">
-                    <Label htmlFor="rotation-slider" className="text-xs">Rotation</Label>
+                    <Label htmlFor="rotation-slider" className="text-xs">Rotation ({Math.round(rotation)}°)</Label>
                     <Slider
                         id="rotation-slider"
                         min={0}
@@ -128,30 +140,28 @@ const PropertiesToolbar = () => {
       </div>
       
       <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow whitespace-nowrap">
-        <div className={`inline-flex items-center h-full ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
-           <ObjectPropertiesPanel
-            selectedNodes={selectedNodes}
-            onAlign={handleAlign}
-            onOpacityChange={handleOpacityChange}
-            onFlip={handleFlip}
-            onColorChange={handleColorUpdate}
-            onMaskImageZoom={handleMaskImageZoom}
-            onMaskImageReset={handleMaskImageReset}
-            onMaskImagePan={handleMaskImagePan}
-            isMultiSelectMode={isMultiSelectMode}
-            onAnimationChange={handleAnimationChange}
-            onClipartPartColorChange={handleClipartPartColorChange}
-            onMultiSelectToggle={() => {
-              const newMode = !isMultiSelectMode;
-              setMultiSelectMode(newMode);
-              if (!newMode && selectedNodes.length > 1) {
-                setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-              }
-            }}
-            onGroup={handleGroup}
-            onUngroup={handleUngroup}
-          />
-        </div>
+         <ObjectPropertiesPanel
+          selectedNodes={selectedNodes}
+          onAlign={handleAlign}
+          onOpacityChange={handleOpacityChange}
+          onFlip={handleFlip}
+          onColorChange={handleColorUpdate}
+          onMaskImageZoom={handleMaskImageZoom}
+          onMaskImageReset={handleMaskImageReset}
+          onMaskImagePan={handleMaskImagePan}
+          isMultiSelectMode={isMultiSelectMode}
+          onAnimationChange={handleAnimationChange}
+          onClipartPartColorChange={handleClipartPartColorChange}
+          onMultiSelectToggle={() => {
+            const newMode = !isMultiSelectMode;
+            setMultiSelectMode(newMode);
+            if (!newMode && selectedNodes.length > 1) {
+              setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+            }
+          }}
+          onGroup={handleGroup}
+          onUngroup={handleUngroup}
+        />
       </div>
     </div>
   );

@@ -603,13 +603,26 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
-  const handleScaleChange = useCallback((scale: number) => {
+  const handleScaleChange = useCallback((scalePercent: number) => {
     const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    nodes.forEach((node) => node.scale({ x: scale, y: scale }));
+    if (nodes.length === 0 || !canvasRef.current?.stage) return;
+
+    const canvasWidth = canvasRef.current.stage.width();
+
+    nodes.forEach(node => {
+      // Get the unscaled width of the node
+      const clientRect = node.getClientRect({ skipTransform: true });
+      const unscaledWidth = clientRect.width;
+
+      if (unscaledWidth > 0) {
+        const targetScale = (canvasWidth / unscaledWidth) * scalePercent;
+        node.scale({ x: targetScale, y: targetScale });
+      }
+    });
+
     canvasRef.current?.layer?.draw?.();
     forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked]);
+  }, [selectedNodes, forceRecord, getUnlocked, canvasRef]);
 
   const handleRotationChange = useCallback((rotation: number) => {
     const nodes = getUnlocked(selectedNodes);
@@ -729,8 +742,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     switch (direction) {
       case 'up': newPos.y -= panAmount; break;
       case 'down': newPos.y += panAmount; break;
-      case 'left': newPos.x -= panAmount; break;
-      case 'right': newPos.x += panAmount; break;
+      case 'left': newPos.x += panAmount; break;
+      case 'right': newPos.x -= panAmount; break;
     }
     const boundFunc = image.getAttr('dragBoundFunc');
     if (boundFunc) newPos = boundFunc.call(image, newPos);
