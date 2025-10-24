@@ -21,6 +21,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     setCanvasReady, 
     fitToScreen, 
     canvasPosition, 
+    setCanvasPosition,
     canvasScale 
   } = useCanvas();
 
@@ -35,7 +36,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   }));
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.Konva === 'undefined' || stageRef.current) {
+    if (typeof window === 'undefined' || !window.Konva || stageRef.current) {
       return;
     }
 
@@ -92,12 +93,22 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   }, [canvasSize, fitToScreen]);
 
   useEffect(() => {
-    if (stageRef.current) {
-      stageRef.current.scale({ x: canvasScale, y: canvasScale });
-      stageRef.current.position(canvasPosition);
-      stageRef.current.batchDraw();
+    const stage = stageRef.current;
+    if (stage) {
+      const container = document.getElementById('canvas-wrapper');
+      if (!container) return;
+
+      const newPos = {
+        x: (container.clientWidth - stage.width() * canvasScale) / 2,
+        y: (container.clientHeight - stage.height() * canvasScale) / 2,
+      };
+
+      stage.scale({ x: canvasScale, y: canvasScale });
+      stage.position(newPos);
+      stage.batchDraw();
     }
-  }, [canvasScale, canvasPosition]);
+  }, [canvasScale]);
+
 
   return (
     <div className="relative-canvas" id="canvas-wrapper">

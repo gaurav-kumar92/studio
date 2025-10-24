@@ -72,6 +72,7 @@ type CanvasContextType = {
   zoomIn: () => void;
   zoomOut: () => void;
   fitToScreen: () => void;
+  handleZoomChange: (value: string) => void;
 
 
   clipboard: any[];
@@ -198,36 +199,26 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const containerHeight = container.clientHeight - padding;
 
     const scale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
-
     setCanvasScale(scale);
-    setCanvasPosition({
-        x: (container.clientWidth - stage.width() * scale) / 2,
-        y: (container.clientHeight - stage.height() * scale) / 2,
-    });
   }, []);
 
   const zoom = useCallback((direction: 'in' | 'out') => {
-    if (!canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
     const scaleBy = 1.1;
     const oldScale = canvasScale;
-    
     const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    
-    const container = document.getElementById('canvas-wrapper');
-    if (!container) return;
-
-    const newPos = {
-      x: (container.clientWidth - stage.width() * newScale) / 2,
-      y: (container.clientHeight - stage.height() * newScale) / 2
-    };
-
     setCanvasScale(newScale);
-    setCanvasPosition(newPos);
   }, [canvasScale]);
 
   const zoomIn = useCallback(() => zoom('in'), [zoom]);
   const zoomOut = useCallback(() => zoom('out'), [zoom]);
+  
+  const handleZoomChange = useCallback((value: string) => {
+    if (value === 'auto') {
+        fitToScreen();
+    } else {
+        setCanvasScale(parseFloat(value));
+    }
+  }, [fitToScreen]);
 
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
@@ -843,7 +834,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
-    canvasScale, canvasPosition, zoomIn, zoomOut, fitToScreen,
+    canvasScale, canvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
