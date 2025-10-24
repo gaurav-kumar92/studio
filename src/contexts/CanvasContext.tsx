@@ -447,16 +447,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         // Move child to layer (removes from group)
         child.moveTo(layer);
   
-        // Apply absolute transform correctly
-        const pos = absTransform.getTranslation();
-        const scale = absTransform.getScale();
-        const rotation = absTransform.getRotation();
+        // Decompose the transform and apply properties
+        const { x, y, rotation, scaleX, scaleY } = absTransform.decompose();
   
-        child.position(pos);
-        child.scale(scale);
-        child.rotation(rotation);
+        child.setAttrs({
+          x: x,
+          y: y,
+          scaleX: scaleX,
+          scaleY: scaleY,
+          rotation: rotation,
+          draggable: true
+        });
   
-        child.draggable(true);
         nodesToSelect.push(child);
       });
   
@@ -844,10 +846,10 @@ const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' 
     let newX = backgroundImageProps.x;
     let newY = backgroundImageProps.y;
     switch (direction) {
-        case 'up': newY += panAmount; break;
-        case 'down': newY -= panAmount; break;
-        case 'left': newX += panAmount; break;
-        case 'right': newX -= panAmount; break;
+        case 'up': newY -= panAmount; break;
+        case 'down': newY += panAmount; break;
+        case 'left': newX -= panAmount; break;
+        case 'right': newX += panAmount; break;
     }
     setBackgroundImageProps(prev => ({...prev, x: newX, y: newY}));
     forceRecord?.();
@@ -1161,5 +1163,7 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
 
     
