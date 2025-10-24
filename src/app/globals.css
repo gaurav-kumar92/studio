@@ -160,7 +160,7 @@ body {
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     /* Adjusted max height for mobile to keep canvas visible */
-    max-height: 35vh; 
+    max-height: none; 
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -591,5 +591,3 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
-
-    

@@ -82,26 +82,23 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     const fitStageIntoParent = () => {
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
   
-      // Reset any external scaling on the container
-      canvasContainer.style.transform = '';
-      
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
   
       // Scale to fit the parent container
-      const scale = Math.min((containerWidth / targetWidth) * 0.95, (containerHeight / targetHeight) * 0.95);
+      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
   
-      // Apply scaling and centering via Konva itself
+      // Apply scaling and centering
       stage.width(targetWidth);
       stage.height(targetHeight);
-      stage.scale({ x: scale, y: scale });
-
-      const stageCenter = { x: targetWidth / 2, y: targetHeight / 2 };
-      
-      stage.position({
-        x: (containerWidth - targetWidth * scale) / 2,
-        y: (containerHeight - targetHeight * scale) / 2
-      });
+  
+      canvasContainer.style.width = `${targetWidth}px`;
+      canvasContainer.style.height = `${targetHeight}px`;
+      canvasContainer.style.position = 'absolute';
+      canvasContainer.style.top = '50%';
+      canvasContainer.style.left = '50%';
+      canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      canvasContainer.style.transformOrigin = 'center center';
   
       // Resize background
       background.width(targetWidth);
@@ -174,5 +171,3 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
-
-    
