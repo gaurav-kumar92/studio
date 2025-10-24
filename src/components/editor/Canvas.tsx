@@ -20,7 +20,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   const { 
     setCanvasReady, 
     fitToScreen, 
-    canvasScale 
+    canvasScale,
+    canvasPosition, 
   } = useCanvas();
 
   const stageRef = useRef<any>(null);
@@ -101,7 +102,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     <div className="relative-canvas" id="canvas-wrapper">
       <div id="canvas-container" style={{
          transform: `scale(${canvasScale})`,
-         boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+         top: `${canvasPosition.y}px`,
+         left: `${canvasPosition.x}px`,
       }}></div>
     </div>
   );

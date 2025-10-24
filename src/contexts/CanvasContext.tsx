@@ -198,16 +198,31 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const padding = 30;
     const containerWidth = container.clientWidth - padding;
     const containerHeight = container.clientHeight - padding;
-
+    
     const scale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
+    
     setCanvasScale(scale);
+    
+    const newX = (container.clientWidth - stage.width() * scale) / 2;
+    const newY = (container.clientHeight - stage.height() * scale) / 2;
+    setCanvasPosition({ x: newX, y: newY });
+
   }, []);
 
   const zoom = useCallback((direction: 'in' | 'out') => {
     const scaleBy = 1.1;
     const oldScale = canvasScale;
     const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+    
+    const container = document.getElementById('canvas-wrapper');
+    if (!container || !canvasRef.current?.stage) return;
+    
+    const stage = canvasRef.current.stage;
+    const newX = (container.clientWidth - stage.width() * newScale) / 2;
+    const newY = (container.clientHeight - stage.height() * newScale) / 2;
+
     setCanvasScale(newScale);
+    setCanvasPosition({ x: newX, y: newY });
   }, [canvasScale]);
 
   const zoomIn = useCallback(() => zoom('in'), [zoom]);
@@ -217,7 +232,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (value === 'auto') {
         fitToScreen();
     } else {
-        setCanvasScale(parseFloat(value));
+        const newScale = parseFloat(value);
+        const container = document.getElementById('canvas-wrapper');
+        const stage = canvasRef.current?.stage;
+        if (container && stage) {
+          const newX = (container.clientWidth - stage.width() * newScale) / 2;
+          const newY = (container.clientHeight - stage.height() * newScale) / 2;
+          setCanvasScale(newScale);
+          setCanvasPosition({ x: newX, y: newY });
+        }
     }
   }, [fitToScreen]);
 
