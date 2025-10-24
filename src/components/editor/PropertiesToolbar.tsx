@@ -58,33 +58,36 @@ const PropertiesToolbar = () => {
         )}
       </div>
 
-      {selectedNode && (
-        <>
-          <Separator orientation="horizontal" className="w-4/5" />
-          <ObjectPropertiesPanel
-            selectedNodes={selectedNodes}
-            onAlign={handleAlign}
-            onOpacityChange={handleOpacityChange}
-            onFlip={handleFlip}
-            onColorChange={handleColorUpdate}
-            onMaskImageZoom={handleMaskImageZoom}
-            onMaskImageReset={handleMaskImageReset}
-            onMaskImagePan={handleMaskImagePan}
-            isMultiSelectMode={isMultiSelectMode}
-            onAnimationChange={handleAnimationChange}
-            onClipartPartColorChange={handleClipartPartColorChange}
-            onMultiSelectToggle={() => {
-              const newMode = !isMultiSelectMode;
-              setMultiSelectMode(newMode);
-              if (!newMode && selectedNodes.length > 1) {
-                setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-              }
-            }}
-            onGroup={handleGroup}
-            onUngroup={handleUngroup}
-          />
-        </>
-      )}
+      {/* This container will always be present, reserving space */}
+      <div className="min-h-[40px] w-full flex flex-col items-center justify-center">
+        {selectedNode && (
+          <>
+            <Separator orientation="horizontal" className="w-4/5 mb-4" />
+            <ObjectPropertiesPanel
+              selectedNodes={selectedNodes}
+              onAlign={handleAlign}
+              onOpacityChange={handleOpacityChange}
+              onFlip={handleFlip}
+              onColorChange={handleColorUpdate}
+              onMaskImageZoom={handleMaskImageZoom}
+              onMaskImageReset={handleMaskImageReset}
+              onMaskImagePan={handleMaskImagePan}
+              isMultiSelectMode={isMultiSelectMode}
+              onAnimationChange={handleAnimationChange}
+              onClipartPartColorChange={handleClipartPartColorChange}
+              onMultiSelectToggle={() => {
+                const newMode = !isMultiSelectMode;
+                setMultiSelectMode(newMode);
+                if (!newMode && selectedNodes.length > 1) {
+                  setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+                }
+              }}
+              onGroup={handleGroup}
+              onUngroup={handleUngroup}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 };
