@@ -141,16 +141,27 @@ type CanvasContextType = {
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
 function getBoundingBoxOfNodes(nodes: any[]) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    nodes.forEach((n) => {
-      const box = n.getClientRect({ skipShadow: true, skipStroke: true });
-      minX = Math.min(minX, box.x);
-      minY = Math.min(minY, box.y);
-      maxX = Math.max(maxX, box.x + box.width);
-      maxY = Math.max(maxY, box.y + box.height);
+    let box = {
+      x: Infinity,
+      y: Infinity,
+      x2: -Infinity,
+      y2: -Infinity,
+      width: 0,
+      height: 0
+    };
+  
+    nodes.forEach(node => {
+      const nodeBox = node.getClientRect();
+      box.x = Math.min(box.x, nodeBox.x);
+      box.y = Math.min(box.y, nodeBox.y);
+      box.x2 = Math.max(box.x2, nodeBox.x + nodeBox.width);
+      box.y2 = Math.max(box.y2, nodeBox.y + nodeBox.height);
     });
-    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-  }
+  
+    box.width = box.x2 - box.x;
+    box.height = box.y2 - box.y;
+    return box;
+}
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
@@ -445,50 +456,42 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     ) return;
   
     runAsSingleHistoryStep(() => {
-      const layer = canvasRef.current!.layer;
-  
-      // Create new group
-      const group = new window.Konva.Group({
-        name: 'group',
-        draggable: true,
-      });
-  
-      // Find bounding box for all selected nodes
-      const box = getBoundingBoxOfNodes(selectedNodes);
-  
-      // Add group at (0,0) so absolute transforms remain valid
-      layer.add(group);
-  
-      selectedNodes.forEach((node) => {
-        // Get absolute transform before moving
-        const absPos = node.getAbsolutePosition();
-  
-        // Move node into group
-        node.moveTo(group);
-  
-        // Convert absolute → relative coordinates
-        const relPos = {
-          x: absPos.x - box.x,
-          y: absPos.y - box.y,
-        };
-  
-        node.setAttrs({
-          x: relPos.x,
-          y: relPos.y,
+        const layer = canvasRef.current!.layer;
+        const group = new window.Konva.Group({
+          name: 'group',
+          draggable: true,
         });
+    
+        layer.add(group);
+    
+        // Get all absolute transforms before grouping
+        const absTransforms = selectedNodes.map((n) => n.getAbsoluteTransform().copy());
+        const absBoxes = selectedNodes.map((n) => n.getClientRect({ skipShadow: true, skipStroke: true }));
+    
+        // Find group bounding box in absolute space
+        const minX = Math.min(...absBoxes.map((b) => b.x));
+        const minY = Math.min(...absBoxes.map((b) => b.y));
+    
+        // Place group at bounding box position
+        group.position({ x: minX, y: minY });
+    
+        // Apply relative transform to each node
+        selectedNodes.forEach((node, i) => {
+          const absTransform = absTransforms[i];
+          const relTransform = absTransform.copy().translate(-minX, -minY);
+          node.moveTo(group);
+    
+          // Apply transformed coordinates safely
+          const pos = relTransform.getTranslation();
+          node.position(pos);
+        });
+    
+        layer.batchDraw();
+    
+        setSelectedNodes([group]);
+        setMultiSelectMode(false);
+        updateLayers();
       });
-  
-      // Move group to bounding box position
-      group.position({ x: box.x, y: box.y });
-  
-      // Redraw
-      layer.batchDraw();
-  
-      // Update selection
-      setSelectedNodes([group]);
-      setMultiSelectMode(false);
-      updateLayers();
-    });
   }, [selectedNodes, canvasRef, runAsSingleHistoryStep, setSelectedNodes, setMultiSelectMode, updateLayers]);
 
   const handleUngroup = useCallback(() => {
@@ -507,7 +510,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const nodesToSelect: Node[] = [];
   
       children.forEach((child: Node) => {
-        // Compute absolute position before moving out
+        // Compute absolute transform before moving out
         const absTransform = child.getAbsoluteTransform().decompose();
   
         // Move to layer
@@ -515,12 +518,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
         // Apply absolute coordinates directly
         child.setAttrs({
-          x: absTransform.x,
-          y: absTransform.y,
-          scaleX: absTransform.scaleX,
-          scaleY: absTransform.scaleY,
-          rotation: absTransform.rotation,
-          draggable: true,
+            x: absTransform.x,
+            y: absTransform.y,
+            scaleX: absTransform.scaleX,
+            scaleY: absTransform.scaleY,
+            rotation: absTransform.rotation,
+            draggable: true,
         });
   
         nodesToSelect.push(child);
@@ -659,33 +662,33 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [updateLayers, forceRecord, isNodeLocked]);
 
   const handleAlign = useCallback((position: string) => {
-    if (!canvasRef.current?.stage) return;
     const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
+    if (nodes.length === 0 || !canvasRef.current?.stage) return;
   
     const stage = canvasRef.current.stage;
   
-    nodes.forEach((node) => {
-      const box = node.getClientRect({ relativeTo: stage });
-      let newX = node.x();
-      let newY = node.y();
-  
-      switch (position) {
-        case 'top': newY -= box.y; break;
-        case 'left': newX -= box.x; break;
-        case 'center':
-          newX -= (box.x + box.width / 2) - stage.width() / 2;
-          newY -= (box.y + box.height / 2) - stage.height() / 2;
-          break;
-        case 'right': newX += stage.width() - (box.x + box.width); break;
-        case 'bottom': newY += stage.height() - (box.y + box.height); break;
-      }
-      node.position({ x: newX, y: newY });
+    runAsSingleHistoryStep(() => {
+      nodes.forEach((node) => {
+        const box = node.getClientRect({ relativeTo: stage });
+        let newX = node.x();
+        let newY = node.y();
+    
+        switch (position) {
+          case 'top': newY -= box.y; break;
+          case 'left': newX -= box.x; break;
+          case 'center':
+            newX -= (box.x + box.width / 2) - stage.width() / 2;
+            newY -= (box.y + box.height / 2) - stage.height() / 2;
+            break;
+          case 'right': newX += stage.width() - (box.x + box.width); break;
+          case 'bottom': newY += stage.height() - (box.y + box.height); break;
+        }
+        node.position({ x: newX, y: newY });
+      });
+    
+      canvasRef.current?.layer?.draw?.();
     });
-  
-    canvasRef.current?.layer?.draw?.();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked]);
+  }, [selectedNodes, getUnlocked, canvasRef, runAsSingleHistoryStep]);
 
   const handleOpacityChange = useCallback((opacity: number) => {
     const nodes = getUnlocked(selectedNodes);
@@ -858,8 +861,8 @@ const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' 
     let newX = backgroundImageProps.x;
     let newY = backgroundImageProps.y;
     switch (direction) {
-        case 'up': newY += panAmount; break;
-        case 'down': newY -= panAmount; break;
+        case 'up': newY -= panAmount; break;
+        case 'down': newY += panAmount; break;
         case 'left': newX += panAmount; break;
         case 'right': newX -= panAmount; break;
     }
@@ -1176,11 +1179,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
-
-    
-
-    
 
     
