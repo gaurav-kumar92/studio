@@ -151,6 +151,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [lastTouch, setLastTouch] = useState<{ x: number; y: number } | null>(null);
 
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
@@ -250,22 +252,35 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setCanvasPosition({ x: newX, y: newY });
   }, []);
 
-  const zoom = useCallback((direction: 'in' | 'out') => {
+  const zoom = useCallback((direction: 'in' | 'out', pointerPos?: { x: number; y: number }) => {
+    if (!canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+
     const scaleBy = 1.1;
     const oldScale = canvasScale;
     const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    setCanvasScale(newScale);
 
-    if (canvasRef.current?.stage) {
-      const stage = canvasRef.current.stage;
-      const container = document.getElementById('canvas-wrapper');
-      if (container) {
-          const newX = (container.clientWidth - stage.width() * newScale) / 2;
-          const newY = (container.clientHeight - stage.height() * newScale) / 2;
-          setCanvasPosition({ x: newX, y: newY });
-      }
-    }
-  }, [canvasScale, canvasRef]);
+    const container = document.getElementById('canvas-wrapper');
+    if (!container) return;
+
+    const pointer = pointerPos || {
+      x: container.clientWidth / 2,
+      y: container.clientHeight / 2,
+    };
+
+    const mousePointTo = {
+      x: (pointer.x - canvasPosition.x) / oldScale,
+      y: (pointer.y - canvasPosition.y) / oldScale,
+    };
+
+    const newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
+    };
+
+    setCanvasScale(newScale);
+    setCanvasPosition(newPos);
+  }, [canvasScale, canvasPosition]);
 
   const zoomIn = useCallback(() => zoom('in'), [zoom]);
   const zoomOut = useCallback(() => zoom('out'), [zoom]);
@@ -276,18 +291,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } else {
         const newScale = parseFloat(value);
         setCanvasScale(newScale);
-        
-        if (canvasRef.current?.stage) {
-            const stage = canvasRef.current.stage;
-            const container = document.getElementById('canvas-wrapper');
-            if (container) {
-                const newX = (container.clientWidth - stage.width() * newScale) / 2;
-                const newY = (container.clientHeight - stage.height() * newScale) / 2;
-                setCanvasPosition({ x: newX, y: newY });
-            }
-        }
     }
-  }, [fitToScreen, canvasRef]);
+  }, [fitToScreen]);
 
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
@@ -905,6 +910,56 @@ const handleBackgroundImageReset = useCallback(() => {
     setKonvaObjects(Array.from(children ?? []));
   }, [selectedNodes]);
   
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    if (e.touches.length > 1 || selectedNodes.length > 0) { // Don't pan if multi-touch (pinch) or selecting
+        setIsPanning(false);
+        return;
+    }
+    const touch = e.touches[0];
+    if (!touch) return;
+    setIsPanning(true);
+    setLastTouch({ x: touch.clientX, y: touch.clientY });
+    e.preventDefault();
+  }, [selectedNodes]);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isPanning || !lastTouch) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - lastTouch.x;
+    const dy = touch.clientY - lastTouch.y;
+
+    setCanvasPosition((prev) => ({
+      x: prev.x + dx,
+      y: prev.y + dy,
+    }));
+
+    setLastTouch({ x: touch.clientX, y: touch.clientY });
+    e.preventDefault();
+  }, [isPanning, lastTouch]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsPanning(false);
+    setLastTouch(null);
+  }, []);
+
+  useEffect(() => {
+    const container = document.getElementById('canvas-wrapper');
+    if (!container || !isCanvasReady) return;
+  
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+  
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isCanvasReady, handleTouchStart, handleTouchMove, handleTouchEnd]);
+
   useEffect(() => {
     if (isCanvasReady) {
       setIsLoading(false);
@@ -985,5 +1040,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    

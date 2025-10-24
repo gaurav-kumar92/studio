@@ -48,6 +48,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       container: 'canvas-container',
       width: width,
       height: height,
+      draggable: false, // We handle dragging manually for smoother touch control
     });
     stageRef.current = stage;
 
@@ -132,13 +133,20 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       }
   }, [backgroundImage, backgroundImageProps]);
 
+  useEffect(() => {
+    if (stageRef.current) {
+      stageRef.current.x(canvasPosition.x);
+      stageRef.current.y(canvasPosition.y);
+      stageRef.current.scale({ x: canvasScale, y: canvasScale });
+      stageRef.current.batchDraw();
+    }
+  }, [canvasPosition, canvasScale]);
+
+
   return (
     <div className="relative-canvas" id="canvas-wrapper">
       <div id="canvas-container" style={{
-         transform: `scale(${canvasScale})`,
-         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-         top: `${canvasPosition.y}px`,
-         left: `${canvasPosition.x}px`,
+         transformOrigin: '0 0', // Ensure this is set
       }}></div>
     </div>
   );

@@ -175,8 +175,9 @@ body {
     position: relative;
     width: 100%;
     background-color: #e5e7eb;
-    overflow: auto; /* Allow scrolling when zoomed */
+    overflow: hidden;
     flex: 1;
+    touch-action: none;
 }
 
 #canvas-container {
@@ -646,4 +647,3 @@ body {
 .properties-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #aaa;
 }
-
