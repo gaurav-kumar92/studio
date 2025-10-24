@@ -16,42 +16,23 @@ export const useAnimationHandler = ({
 }: UseAnimationHandlerProps) => {
   const activeTweens = useRef<any[]>([]);
 
-  const handleAnimationChange = useCallback((config: any) => {
-    if (selectedNodes.length === 0) return;
-
-    selectedNodes.forEach(node => {
-      node.setAttr('data-animation-type', config.type);
-      node.setAttr('data-animation-duration', config.duration);
-    });
-
-    forceRecord?.();
-  }, [selectedNodes, forceRecord]);
-  
-  const resetNodeState = (node: any) => {
-    const originalState = node.getAttr('data-original-state');
-    if (originalState) {
-        node.setAttrs(originalState);
-    } else {
-        // Fallback if no state saved
-        node.opacity(1);
-        node.scale({x: node.scaleX(), y: node.scaleY()});
-        node.rotation(0);
-    }
-  }
-
-  const playAllAnimations = useCallback(() => {
+    const playAnimationForNodes = useCallback((nodes: any[]) => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
 
-    // Stop and reset any currently running animations
-    activeTweens.current.forEach(tween => {
-      tween.destroy();
+    // Stop any tweens for the nodes that are about to be animated
+    activeTweens.current = activeTweens.current.filter(tween => {
+      const isNodeInSelection = nodes.some(n => n === tween.node);
+      if (isNodeInSelection) {
+        tween.destroy();
+        return false; // remove from active tweens
+      }
+      return true; // keep in active tweens
     });
-    activeTweens.current = [];
-    layer.find('.animating').forEach(resetNodeState);
+    nodes.forEach(resetNodeState);
 
 
-    layer.getChildren((node: any) => node.hasName && !node.hasName('Transformer')).forEach((node: any) => {
+    nodes.forEach((node: any) => {
       const animationType = node.getAttr('data-animation-type');
       if (!animationType || animationType === 'none') {
         resetNodeState(node);
@@ -127,11 +108,35 @@ export const useAnimationHandler = ({
         activeTweens.current.push(tween);
       }
     });
+    }, [canvasRef]);
 
-  }, [canvasRef]);
+
+  const handleAnimationChange = useCallback((config: any) => {
+    if (selectedNodes.length === 0) return;
+
+    selectedNodes.forEach(node => {
+      node.setAttr('data-animation-type', config.type);
+      node.setAttr('data-animation-duration', config.duration);
+    });
+
+    playAnimationForNodes(selectedNodes);
+
+    forceRecord?.();
+  }, [selectedNodes, forceRecord, playAnimationForNodes]);
+  
+  const resetNodeState = (node: any) => {
+    const originalState = node.getAttr('data-original-state');
+    if (originalState) {
+        node.setAttrs(originalState);
+    } else {
+        // Fallback if no state saved
+        node.opacity(1);
+        node.scale({x: node.scaleX(), y: node.scaleY()});
+        // Do not reset rotation to 0, use its current rotation
+    }
+  }
 
   return {
     handleAnimationChange,
-    playAllAnimations,
   };
 };

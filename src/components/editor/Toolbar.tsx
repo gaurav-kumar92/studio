@@ -12,7 +12,6 @@ import {
   Unlock,
   Copy,
   ClipboardPaste,
-  Play,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -35,7 +34,6 @@ const Toolbar = () => {
     handleCopy,
     handlePaste,
     clipboard,
-    playAllAnimations,
   } = useCanvas();
 
   const hasSelection = selectedNodes.length > 0;
@@ -60,10 +58,6 @@ const Toolbar = () => {
         <Separator orientation="vertical" />
         <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
           <Save className="h-4 w-4" />
-        </Button>
-        <Separator orientation="vertical" />
-        <Button variant="default" size="sm" aria-label="Play Animations" title="Play Animations" onClick={playAllAnimations}>
-          <Play className="h-4 w-4" />
         </Button>
       </div>
 

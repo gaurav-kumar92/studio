@@ -114,7 +114,6 @@ type CanvasContextType = {
   handleMaskImageReset: () => void;
   handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
   handleAnimationChange: (animation: any) => void;
-  playAllAnimations: () => void;
   handleClipartPartColorChange: (partName: string, color: string) => void;
   handleSetBackgroundImage: () => void;
   handleBackgroundImageZoom: (direction: 'in' | 'out') => void;
@@ -460,7 +459,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
   const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
-  const { handleAnimationChange, playAllAnimations } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
+  const { handleAnimationChange } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
   const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
   const handleDoubleClickRef = useRef(handleDoubleClick);
@@ -1021,51 +1020,37 @@ const handleBackgroundImageReset = useCallback(() => {
   
 
   useEffect(() => {
-    let checkInterval: NodeJS.Timeout;
-    if (typeof window !== 'undefined') {
-        checkInterval = setInterval(() => {
-            if ((window as any).Konva) {
-                if (canvasRef.current?.stage && canvasRef.current?.layer) {
-                    setIsLoading(false);
-                    clearInterval(checkInterval);
-                }
-            }
-        }, 100);
-    }
-
     if (isCanvasReady && canvasRef.current?.stage) {
-        const stage = canvasRef.current.stage;
+      setIsLoading(false);
+      const stage = canvasRef.current.stage;
 
-        fitToScreen();
-        window.addEventListener('resize', fitToScreen);
+      fitToScreen();
+      window.addEventListener('resize', fitToScreen);
 
-        stage.on('dragmove', (e: any) => {
-            const node = e.target;
-            const stageWidth = stage.width();
-            const stageHeight = stage.height();
+      stage.on('dragmove', (e: any) => {
+          const node = e.target;
+          const stageWidth = stage.width();
+          const stageHeight = stage.height();
 
-            const box = node.getClientRect({ relativeTo: stage });
-            let newX = node.x();
-            let newY = node.y();
+          const box = node.getClientRect({ relativeTo: stage });
+          let newX = node.x();
+          let newY = node.y();
 
-            if (box.x < 0) newX -= box.x;
-            if (box.y < 0) newY -= box.y;
-            if (box.x + box.width > stageWidth) newX -= (box.x + box.width - stageWidth);
-            if (box.y + box.height > stageHeight) newY -= (box.y + box.height - stageHeight);
-            
-            node.position({ x: newX, y: newY });
-        });
+          if (box.x < 0) newX -= box.x;
+          if (box.y < 0) newY -= box.y;
+          if (box.x + box.width > stageWidth) newX -= (box.x + box.width - stageWidth);
+          if (box.y + box.height > stageHeight) newY -= (box.y + box.height - stageHeight);
+          
+          node.position({ x: newX, y: newY });
+      });
 
-        return () => {
-            if (checkInterval) clearInterval(checkInterval);
-            window.removeEventListener('resize', fitToScreen);
+      return () => {
+          window.removeEventListener('resize', fitToScreen);
+          if (stage && typeof stage.off === 'function') {
             stage.off('dragmove');
-        };
+          }
+      };
     }
-
-    return () => {
-        if (checkInterval) clearInterval(checkInterval);
-    };
 }, [isCanvasReady, fitToScreen, canvasRef]);
 
 
@@ -1124,7 +1109,7 @@ const handleBackgroundImageReset = useCallback(() => {
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleTextUpdate,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
-    handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
+    handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
