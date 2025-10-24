@@ -431,31 +431,31 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setAddItemDialogOpen(false);
     deselectNodes();
     if (!canvasRef.current) return;
-    switch (itemType) {
-      case 'text':
+    if(itemType === 'text') {
         handleAddOrUpdateText({
-          text: 'New Text',
-          fontSize: 48,
-          fontFamily: 'Inter',
-          isBold: false,
-          isItalic: false,
-          isUnderline: false,
-          isStrikethrough: false,
-          letterSpacing: 0,
-          lineHeight: 1.2,
-          align: 'center',
-          isShadow: false,
-          shadowBlur: 10,
-          shadowDistance: 5,
-          shadowOpacity: 0.5,
-          isGlow: false,
-          glowColor: '#0000ff',
-          glowBlur: 10,
-          glowOpacity: 0.7,
-          radius: 150,
-          curvature: 0,
-        });
-        break;
+            text: 'New Text',
+            fontSize: 48,
+            fontFamily: 'Inter',
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            isStrikethrough: false,
+            letterSpacing: 0,
+            lineHeight: 1.2,
+            align: 'center',
+            isShadow: false,
+            shadowBlur: 10,
+            shadowDistance: 5,
+            shadowOpacity: 0.5,
+            isGlow: false,
+            glowColor: '#0000ff',
+            glowBlur: 10,
+            glowOpacity: 0.7,
+            radius: 150,
+            curvature: 0,
+          });
+    }
+    switch (itemType) {
       case 'shape': setEditingShapeNode(null); setShapeDialogOpen(true); break;
       case 'image': addImageFromComputer(); break;
       case 'frame': setEditingFrameNode(null); setFrameDialogOpen(true); break;

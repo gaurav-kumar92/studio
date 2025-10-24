@@ -43,3 +43,4 @@ const ZoomSelector: React.FC = () => {
 };
 
 export default ZoomSelector;
+
