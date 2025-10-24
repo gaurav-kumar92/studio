@@ -17,9 +17,6 @@ import {
 import Toolbar from '@/components/editor/Toolbar';
 import ClipartDialog from '@/components/editor/ClipartDialog';
 import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
-import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
-import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
-import BackgroundImagePicker from '@/components/editor/BackgroundImagePicker';
 
 declare global {
   interface Window {
@@ -62,9 +59,6 @@ function Editor() {
     handleMoveNode,
     isLoading,
     canvasSize,
-    setCanvasSize,
-    backgroundColor,
-    setBackgroundColor,
     backgroundImage,
   } = useCanvas();
 
@@ -85,14 +79,6 @@ function Editor() {
       ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-            <BackgroundColorPicker
-              value={backgroundColor}
-              onChange={setBackgroundColor}
-            />
-            <BackgroundImagePicker />
-          </div>
           <Toolbar />
           <Canvas
             ref={canvasRef}

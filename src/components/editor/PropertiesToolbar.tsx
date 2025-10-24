@@ -11,6 +11,10 @@ import { Button } from '../ui/button';
 import { Menu, RotateCw, Scaling } from 'lucide-react';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
+import CanvasSizeSelector from './CanvasSizeSelector';
+import BackgroundColorPicker from './BackgroundColorPicker';
+import BackgroundImagePicker from './BackgroundImagePicker';
+import { Separator } from '../ui/separator';
 
 const PropertiesToolbar = () => {
   const {
@@ -38,6 +42,10 @@ const PropertiesToolbar = () => {
     handleBackgroundImageReset,
     handleRemoveBackgroundImage,
     canvasRef,
+    canvasSize,
+    setCanvasSize,
+    backgroundColor,
+    setBackgroundColor,
   } = useCanvas();
 
   const [scale, setScale] = useState(1);
@@ -92,6 +100,12 @@ const PropertiesToolbar = () => {
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
       <div className="flex items-center justify-center gap-1">
         <ZoomControls />
+        <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
+        <BackgroundColorPicker
+          value={backgroundColor}
+          onChange={setBackgroundColor}
+        />
+        <BackgroundImagePicker />
         {backgroundImage && (
           <Popover>
             <PopoverTrigger asChild>
@@ -109,6 +123,7 @@ const PropertiesToolbar = () => {
             </PopoverContent>
           </Popover>
         )}
+        <Separator orientation='vertical' className='h-6 mx-2' />
 
         <Popover>
             <PopoverTrigger asChild>
