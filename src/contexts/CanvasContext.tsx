@@ -911,19 +911,30 @@ const handleBackgroundImageReset = useCallback(() => {
   }, [selectedNodes]);
   
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (e.touches.length > 1 || selectedNodes.length > 0) { // Don't pan if multi-touch (pinch) or selecting
+    if (e.touches.length > 1) { // Don't pan if multi-touch (pinch)
         setIsPanning(false);
         return;
     }
+    
+    // Do not pan if a transformer is being interacted with
+    const target = (e.target as HTMLElement)?.parentElement;
+    if (target && target.classList.contains('konvajs-content')) {
+        const konvaNode = (e.target as any)?._konvaNode;
+        if (konvaNode && (konvaNode.getClassName() === 'Transformer' || konvaNode.getParent()?.getClassName() === 'Transformer')) {
+            setIsPanning(false);
+            return;
+        }
+    }
+
     const touch = e.touches[0];
     if (!touch) return;
     setIsPanning(true);
     setLastTouch({ x: touch.clientX, y: touch.clientY });
     e.preventDefault();
-  }, [selectedNodes]);
+  }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPanning || !lastTouch) return;
+    if (!isPanning || !lastTouch || e.touches.length > 1) return;
 
     const touch = e.touches[0];
     if (!touch) return;
@@ -952,11 +963,13 @@ const handleBackgroundImageReset = useCallback(() => {
     container.addEventListener('touchstart', handleTouchStart, { passive: false });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
   
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [isCanvasReady, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
