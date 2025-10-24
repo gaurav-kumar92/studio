@@ -85,11 +85,15 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
         layerRef.current.clipFunc((ctx: any) => {
           ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
         });
-        stageRef.current.draw();
+        if (stageRef.current) {
+          stageRef.current.draw();
+        }
     } else {
         if(layerRef.current) {
           layerRef.current.clipFunc(null);
-          stageRef.current.draw();
+          if (stageRef.current) {
+            stageRef.current.draw();
+          }
         }
     }
   }, [isCircular, canvasSize]);
