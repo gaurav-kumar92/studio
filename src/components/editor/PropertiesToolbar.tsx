@@ -66,7 +66,7 @@ const PropertiesToolbar = () => {
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-1">
         <ZoomControls />
         {backgroundImage && (
           <Popover>
@@ -84,47 +84,51 @@ const PropertiesToolbar = () => {
             </PopoverContent>
           </Popover>
         )}
+
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={!hasSelection}><Scaling size={16} /></Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48">
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="scale-slider" className="text-xs">Scale</Label>
+                    <Slider
+                        id="scale-slider"
+                        min={0.1}
+                        max={5}
+                        step={0.05}
+                        value={[scale]}
+                        onValueChange={(val) => handleScaleSliderChange(val[0])}
+                        disabled={!hasSelection}
+                    />
+                </div>
+            </PopoverContent>
+        </Popover>
+
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={!hasSelection}><RotateCw size={16} /></Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48">
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="rotation-slider" className="text-xs">Rotation</Label>
+                    <Slider
+                        id="rotation-slider"
+                        min={0}
+                        max={360}
+                        step={1}
+                        value={[rotation]}
+                        onValueChange={(val) => handleRotationSliderChange(val[0])}
+                        disabled={!hasSelection}
+                    />
+                </div>
+            </PopoverContent>
+        </Popover>
+
       </div>
-
-      <div className={`flex items-center gap-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
-        <Separator orientation="vertical" />
-         <div className="w-32">
-           <div className="flex items-center gap-2">
-              <Scaling size={16} />
-              <Label htmlFor="scale-slider" className="text-xs">Scale</Label>
-            </div>
-            <Slider
-              id="scale-slider"
-              min={0.1}
-              max={5}
-              step={0.05}
-              value={[scale]}
-              onValueChange={(val) => handleScaleSliderChange(val[0])}
-              disabled={!hasSelection}
-            />
-         </div>
-
-         <Separator orientation="vertical" />
-
-          <div className="w-32">
-            <div className="flex items-center gap-2">
-              <RotateCw size={16} />
-              <Label htmlFor="rotation-slider" className="text-xs">Rotation</Label>
-            </div>
-            <Slider
-              id="rotation-slider"
-              min={0}
-              max={360}
-              step={1}
-              value={[rotation]}
-              onValueChange={(val) => handleRotationSliderChange(val[0])}
-              disabled={!hasSelection}
-            />
-         </div>
-      </div>
-
-      <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow">
-        <div className={`${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
+      
+      <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow whitespace-nowrap">
+        <div className={`inline-flex items-center h-full ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
            <ObjectPropertiesPanel
             selectedNodes={selectedNodes}
             onAlign={handleAlign}
