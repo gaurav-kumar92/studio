@@ -1,14 +1,17 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCanvas } from '@/contexts/CanvasContext';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 import ZoomControls from './ZoomControls';
 import BackgroundImagePanel from './BackgroundImagePanel';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, RotateCw, Scaling } from 'lucide-react';
+import { Slider } from '../ui/slider';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 
 const PropertiesToolbar = () => {
   const {
@@ -35,12 +38,36 @@ const PropertiesToolbar = () => {
     handleBackgroundImageReset,
   } = useCanvas();
 
+  const [scale, setScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
   const hasSelection = selectedNodes.length > 0;
+  const selectedNode = hasSelection ? selectedNodes[0] : null;
+
+  useEffect(() => {
+    if (selectedNode) {
+      setScale(selectedNode.scaleX() ?? 1);
+      setRotation(selectedNode.rotation() ?? 0);
+    } else {
+      setScale(1);
+      setRotation(0);
+    }
+  }, [selectedNode]);
+
+  const handleScaleSliderChange = (newScale: number) => {
+    setScale(newScale);
+    handleScaleChange(newScale);
+  };
+  
+  const handleRotationSliderChange = (newRotation: number) => {
+    setRotation(newRotation);
+    handleRotationChange(newRotation);
+  };
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
-       <div className="flex items-center justify-center gap-2">
-         <ZoomControls />
+      <div className="flex items-center justify-center gap-2">
+        <ZoomControls />
         {backgroundImage && (
           <Popover>
             <PopoverTrigger asChild>
@@ -59,14 +86,49 @@ const PropertiesToolbar = () => {
         )}
       </div>
 
+      <div className={`flex items-center gap-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
+        <Separator orientation="vertical" />
+         <div className="w-32">
+           <div className="flex items-center gap-2">
+              <Scaling size={16} />
+              <Label htmlFor="scale-slider" className="text-xs">Scale</Label>
+            </div>
+            <Slider
+              id="scale-slider"
+              min={0.1}
+              max={5}
+              step={0.05}
+              value={[scale]}
+              onValueChange={(val) => handleScaleSliderChange(val[0])}
+              disabled={!hasSelection}
+            />
+         </div>
+
+         <Separator orientation="vertical" />
+
+          <div className="w-32">
+            <div className="flex items-center gap-2">
+              <RotateCw size={16} />
+              <Label htmlFor="rotation-slider" className="text-xs">Rotation</Label>
+            </div>
+            <Slider
+              id="rotation-slider"
+              min={0}
+              max={360}
+              step={1}
+              value={[rotation]}
+              onValueChange={(val) => handleRotationSliderChange(val[0])}
+              disabled={!hasSelection}
+            />
+         </div>
+      </div>
+
       <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow">
-        <div className={`inline-block ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
            <ObjectPropertiesPanel
             selectedNodes={selectedNodes}
             onAlign={handleAlign}
             onOpacityChange={handleOpacityChange}
-            onScaleChange={handleScaleChange}
-            onRotationChange={handleRotationChange}
             onFlip={handleFlip}
             onColorChange={handleColorUpdate}
             onMaskImageZoom={handleMaskImageZoom}

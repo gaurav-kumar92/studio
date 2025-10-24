@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette, Scaling, RotateCw } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -16,8 +16,6 @@ type ObjectPropertiesPanelProps = {
   selectedNodes: any[];
   onAlign: (position: string) => void;
   onOpacityChange: (opacity: number) => void;
-  onScaleChange: (scale: number) => void;
-  onRotationChange: (rotation: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
   onColorChange: (config: any) => void;
   onMaskImageZoom: (direction: 'in' | 'out') => void;
@@ -35,8 +33,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   selectedNodes,
   onAlign,
   onOpacityChange,
-  onScaleChange,
-  onRotationChange,
   onFlip,
   onColorChange,
   onMaskImageZoom,
@@ -50,8 +46,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onClipartPartColorChange,
 }) => {
   const [opacity, setOpacity] = useState(1);
-  const [scale, setScale] = useState(1);
-  const [rotation, setRotation] = useState(0);
   
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
   const hasSelection = selectedNodes.length > 0;
@@ -59,28 +53,14 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   useEffect(() => {
     if (selectedNode) {
       setOpacity(selectedNode.opacity() ?? 1);
-      setScale(selectedNode.scaleX() ?? 1);
-      setRotation(selectedNode.rotation() ?? 0);
     } else {
       setOpacity(1);
-      setScale(1);
-      setRotation(0);
     }
   }, [selectedNode]);
   
   const handleOpacitySliderChange = (newOpacity: number) => {
     setOpacity(newOpacity);
     onOpacityChange(newOpacity);
-  };
-
-  const handleScaleSliderChange = (newScale: number) => {
-    setScale(newScale);
-    onScaleChange(newScale);
-  };
-  
-  const handleRotationSliderChange = (newRotation: number) => {
-    setRotation(newRotation);
-    onRotationChange(newRotation);
   };
   
   const isClipart = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('clipart');
@@ -173,42 +153,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           disabled={!hasSelection}
         />
       </div>
-
-       <Separator orientation="vertical" />
-       
-       <div className="w-32">
-         <div className="flex items-center gap-2">
-            <Scaling size={16} />
-            <Label htmlFor="scale-slider" className="text-xs">Scale</Label>
-          </div>
-          <Slider
-            id="scale-slider"
-            min={0.1}
-            max={5}
-            step={0.05}
-            value={[scale]}
-            onValueChange={(val) => handleScaleSliderChange(val[0])}
-            disabled={!hasSelection}
-          />
-       </div>
-
-       <Separator orientation="vertical" />
-
-        <div className="w-32">
-          <div className="flex items-center gap-2">
-            <RotateCw size={16} />
-            <Label htmlFor="rotation-slider" className="text-xs">Rotation</Label>
-          </div>
-          <Slider
-            id="rotation-slider"
-            min={0}
-            max={360}
-            step={1}
-            value={[rotation]}
-            onValueChange={(val) => handleRotationSliderChange(val[0])}
-            disabled={!hasSelection}
-          />
-       </div>
 
        <Separator orientation="vertical" />
 
