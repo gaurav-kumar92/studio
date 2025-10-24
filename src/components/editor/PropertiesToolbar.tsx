@@ -2,7 +2,6 @@
 'use client';
 
 import React from 'react';
-import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 import ZoomControls from './ZoomControls';
@@ -34,8 +33,6 @@ const PropertiesToolbar = () => {
     handleBackgroundImageReset,
   } = useCanvas();
 
-  const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
-
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
       <div className="flex items-center justify-center gap-2">
@@ -58,33 +55,29 @@ const PropertiesToolbar = () => {
         )}
       </div>
 
-      <div className="w-full flex items-center justify-center">
-        {selectedNode && <Separator orientation="horizontal" className="w-4/5 my-2" />}
-      </div>
-      
-      <div className="min-h-[40px] w-full flex flex-col items-center justify-center">
-        <ObjectPropertiesPanel
-          selectedNodes={selectedNodes}
-          onAlign={handleAlign}
-          onOpacityChange={handleOpacityChange}
-          onFlip={handleFlip}
-          onColorChange={handleColorUpdate}
-          onMaskImageZoom={handleMaskImageZoom}
-          onMaskImageReset={handleMaskImageReset}
-          onMaskImagePan={handleMaskImagePan}
-          isMultiSelectMode={isMultiSelectMode}
-          onAnimationChange={handleAnimationChange}
-          onClipartPartColorChange={handleClipartPartColorChange}
-          onMultiSelectToggle={() => {
-            const newMode = !isMultiSelectMode;
-            setMultiSelectMode(newMode);
-            if (!newMode && selectedNodes.length > 1) {
-              setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-            }
-          }}
-          onGroup={handleGroup}
-          onUngroup={handleUngroup}
-        />
+      <div className="w-full max-w-full overflow-x-auto properties-scrollbar">
+          <ObjectPropertiesPanel
+            selectedNodes={selectedNodes}
+            onAlign={handleAlign}
+            onOpacityChange={handleOpacityChange}
+            onFlip={handleFlip}
+            onColorChange={handleColorUpdate}
+            onMaskImageZoom={handleMaskImageZoom}
+            onMaskImageReset={handleMaskImageReset}
+            onMaskImagePan={handleMaskImagePan}
+            isMultiSelectMode={isMultiSelectMode}
+            onAnimationChange={handleAnimationChange}
+            onClipartPartColorChange={handleClipartPartColorChange}
+            onMultiSelectToggle={() => {
+              const newMode = !isMultiSelectMode;
+              setMultiSelectMode(newMode);
+              if (!newMode && selectedNodes.length > 1) {
+                setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+              }
+            }}
+            onGroup={handleGroup}
+            onUngroup={handleUngroup}
+          />
       </div>
     </div>
   );

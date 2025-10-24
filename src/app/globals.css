@@ -632,3 +632,18 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+.properties-scrollbar::-webkit-scrollbar {
+    height: 4px;
+}
+.properties-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+.properties-scrollbar::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+.properties-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+

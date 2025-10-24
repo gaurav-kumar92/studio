@@ -88,12 +88,13 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
 
   return (
-    <div id="object-properties" className="flex items-center justify-center gap-2 flex-wrap">
+    <div id="object-properties" className="inline-flex items-center justify-center gap-2 flex-nowrap p-2">
        <Button
           variant={isMultiSelectMode ? "destructive" : "ghost"}
           size="icon"
           onClick={onMultiSelectToggle}
           title={isMultiSelectMode ? "Exit Multi-Select" : "Select Multiple"}
+          disabled={!hasSelection}
         >
           <ListPlus className="h-4 w-4" />
         </Button>
