@@ -43,7 +43,8 @@ const Toolbar = () => {
 
   return (
     <div className="toolbar" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-wrap items-center justify-center gap-1">
+      {/* Top Section */}
+      <div className="flex items-center justify-center gap-1">
         <Button
           variant="default"
           size="sm"
@@ -64,7 +65,10 @@ const Toolbar = () => {
         <Button variant="default" size="sm" aria-label="Play Animations" title="Play Animations" onClick={playAllAnimations}>
           <Play className="h-4 w-4" />
         </Button>
-        <Separator orientation="vertical" />
+      </div>
+
+      {/* Bottom Section */}
+      <div className="flex items-center justify-center gap-1">
         <Button
           variant="ghost"
           size="icon"
