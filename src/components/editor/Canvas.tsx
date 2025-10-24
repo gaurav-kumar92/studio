@@ -158,3 +158,5 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
+
+    
