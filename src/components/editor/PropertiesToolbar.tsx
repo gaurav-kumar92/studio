@@ -15,6 +15,8 @@ const PropertiesToolbar = () => {
     selectedNodes,
     handleAlign,
     handleOpacityChange,
+    handleScaleChange,
+    handleRotationChange,
     handleFlip,
     handleColorUpdate,
     handleMaskImageZoom,
@@ -33,10 +35,12 @@ const PropertiesToolbar = () => {
     handleBackgroundImageReset,
   } = useCanvas();
 
+  const hasSelection = selectedNodes.length > 0;
+
   return (
-    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
-      <div className="flex items-center justify-center gap-2">
-        <ZoomControls />
+    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
+       <div className="flex items-center justify-center gap-2">
+         <ZoomControls />
         {backgroundImage && (
           <Popover>
             <PopoverTrigger asChild>
@@ -55,11 +59,14 @@ const PropertiesToolbar = () => {
         )}
       </div>
 
-      <div className="w-full max-w-full overflow-x-auto properties-scrollbar">
-          <ObjectPropertiesPanel
+      <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow">
+        <div className={`inline-block ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
+           <ObjectPropertiesPanel
             selectedNodes={selectedNodes}
             onAlign={handleAlign}
             onOpacityChange={handleOpacityChange}
+            onScaleChange={handleScaleChange}
+            onRotationChange={handleRotationChange}
             onFlip={handleFlip}
             onColorChange={handleColorUpdate}
             onMaskImageZoom={handleMaskImageZoom}
@@ -78,6 +85,7 @@ const PropertiesToolbar = () => {
             onGroup={handleGroup}
             onUngroup={handleUngroup}
           />
+        </div>
       </div>
     </div>
   );

@@ -94,6 +94,8 @@ type CanvasContextType = {
   handleMoveNode: (action: 'up' | 'down', nodeId: string) => void;
   handleAlign: (position: string) => void;
   handleOpacityChange: (opacity: number) => void;
+  handleScaleChange: (scale: number) => void;
+  handleRotationChange: (rotation: number) => void;
   handleFlip: (direction: 'horizontal' | 'vertical') => void;
   handleColorUpdate: (config: any) => void;
   handleSelectItem: (itemType: string) => void;
@@ -601,6 +603,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
+  const handleScaleChange = useCallback((scale: number) => {
+    const nodes = getUnlocked(selectedNodes);
+    if (nodes.length === 0) return;
+    nodes.forEach((node) => node.scale({ x: scale, y: scale }));
+    canvasRef.current?.layer?.draw?.();
+    forceRecord?.();
+  }, [selectedNodes, forceRecord, getUnlocked]);
+
+  const handleRotationChange = useCallback((rotation: number) => {
+    const nodes = getUnlocked(selectedNodes);
+    if (nodes.length === 0) return;
+    nodes.forEach((node) => node.rotation(rotation));
+    canvasRef.current?.layer?.draw?.();
+    forceRecord?.();
+  }, [selectedNodes, forceRecord, getUnlocked]);
+
   const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
     const layer = canvasRef.current?.layer;
     if (!layer) return;
@@ -930,7 +948,7 @@ const handleBackgroundImageReset = useCallback(() => {
     setEditingTextNode,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
-    updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
+    updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
