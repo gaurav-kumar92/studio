@@ -93,84 +93,82 @@ function Editor() {
           <p>Loading Editor...</p>
         </div>
       ) : null}
-      <main>
-        <div id="editor-ui">
-          <div className="editor-main-column">
-            <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
-            <Toolbar />
-            <Canvas
-              ref={canvasRef}
-              canvasSize={sizeString!}
-              isCircular={isCircular!}
+      <div id="editor-ui">
+        <div className="editor-main-column">
+          <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
+          <Toolbar />
+          <Canvas
+            ref={canvasRef}
+            canvasSize={sizeString!}
+            isCircular={isCircular!}
+          />
+          {editingTextNode && (
+            <OnCanvasTextEditor
+              node={editingTextNode}
+              onClose={() => setEditingTextNode(null)}
+              onUpdate={handleAddOrUpdateText}
             />
-            {editingTextNode && (
-              <OnCanvasTextEditor
-                node={editingTextNode}
-                onClose={() => setEditingTextNode(null)}
-                onUpdate={handleAddOrUpdateText}
-              />
-            )}
-            <PropertiesToolbar />
-          </div>
-
-          <LayersPanel
-            layers={konvaObjects}
-            selectedNodes={selectedNodes}
-            onSelectNode={(id) => {
-              const node = canvasRef.current?.layer.findOne(`#${id}`);
-              if (node) {
-                if (isMultiSelectMode) {
-                  const isSelected = selectedNodes.some((n) => n.id() === node.id());
-                  if (isSelected) {
-                    setSelectedNodes(selectedNodes.filter((n) => n.id() !== node.id()));
-                  } else {
-                    setSelectedNodes([...selectedNodes, node]);
-                  }
-                } else {
-                  setSelectedNodes([node]);
-                }
-              }
-            }}
-            onMoveNode={handleMoveNode}
-          />
-
-          <AddItemDialog
-            isOpen={isAddItemDialogOpen}
-            onClose={() => setAddItemDialogOpen(false)}
-            onSelectItem={handleSelectItem}
-          />
-
-          <ShapeDialog
-            isOpen={isShapeDialogOpen}
-            onClose={() => setShapeDialogOpen(false)}
-            onAddShape={handleAddShape}
-            onUpdateShape={handleUpdateShape}
-            editingNode={editingShapeNode}
-          />
-
-          <FrameDialog
-            isOpen={isFrameDialogOpen}
-            onClose={() => setFrameDialogOpen(false)}
-            onAddFrame={handleAddFrame}
-            onUpdateFrame={handleUpdateFrame}
-            editingNode={editingFrameNode}
-          />
-
-          <MaskDialog
-            isOpen={isMaskDialogOpen}
-            onClose={() => setMaskDialogOpen(false)}
-            onAddMask={handleAddMask}
-            onUpdateMask={handleUpdateMask}
-            editingNode={editingMaskNode}
-          />
-
-          <ClipartDialog
-            isOpen={isClipartDialogOpen}
-            onClose={() => setClipartDialogOpen(false)}
-            onAddClipart={handleAddClipart}
-          />
+          )}
+          <PropertiesToolbar />
         </div>
-      </main>
+
+        <LayersPanel
+          layers={konvaObjects}
+          selectedNodes={selectedNodes}
+          onSelectNode={(id) => {
+            const node = canvasRef.current?.layer.findOne(`#${id}`);
+            if (node) {
+              if (isMultiSelectMode) {
+                const isSelected = selectedNodes.some((n) => n.id() === node.id());
+                if (isSelected) {
+                  setSelectedNodes(selectedNodes.filter((n) => n.id() !== node.id()));
+                } else {
+                  setSelectedNodes([...selectedNodes, node]);
+                }
+              } else {
+                setSelectedNodes([node]);
+              }
+            }
+          }}
+          onMoveNode={handleMoveNode}
+        />
+
+        <AddItemDialog
+          isOpen={isAddItemDialogOpen}
+          onClose={() => setAddItemDialogOpen(false)}
+          onSelectItem={handleSelectItem}
+        />
+
+        <ShapeDialog
+          isOpen={isShapeDialogOpen}
+          onClose={() => setShapeDialogOpen(false)}
+          onAddShape={handleAddShape}
+          onUpdateShape={handleUpdateShape}
+          editingNode={editingShapeNode}
+        />
+
+        <FrameDialog
+          isOpen={isFrameDialogOpen}
+          onClose={() => setFrameDialogOpen(false)}
+          onAddFrame={handleAddFrame}
+          onUpdateFrame={handleUpdateFrame}
+          editingNode={editingFrameNode}
+        />
+
+        <MaskDialog
+          isOpen={isMaskDialogOpen}
+          onClose={() => setMaskDialogOpen(false)}
+          onAddMask={handleAddMask}
+          onUpdateMask={handleUpdateMask}
+          editingNode={editingMaskNode}
+        />
+
+        <ClipartDialog
+          isOpen={isClipartDialogOpen}
+          onClose={() => setClipartDialogOpen(false)}
+          onAddClipart={handleAddClipart}
+        />
+      </div>
     </>
   );
 }
