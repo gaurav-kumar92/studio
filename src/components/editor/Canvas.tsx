@@ -97,8 +97,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       canvasContainer.style.position = 'absolute';
       canvasContainer.style.top = '50%';
       canvasContainer.style.left = '50%';
+      // This transform both centers and scales the canvas
       canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
-      canvasContainer.style.transformOrigin = 'center center';
+      
   
       // Resize background
       background.width(targetWidth);
@@ -147,3 +148,5 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
+
+    

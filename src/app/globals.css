@@ -148,6 +148,7 @@ body {
 }
 
 #canvas-container {
+    /* The transform-origin should be center for the translate/scale to work correctly */
     transform-origin: center center;
 }
 
@@ -590,3 +591,5 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+
+    
