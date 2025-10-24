@@ -35,16 +35,14 @@ const PropertiesToolbar = () => {
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
 
   return (
-    <div className="toolbar mt-4 w-full flex-wrap justify-center h-auto py-2">
+    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col lg:flex-row items-center justify-center gap-4">
       {/* Canvas Properties Section */}
-      <div className="toolbar-section flex-col md:flex-row flex-wrap justify-center items-center gap-2">
-        <div className="flex items-center gap-2">
-          <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-          <BackgroundColorPicker
-            value={backgroundColor}
-            onChange={setBackgroundColor}
-          />
-        </div>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+        <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
+        <BackgroundColorPicker
+          value={backgroundColor}
+          onChange={setBackgroundColor}
+        />
         <ZoomControls />
       </div>
 
@@ -57,33 +55,30 @@ const PropertiesToolbar = () => {
           />
           <Separator
             orientation="horizontal"
-            className="block lg:hidden w-full my-2"
+            className="block lg:hidden w-4/5 my-2"
           />
-          <div className="toolbar-section flex-wrap justify-center">
-            <ObjectPropertiesPanel
-              selectedNodes={selectedNodes}
-              onAlign={handleAlign}
-              onOpacityChange={handleOpacityChange}
-              onFlip={handleFlip}
-              onColorChange={handleColorUpdate}
-              onMaskImageZoom={handleMaskImageZoom}
-              onMaskImageReset={handleMaskImageReset}
-              onMaskImagePan={handleMaskImagePan}
-              isMultiSelectMode={isMultiSelectMode}
-              onAnimationChange={handleAnimationChange}
-              onClipartPartColorChange={handleClipartPartColorChange}
-              onMultiSelectToggle={() => {
-                const newMode = !isMultiSelectMode;
-                setMultiSelectMode(newMode);
-                if (!newMode && selectedNodes.length > 1) {
-                  // If exiting multi-select, keep only the last selected item
-                  setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-                }
-              }}
-              onGroup={handleGroup}
-              onUngroup={handleUngroup}
-            />
-          </div>
+          <ObjectPropertiesPanel
+            selectedNodes={selectedNodes}
+            onAlign={handleAlign}
+            onOpacityChange={handleOpacityChange}
+            onFlip={handleFlip}
+            onColorChange={handleColorUpdate}
+            onMaskImageZoom={handleMaskImageZoom}
+            onMaskImageReset={handleMaskImageReset}
+            onMaskImagePan={handleMaskImagePan}
+            isMultiSelectMode={isMultiSelectMode}
+            onAnimationChange={handleAnimationChange}
+            onClipartPartColorChange={handleClipartPartColorChange}
+            onMultiSelectToggle={() => {
+              const newMode = !isMultiSelectMode;
+              setMultiSelectMode(newMode);
+              if (!newMode && selectedNodes.length > 1) {
+                setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+              }
+            }}
+            onGroup={handleGroup}
+            onUngroup={handleUngroup}
+          />
         </>
       )}
     </div>

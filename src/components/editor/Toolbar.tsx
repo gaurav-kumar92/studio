@@ -42,9 +42,8 @@ const Toolbar = () => {
   const canPaste = clipboard.length > 0;
 
   return (
-    <div className="toolbar flex-col items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-      {/* Top Row: Add, Zoom, Save */}
-      <div className="toolbar-section">
+    <div className="toolbar" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap items-center justify-center gap-1">
         <Button
           variant="default"
           size="sm"
@@ -65,10 +64,7 @@ const Toolbar = () => {
         <Button variant="default" size="sm" aria-label="Play Animations" title="Play Animations" onClick={playAllAnimations}>
           <Play className="h-4 w-4" />
         </Button>
-      </div>
-
-      {/* Bottom Row: History, Edit */}
-      <div className="toolbar-section">
+        <Separator orientation="vertical" />
         <Button
           variant="ghost"
           size="icon"

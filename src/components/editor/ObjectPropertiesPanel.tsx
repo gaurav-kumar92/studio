@@ -24,6 +24,7 @@ type ObjectPropertiesPanelProps = {
   onGroup: () => void;
   onUngroup: () => void;
   onAnimationChange: (animation: any) => void;
+  onClipartPartColorChange: (partName: string, color: string) => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -40,6 +41,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onGroup,
   onUngroup,
   onAnimationChange,
+  onClipartPartColorChange,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -86,7 +88,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
 
   return (
-    <div id="object-properties" className="flex items-center gap-2">
+    <div id="object-properties" className="flex items-center justify-center gap-2 flex-wrap">
        <Button
           variant={isMultiSelectMode ? "destructive" : "ghost"}
           size="icon"
