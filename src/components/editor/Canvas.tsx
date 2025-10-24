@@ -74,7 +74,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
   }, [canvasSize, setCanvasReady]);
 
   useEffect(() => {
-    if (!stageRef.current || !stageRef.current.getStage() || !layerRef.current) return;
+    if (!stageRef.current || !layerRef.current) return;
 
     const [width, height] = canvasSize.split('x').map(Number);
     
@@ -88,11 +88,15 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
           ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
         });
     } else {
+      if (layerRef.current) {
         layerRef.current.clipFunc(null);
+      }
     }
 
     // Always redraw after changing clipping
-    stageRef.current.draw();
+    if (stageRef.current) {
+      stageRef.current.draw();
+    }
     
   }, [isCircular, canvasSize]);
 
