@@ -85,7 +85,7 @@ const TwitterIcon = () => (
 const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange }) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[280px] h-8">
+      <SelectTrigger className="w-[180px] h-8">
         <SelectValue placeholder="Select Canvas Size" />
       </SelectTrigger>
       <SelectContent className="max-h-[50vh]">
