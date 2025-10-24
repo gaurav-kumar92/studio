@@ -74,7 +74,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
   }, [canvasSize, setCanvasReady]);
 
   useEffect(() => {
-    if (!stageRef.current) return;
+    if (!stageRef.current || !layerRef.current) return;
     const [width, height] = canvasSize.split('x').map(Number);
     stageRef.current.clipFunc((ctx: any) => {
       ctx.rect(0, 0, width, height);
