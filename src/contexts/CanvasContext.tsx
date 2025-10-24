@@ -256,13 +256,23 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const zoom = useCallback((direction: 'in' | 'out', pointerPos?: { x: number; y: number }) => {
     if (!canvasRef.current?.stage) return;
     const stage = canvasRef.current.stage;
+    const container = document.getElementById('canvas-wrapper');
+    if (!container) return;
 
     const scaleBy = 1.1;
     const oldScale = canvasScale;
-    const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-
-    const container = document.getElementById('canvas-wrapper');
-    if (!container) return;
+    
+    let newScale;
+    if (direction === 'in') {
+      newScale = oldScale * scaleBy;
+    } else {
+      const padding = 30;
+      const containerWidth = container.clientWidth - padding;
+      const containerHeight = container.clientHeight - padding;
+      const minScale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
+      
+      newScale = Math.max(oldScale / scaleby, minScale);
+    }
 
     const pointer = pointerPos || {
       x: container.clientWidth / 2,
