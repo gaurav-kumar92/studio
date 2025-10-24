@@ -69,6 +69,7 @@ type CanvasContextType = {
   
   canvasScale: number;
   canvasPosition: { x: number; y: number };
+  setCanvasPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number }>>;
   zoomIn: () => void;
   zoomOut: () => void;
   fitToScreen: () => void;
@@ -834,7 +835,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
-    canvasScale, canvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
+    canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
