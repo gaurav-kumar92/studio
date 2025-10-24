@@ -436,19 +436,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     runAsSingleHistoryStep(() => {
       const layer = canvasRef.current!.layer;
   
-      // Find the bounding box that contains all selected nodes
-      let minX = Infinity, minY = Infinity;
-      let maxX = -Infinity, maxY = -Infinity;
+      // Store each node's absolute position before grouping
+      const nodeData = selectedNodes.map((node) => ({
+        node,
+        absPos: node.getAbsolutePosition(),
+      }));
   
-      selectedNodes.forEach((node) => {
-        const box = node.getClientRect({ relativeTo: layer });
-        minX = Math.min(minX, box.x);
-        minY = Math.min(minY, box.y);
-        maxX = Math.max(maxX, box.x + box.width);
-        maxY = Math.max(maxY, box.y + box.height);
+      // Find the top-left corner of all absolute positions
+      let minX = Infinity, minY = Infinity;
+      nodeData.forEach(({ absPos }) => {
+        minX = Math.min(minX, absPos.x);
+        minY = Math.min(minY, absPos.y);
       });
   
-      // Create group at the top-left of the bounding box
+      // Create group at the top-left position
       const group = new window.Konva.Group({
         name: 'group',
         draggable: true,
@@ -458,22 +459,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
       layer.add(group);
   
-      // Move children to group with positions relative to group's origin
-      selectedNodes.forEach((node) => {
-        const box = node.getClientRect({ relativeTo: layer });
-        const currentX = node.x();
-        const currentY = node.y();
-        
-        // Calculate offset from node's current position to its visual position
-        const offsetX = box.x - currentX;
-        const offsetY = box.y - currentY;
-        
+      // Move each node to the group and position relative to group origin
+      nodeData.forEach(({ node, absPos }) => {
         node.moveTo(group);
-        
-        // Set position relative to group, accounting for any offset
         node.position({
-          x: box.x - minX - offsetX,
-          y: box.y - minY - offsetY,
+          x: absPos.x - minX,
+          y: absPos.y - minY,
         });
       });
   
@@ -506,22 +497,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const children = group.getChildren().slice();
       const nodesToSelect: Node[] = [];
   
-      // Store group's absolute position
-      const groupPos = group.getAbsolutePosition();
-  
       children.forEach((child: Node) => {
-        // Get child's current position relative to group
-        const childRelativePos = child.position();
-        
-        // Calculate absolute position
-        const childAbsX = groupPos.x + childRelativePos.x;
-        const childAbsY = groupPos.y + childRelativePos.y;
+        // Store the absolute position BEFORE moving
+        const absPos = child.getAbsolutePosition();
         
         // Move to layer
         child.moveTo(layer);
         
-        // Set absolute position
-        child.position({ x: childAbsX, y: childAbsY });
+        // Restore the absolute position AFTER moving
+        child.setAbsolutePosition(absPos);
         child.draggable(true);
         
         nodesToSelect.push(child);
@@ -1184,5 +1168,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
