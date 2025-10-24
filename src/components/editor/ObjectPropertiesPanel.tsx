@@ -95,11 +95,13 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onAnimationChange(config);
     setAnimationPopoverOpen(false);
   };
+  
+  const isMultiSelectActive = isMultiSelectMode && hasSelection;
 
   return (
     <div id="object-properties" className={`inline-flex items-center justify-center gap-2 flex-nowrap p-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
        <Button
-          variant={isMultiSelectMode ? "active" : "ghost"}
+          variant={isMultiSelectActive ? "active" : "ghost"}
           size="icon"
           onClick={onMultiSelectToggle}
           title={isMultiSelectMode ? "Exit Multi-Select" : "Select Multiple"}

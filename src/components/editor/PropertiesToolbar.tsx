@@ -77,6 +77,16 @@ const PropertiesToolbar = () => {
     setRotation(newRotation);
     handleRotationChange(newRotation);
   };
+  
+  const handleMultiSelectToggle = () => {
+    const newMode = !isMultiSelectMode;
+    setMultiSelectMode(newMode);
+    // If turning multi-select OFF and more than one item is selected,
+    // collapse selection to the last selected item.
+    if (!newMode && selectedNodes.length > 1) {
+      setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+    }
+  };
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
@@ -156,13 +166,7 @@ const PropertiesToolbar = () => {
           isMultiSelectMode={isMultiSelectMode}
           onAnimationChange={handleAnimationChange}
           onClipartPartColorChange={handleClipartPartColorChange}
-          onMultiSelectToggle={() => {
-            const newMode = !isMultiSelectMode;
-            setMultiSelectMode(newMode);
-            if (!newMode && selectedNodes.length > 1) {
-              setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-            }
-          }}
+          onMultiSelectToggle={handleMultiSelectToggle}
           onGroup={handleGroup}
           onUngroup={handleUngroup}
         />
