@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import 'react-quill/dist/quill.snow.css'; // import styles
 import dynamic from 'next/dynamic';
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
@@ -58,7 +57,7 @@ const OnCanvasTextEditor: React.FC<OnCanvasTextEditorProps> = ({ node, onClose, 
     left: `${position.x}px`,
     width: `${box.width}px`,
     minHeight: `${box.height}px`,
-    background: 'white',
+    background: 'transparent',
     border: '1px dashed #7c3aed',
     zIndex: 100,
     fontSize: `${node.getAttr('data-font-size')}px`,
