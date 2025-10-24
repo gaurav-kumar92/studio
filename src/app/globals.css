@@ -144,13 +144,10 @@ body {
     align-items: center;
 }
 
-#canvas-container canvas {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+#canvas-container {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-#canvas-container {
-    transform-origin: center center;
-}
 
 /* --- Layers Panel --- */
 #layers-panel {
@@ -159,7 +156,6 @@ body {
     padding: 1.5rem;
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    /* Adjusted max height for mobile to keep canvas visible */
     max-height: none; 
     display: flex;
     flex-direction: column;

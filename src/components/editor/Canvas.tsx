@@ -85,20 +85,11 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
   
-      // Scale to fit the parent container
-      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
+      // Scale to fit the parent container, with a small margin
+      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight) * 0.9;
   
-      // Apply scaling and centering
       stage.width(targetWidth);
       stage.height(targetHeight);
-  
-      canvasContainer.style.width = `${targetWidth}px`;
-      canvasContainer.style.height = `${targetHeight}px`;
-      canvasContainer.style.position = 'absolute';
-      canvasContainer.style.top = '50%';
-      canvasContainer.style.left = '50%';
-      canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
-      canvasContainer.style.transformOrigin = 'center center';
   
       // Resize background
       background.width(targetWidth);
@@ -113,6 +104,13 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       } else {
         layer.clipFunc(null);
       }
+      
+      // Use Konva's scaling and positioning
+      stage.scale({ x: scale, y: scale });
+      stage.position({
+        x: (containerWidth - targetWidth * scale) / 2,
+        y: (containerHeight - targetHeight * scale) / 2,
+      });
   
       stage.draw();
       setInitialScale(scale);
@@ -131,30 +129,19 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
     const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
-    // Find the center of the stage
-    const stageCenter = {
-      x: targetWidth / 2,
-      y: targetHeight / 2,
-    };
-
-    // Calculate new scale
-    const scale = currentScale;
-
-    // Apply scale (both x and y)
-    stage.scale({ x: scale, y: scale });
-
-    // Keep canvas centered by adjusting position
-    const canvasContainer = document.getElementById('canvas-container');
-    const parent = canvasContainer?.parentElement;
+    const parent = document.getElementById('canvas-container')?.parentElement;
     if (!parent) return;
 
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
+    
+    // Apply new scale
+    stage.scale({ x: currentScale, y: currentScale });
 
-    // Compute new position so the stage stays centered
+    // Compute new position to keep the stage centered
     stage.position({
-      x: parentWidth / 2 - stageCenter.x * scale,
-      y: parentHeight / 2 - stageCenter.y * scale,
+      x: (parentWidth - targetWidth * currentScale) / 2,
+      y: (parentHeight - targetHeight * currentScale) / 2,
     });
 
     stage.batchDraw();
