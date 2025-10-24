@@ -137,7 +137,7 @@ body {
     width: 100%;
     background-color: #e5e7eb;
     overflow: auto;
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;

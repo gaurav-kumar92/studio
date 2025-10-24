@@ -129,19 +129,29 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
     const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
+    // Find the center of the stage
+    const stageCenter = {
+      x: targetWidth / 2,
+      y: targetHeight / 2,
+    };
+
+    // Calculate new scale
+    const scale = currentScale;
+
+    // Apply scale (both x and y)
+    stage.scale({ x: scale, y: scale });
+
+    // Keep canvas centered by adjusting position
     const parent = document.getElementById('canvas-container')?.parentElement;
     if (!parent) return;
 
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
-    
-    // Apply new scale
-    stage.scale({ x: currentScale, y: currentScale });
 
-    // Compute new position to keep the stage centered
+    // Compute new position so the stage stays centered
     stage.position({
-        x: (parentWidth - targetWidth * currentScale) / 2,
-        y: (parentHeight - targetHeight * currentScale) / 2,
+      x: parentWidth / 2 - stageCenter.x * scale,
+      y: parentHeight / 2 - stageCenter.y * scale,
     });
 
     stage.batchDraw();
