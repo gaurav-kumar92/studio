@@ -74,30 +74,29 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
   }, [canvasSize, setCanvasReady]);
 
   useEffect(() => {
-    if (!stageRef.current || !layerRef.current) return;
-
-    const [width, height] = canvasSize.split('x').map(Number);
-    
-    stageRef.current.clipFunc((ctx: any) => {
-      ctx.rect(0, 0, width, height);
-    });
-
-    if (isCircular) {
-        const radius = Math.min(width, height) / 2;
-        layerRef.current.clipFunc((ctx: any) => {
-          ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
+    if (stageRef.current && stageRef.current.getStage()) {
+        const [width, height] = canvasSize.split('x').map(Number);
+        
+        stageRef.current.clipFunc((ctx: any) => {
+            ctx.rect(0, 0, width, height);
         });
-    } else {
-      if (layerRef.current) {
-        layerRef.current.clipFunc(null);
-      }
-    }
 
-    // Always redraw after changing clipping
-    if (stageRef.current) {
-      stageRef.current.draw();
+        if (isCircular) {
+            const radius = Math.min(width, height) / 2;
+            if (layerRef.current) {
+                layerRef.current.clipFunc((ctx: any) => {
+                    ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
+                });
+            }
+        } else {
+            if (layerRef.current) {
+                layerRef.current.clipFunc(null);
+            }
+        }
+
+        // Always redraw after changing clipping
+        stageRef.current.draw();
     }
-    
   }, [isCircular, canvasSize]);
 
   useEffect(() => {
