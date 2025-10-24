@@ -51,12 +51,6 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       draggable: false,
     });
     stageRef.current = stage;
-    
-    // Add clip function to the stage
-    stage.clipFunc((ctx: any) => {
-      const [clipWidth, clipHeight] = (canvasSize || '1080x1080').split('x').map(Number);
-      ctx.rect(0, 0, clipWidth, clipHeight);
-    });
 
     const layer = new window.Konva.Layer();
     stage.add(layer);
@@ -90,21 +84,18 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
           backgroundRef.current.height(height);
         }
 
-        // Update stage clipping for boundaries
-        stage.clipFunc((ctx: any) => {
-          ctx.rect(0, 0, width, height);
+        // Add clip function to the layer, not the stage
+        layer.clipFunc((ctx: any) => {
+          const clipWidth = width;
+          const clipHeight = height;
+          if (isCircular) {
+              const radius = Math.min(clipWidth, clipHeight) / 2;
+              ctx.arc(clipWidth / 2, clipHeight / 2, radius, 0, Math.PI * 2, false);
+          } else {
+              ctx.rect(0, 0, clipWidth, clipHeight);
+          }
         });
         
-        // Update layer clipping for circular/rectangular shape
-        if (isCircular) {
-            const radius = Math.min(width, height) / 2;
-            layer.clipFunc((ctx: any) => {
-                ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
-            });
-        } else {
-            layer.clipFunc(null);
-        }
-
         // Always redraw after changing clipping or dimensions
         stage.batchDraw();
         fitToScreen();

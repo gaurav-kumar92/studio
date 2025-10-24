@@ -589,42 +589,30 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (!canvasRef.current?.stage) return;
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
-
+  
     const stage = canvasRef.current.stage;
-
+  
     nodes.forEach((node) => {
-        const box = node.getClientRect({ relativeTo: stage });
-        let newX: number | undefined, newY: number | undefined;
-
-        switch (position) {
-            case 'top':
-                newY = node.y() - box.y;
-                node.y(newY);
-                break;
-            case 'left':
-                newX = node.x() - box.x;
-                node.x(newX);
-                break;
-            case 'center':
-                newX = node.x() + (stage.width() / 2 - (box.x + box.width / 2));
-                newY = node.y() + (stage.height() / 2 - (box.y + box.height / 2));
-                node.x(newX);
-                node.y(newY);
-                break;
-            case 'right':
-                newX = node.x() + (stage.width() - (box.x + box.width));
-                node.x(newX);
-                break;
-            case 'bottom':
-                newY = node.y() + (stage.height() - (box.y + box.height));
-                node.y(newY);
-                break;
-        }
+      const box = node.getClientRect({ relativeTo: stage });
+      let newX = node.x();
+      let newY = node.y();
+  
+      switch (position) {
+        case 'top': newY -= box.y; break;
+        case 'left': newX -= box.x; break;
+        case 'center':
+          newX -= (box.x + box.width / 2) - stage.width() / 2;
+          newY -= (box.y + box.height / 2) - stage.height() / 2;
+          break;
+        case 'right': newX += stage.width() - (box.x + box.width); break;
+        case 'bottom': newY += stage.height() - (box.y + box.height); break;
+      }
+      node.position({ x: newX, y: newY });
     });
-
+  
     canvasRef.current?.layer?.draw?.();
     forceRecord?.();
-}, [selectedNodes, forceRecord, getUnlocked]);
+  }, [selectedNodes, forceRecord, getUnlocked]);
 
   const handleOpacityChange = useCallback((opacity: number) => {
     const nodes = getUnlocked(selectedNodes);
@@ -1027,7 +1015,34 @@ const handleBackgroundImageReset = useCallback(() => {
       setIsLoading(false);
       fitToScreen();
       window.addEventListener('resize', fitToScreen);
-      return () => window.removeEventListener('resize', fitToScreen);
+
+      if (canvasRef.current?.stage) {
+        const stage = canvasRef.current.stage;
+        stage.on('dragmove', (e: any) => {
+            const node = e.target;
+            const stageWidth = stage.width();
+            const stageHeight = stage.height();
+
+            const box = node.getClientRect({ relativeTo: stage });
+            let newX = node.x();
+            let newY = node.y();
+
+            if (box.x < 0) newX -= box.x;
+            if (box.y < 0) newY -= box.y;
+            if (box.x + box.width > stageWidth) newX -= (box.x + box.width - stageWidth);
+            if (box.y + box.height > stageHeight) newY -= (box.y + box.height - stageHeight);
+            
+            node.position({ x: newX, y: newY });
+        });
+      }
+
+
+      return () => {
+        window.removeEventListener('resize', fitToScreen);
+        if (canvasRef.current?.stage) {
+            canvasRef.current.stage.off('dragmove');
+        }
+      }
     }
   }, [isCanvasReady, fitToScreen]);
 
