@@ -88,6 +88,22 @@ function Editor() {
     };
   }, [setCanvasReady]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const preventPinchZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', preventPinchZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchmove', preventPinchZoom);
+    };
+  }, []);
+
   const isCircular = canvasSize.endsWith('-circle');
   const sizeString = canvasSize.split('-')[0];
 
