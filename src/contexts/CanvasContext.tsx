@@ -119,6 +119,7 @@ type CanvasContextType = {
   handleBackgroundImageZoom: (direction: 'in' | 'out') => void;
   handleBackgroundImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
   handleBackgroundImageReset: () => void;
+  handleRemoveBackgroundImage: () => void;
 
   undo: () => void;
   redo: () => void;
@@ -218,6 +219,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     input.click();
+  }, [forceRecord]);
+  
+  const handleRemoveBackgroundImage = useCallback(() => {
+    setBackgroundImage(null);
+    setBackgroundColorState(prev => ({ ...prev, solidColor: '#ffffff' }));
+    forceRecord();
   }, [forceRecord]);
 
 
@@ -1111,6 +1118,7 @@ const handleBackgroundImageReset = useCallback(() => {
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
+    handleRemoveBackgroundImage,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,

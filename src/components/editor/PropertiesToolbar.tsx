@@ -36,6 +36,7 @@ const PropertiesToolbar = () => {
     handleBackgroundImageZoom,
     handleBackgroundImagePan,
     handleBackgroundImageReset,
+    handleRemoveBackgroundImage,
     canvasRef,
   } = useCanvas();
 
@@ -93,6 +94,7 @@ const PropertiesToolbar = () => {
                 onZoom={handleBackgroundImageZoom}
                 onPan={handleBackgroundImagePan}
                 onReset={handleBackgroundImageReset}
+                onRemove={handleRemoveBackgroundImage}
               />
             </PopoverContent>
           </Popover>
