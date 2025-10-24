@@ -36,6 +36,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   }));
 
   useEffect(() => {
+    // Only run this once when Konva is available. The `stageRef.current` check was wrong.
     if (typeof window === 'undefined' || !window.Konva || stageRef.current) {
       return;
     }
@@ -65,18 +66,23 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
     setCanvasReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canvasSize, setCanvasReady]);
 
   useEffect(() => {
-    if (!stageRef.current || !isCircular) {
-        if(layerRef.current) layerRef.current.clipFunc(null);
-    } else {
+    if (!stageRef.current) return;
+
+    if (isCircular) {
         const [width, height] = canvasSize.split('x').map(Number);
         const radius = Math.min(width, height) / 2;
         layerRef.current.clipFunc((ctx: any) => {
           ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
         });
         stageRef.current.draw();
+    } else {
+        if(layerRef.current) {
+          layerRef.current.clipFunc(null);
+          stageRef.current.draw();
+        }
     }
   }, [isCircular, canvasSize]);
 
