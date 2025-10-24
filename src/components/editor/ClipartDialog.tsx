@@ -19,6 +19,32 @@ const cliparts = [
             leftEye: 'M65 80c8.28 0 15 6.72 15 15s-6.72 15-15 15-15-6.72-15-15 6.72-15 15-15z',
             rightEye: 'M135 80c8.28 0 15 6.72 15 15s-6.72 15-15 15-15-6.72-15-15 6.72-15 15-15z',
             mouth: 'M50 140c0 27.61 22.39 50 50 50s50-22.39 50-50H50z'
+        },
+        defaultColors: {
+            face: '#3b82f6',
+            leftEye: 'black',
+            rightEye: 'black',
+            mouth: 'black'
+        }
+    },
+    {
+        name: 'Heart',
+        viewBox: '0 0 24 24',
+        parts: {
+            shape: 'M12 21.23l-1.41-1.41C5.61 15.03 2 11.55 2 7.5 2 4.42 4.42 2 7.5 2c1.74 0 3.41.81 4.5 2.09C13.09 2.81 14.76 2 16.5 2 19.58 2 22 4.42 22 7.5c0 4.05-3.61 7.53-8.59 12.32L12 21.23z'
+        },
+        defaultColors: {
+            shape: '#ef4444'
+        }
+    },
+    {
+        name: 'Star',
+        viewBox: '0 0 24 24',
+        parts: {
+            shape: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'
+        },
+        defaultColors: {
+            shape: '#facc15'
         }
     }
 ];
@@ -28,8 +54,8 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
         return null;
     }
 
-    const handleClipartSelect = (parts: { [key: string]: string }) => {
-        onAddClipart(parts);
+    const handleClipartSelect = (clipart: (typeof cliparts)[0]) => {
+        onAddClipart(clipart.parts);
         onClose();
     };
 
@@ -44,13 +70,13 @@ const ClipartDialog: React.FC<ClipartDialogProps> = ({ isOpen, onClose, onAddCli
                             key={index}
                             className="shape-btn p-4 flex items-center justify-center"
                             title={clipart.name}
-                            onClick={() => handleClipartSelect(clipart.parts)}
+                            onClick={() => handleClipartSelect(clipart)}
                         >
                            <svg viewBox={clipart.viewBox} width="50" height="50">
-                                <path d={clipart.parts.face} fill="#3b82f6" />
-                                <path d={clipart.parts.leftEye} fill="black" />
-                                <path d={clipart.parts.rightEye} fill="black" />
-                                <path d={clipart.parts.mouth} fill="black" />
+                                {Object.entries(clipart.parts).map(([partName, pathData]) => {
+                                    const fill = clipart.defaultColors?.[partName as keyof typeof clipart.defaultColors] || 'black';
+                                    return <path key={partName} d={pathData} fill={fill} />;
+                                })}
                            </svg>
                         </button>
                     ))}
