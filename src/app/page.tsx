@@ -8,12 +8,12 @@ import ShapeDialog from '@/components/editor/ShapeDialog';
 import FrameDialog from '@/components/editor/FrameDialog';
 import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
-import TextDialog from '@/components/editor/TextDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
 import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
 import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
 import ClipartDialog from '@/components/editor/ClipartDialog';
+import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
 
 declare global {
   interface Window {
@@ -34,8 +34,6 @@ function Editor() {
     setAddItemDialogOpen,
     isShapeDialogOpen,
     setShapeDialogOpen,
-    isTextDialogOpen,
-    setTextDialogOpen,
     isFrameDialogOpen,
     setFrameDialogOpen,
     isMaskDialogOpen,
@@ -46,6 +44,7 @@ function Editor() {
     editingFrameNode,
     editingMaskNode,
     editingTextNode,
+    setEditingTextNode,
     handleAddShape,
     handleUpdateShape,
     handleAddOrUpdateText,
@@ -104,6 +103,13 @@ function Editor() {
               canvasSize={sizeString!}
               isCircular={isCircular!}
             />
+            {editingTextNode && (
+              <OnCanvasTextEditor
+                node={editingTextNode}
+                onClose={() => setEditingTextNode(null)}
+                onUpdate={handleAddOrUpdateText}
+              />
+            )}
             <PropertiesToolbar />
           </div>
 
@@ -132,13 +138,6 @@ function Editor() {
             isOpen={isAddItemDialogOpen}
             onClose={() => setAddItemDialogOpen(false)}
             onSelectItem={handleSelectItem}
-          />
-
-          <TextDialog
-            isOpen={isTextDialogOpen}
-            onClose={() => setTextDialogOpen(false)}
-            onAddOrUpdateText={handleAddOrUpdateText}
-            editingNode={editingTextNode}
           />
 
           <ShapeDialog

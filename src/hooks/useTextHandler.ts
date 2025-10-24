@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useCallback } from 'react';
 
@@ -10,7 +11,6 @@ type UseTextHandlerProps = {
   attachDoubleClick: (node: any) => void;
   editingTextNode: any;
   setEditingTextNode: (node: any) => void;
-  setTextDialogOpen: (isOpen: boolean) => void;
 
   // NEW: allow this hook to push history entries
   forceRecord?: () => void;
@@ -25,7 +25,6 @@ export const useTextHandler = ({
   attachDoubleClick,
   editingTextNode,
   setEditingTextNode,
-  setTextDialogOpen,
   forceRecord, // NEW
 }: UseTextHandlerProps) => {
   // Utility: ensure the node has a stable id before we record
@@ -39,6 +38,12 @@ export const useTextHandler = ({
   const handleAddOrUpdateText = useCallback((config: any) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
+
+    // Use a placeholder for new text to avoid adding empty objects
+    if (!editingTextNode && (!config.text || config.text.trim() === '')) {
+      config.text = 'New Text';
+    }
+
 
     // Reuse id when editing; new id when adding
     const uniqueId =
@@ -253,8 +258,6 @@ export const useTextHandler = ({
       ensureId(newNode);
       forceRecord?.();
     }
-
-    setTextDialogOpen(false);
   }, [
     canvasRef,
     editingTextNode,
@@ -263,7 +266,6 @@ export const useTextHandler = ({
     updateLayers,
     applyFill,
     setEditingTextNode,
-    setTextDialogOpen,
     attachDoubleClick,
     forceRecord,
   ]);

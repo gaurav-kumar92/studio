@@ -6,7 +6,6 @@ import { useCallback } from 'react';
 
 type UseNodeHandlersProps = {
     setEditingTextNode: (node: any) => void;
-    setTextDialogOpen: (isOpen: boolean) => void;
     setEditingShapeNode: (node: any) => void;
     setShapeDialogOpen: (isOpen: boolean) => void;
     setEditingFrameNode: (node: any) => void;
@@ -17,7 +16,6 @@ type UseNodeHandlersProps = {
 
 export const useNodeHandlers = ({
     setEditingTextNode,
-    setTextDialogOpen,
     setEditingShapeNode,
     setShapeDialogOpen,
     setEditingFrameNode,
@@ -33,7 +31,6 @@ export const useNodeHandlers = ({
             case 'textGroup':
             case 'circularText':
                 setEditingTextNode(node);
-                setTextDialogOpen(true);
                 break;
             case 'shape':
                 setEditingShapeNode(node);
@@ -81,7 +78,6 @@ export const useNodeHandlers = ({
         }
     }, [
         setEditingTextNode, 
-        setTextDialogOpen, 
         setEditingShapeNode, 
         setShapeDialogOpen, 
         setEditingFrameNode, 
