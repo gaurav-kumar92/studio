@@ -20,7 +20,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   const [stage, setStage] = useState<any>(null);
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
-  const { setInitialScale, setCanvasReady, setCurrentScale } = useCanvas();
+  const { setInitialScale, setCanvasReady, setCurrentScale, currentScale } = useCanvas();
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -90,14 +90,13 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
         (containerHeight / targetHeight) * 0.95
       );
       
-      // Set the stage to the canvas's actual dimensions
       stage.width(targetWidth);
       stage.height(targetHeight);
       
-      // Use CSS transform to scale the container, which centers it via flexbox
       canvasContainer.style.transform = `scale(${scale})`;
+      canvasContainer.style.width = `${targetWidth}px`;
+      canvasContainer.style.height = `${targetHeight}px`;
       
-      // The background Rect should cover the original unscaled area
       background.width(targetWidth);
       background.height(targetHeight);
       
@@ -120,6 +119,24 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     
     // We only want this to run when the canvas size changes.
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
+
+  // EFFECT TO HANDLE ZOOM SCALING AND SCROLLING
+  useEffect(() => {
+    if (!stage) return;
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!canvasContainer) return;
+
+    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
+
+    // Apply scale transform
+    canvasContainer.style.transform = `scale(${currentScale})`;
+    
+    // Update container dimensions to trigger scrollbar recalculation
+    canvasContainer.style.width = `${targetWidth}px`;
+    canvasContainer.style.height = `${targetHeight}px`;
+
+  }, [currentScale, stage, canvasSize]);
+
 
   return (
     <div className="relative-canvas">
