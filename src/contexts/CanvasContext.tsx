@@ -243,8 +243,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const scale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
     
     setCanvasScale(scale);
-    setCanvasPosition({ x: 0, y: 0 });
 
+    const newX = (container.clientWidth - stage.width() * scale) / 2;
+    const newY = (container.clientHeight - stage.height() * scale) / 2;
+
+    setCanvasPosition({ x: newX, y: newY });
   }, []);
 
   const zoom = useCallback((direction: 'in' | 'out') => {
@@ -252,7 +255,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const oldScale = canvasScale;
     const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
     setCanvasScale(newScale);
-  }, [canvasScale]);
+
+    if (canvasRef.current?.stage) {
+      const stage = canvasRef.current.stage;
+      const container = document.getElementById('canvas-wrapper');
+      if (container) {
+          const newX = (container.clientWidth - stage.width() * newScale) / 2;
+          const newY = (container.clientHeight - stage.height() * newScale) / 2;
+          setCanvasPosition({ x: newX, y: newY });
+      }
+    }
+  }, [canvasScale, canvasRef]);
 
   const zoomIn = useCallback(() => zoom('in'), [zoom]);
   const zoomOut = useCallback(() => zoom('out'), [zoom]);
@@ -263,9 +276,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     } else {
         const newScale = parseFloat(value);
         setCanvasScale(newScale);
-        setCanvasPosition({ x: 0, y: 0 });
+        
+        if (canvasRef.current?.stage) {
+            const stage = canvasRef.current.stage;
+            const container = document.getElementById('canvas-wrapper');
+            if (container) {
+                const newX = (container.clientWidth - stage.width() * newScale) / 2;
+                const newY = (container.clientHeight - stage.height() * newScale) / 2;
+                setCanvasPosition({ x: newX, y: newY });
+            }
+        }
     }
-  }, [fitToScreen]);
+  }, [fitToScreen, canvasRef]);
 
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
