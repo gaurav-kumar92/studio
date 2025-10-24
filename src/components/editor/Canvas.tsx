@@ -74,8 +74,10 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
   }, [canvasSize, setCanvasReady]);
 
   useEffect(() => {
-    if (!stageRef.current || !layerRef.current) return;
+    if (!stageRef.current || !stageRef.current.getStage() || !layerRef.current) return;
+
     const [width, height] = canvasSize.split('x').map(Number);
+    
     stageRef.current.clipFunc((ctx: any) => {
       ctx.rect(0, 0, width, height);
     });
@@ -85,21 +87,17 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
         layerRef.current.clipFunc((ctx: any) => {
           ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
         });
-        if (stageRef.current) {
-          stageRef.current.draw();
-        }
     } else {
-        if(layerRef.current) {
-          layerRef.current.clipFunc(null);
-          if (stageRef.current) {
-            stageRef.current.draw();
-          }
-        }
+        layerRef.current.clipFunc(null);
     }
+
+    // Always redraw after changing clipping
+    stageRef.current.draw();
+    
   }, [isCircular, canvasSize]);
 
   useEffect(() => {
-    if (stageRef.current) {
+    if (stageRef.current && stageRef.current.getStage()) {
       const [width, height] = canvasSize.split('x').map(Number);
       stageRef.current.width(width);
       stageRef.current.height(height);
@@ -137,14 +135,14 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
                   backgroundRef.current.fill(null);
                   backgroundRef.current.fillLinearGradientColorStops(null);
                   backgroundRef.current.fillRadialGradientColorStops(null);
-                  layerRef.current?.draw();
+                  if (layerRef.current) layerRef.current.draw();
               };
           }
       }
   }, [backgroundImage, backgroundImageProps]);
 
   useEffect(() => {
-    if (stageRef.current) {
+    if (stageRef.current && stageRef.current.getStage()) {
       stageRef.current.x(canvasPosition.x);
       stageRef.current.y(canvasPosition.y);
       stageRef.current.scale({ x: canvasScale, y: canvasScale });
