@@ -39,28 +39,35 @@ export const useTextHandler = ({
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
 
+    const isEditing = !!editingTextNode || (config.id && layer.findOne(`#${config.id}`));
+
     // Use a placeholder for new text to avoid adding empty objects
-    if (!editingTextNode && (!config.text || config.text.trim() === '')) {
+    if (!isEditing && (!config.text || config.text.trim() === '')) {
       config.text = 'New Text';
     }
 
 
     // Reuse id when editing; new id when adding
     const uniqueId =
+      config.id ??
       editingTextNode?.id?.() ?? `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    let oldNode = layer.findOne(`#${uniqueId}`);
 
     // When editing, you destroy & rebuild — we’ll keep the same id so this becomes an UPDATE
     let oldAttrs: { [key: string]: any } = {};
-    if (editingTextNode) {
+    if (oldNode) {
       // Preserve all "data-*" attrs (your design settings)
-      Object.keys(editingTextNode.attrs).forEach((key) => {
-        if (key.startsWith('data-')) oldAttrs[key] = editingTextNode.attrs[key];
+      Object.keys(oldNode.attrs).forEach((key) => {
+        if (key.startsWith('data-')) oldAttrs[key] = oldNode.attrs[key];
       });
 
       // Remove old node (we’ll create a new node with the SAME id)
-      editingTextNode.destroy();
-      deselectNode();
-      setEditingTextNode(null);
+      oldNode.destroy();
+      if(editingTextNode) {
+          deselectNode();
+          setEditingTextNode(null);
+      }
     }
 
     // Merge old + new “data-*” attributes (dialog values override)
@@ -89,8 +96,8 @@ export const useTextHandler = ({
     };
 
     let newNode: any;
-    const x = editingTextNode ? editingTextNode.x() : stage.width() / 2;
-    const y = editingTextNode ? editingTextNode.y() : stage.height() / 2;
+    const x = oldNode ? oldNode.x() : stage.width() / 2;
+    const y = oldNode ? oldNode.y() : stage.height() / 2;
 
     if (config.curvature > 0) {
       // ----- Circular Text -----
@@ -272,7 +279,21 @@ export const useTextHandler = ({
     forceRecord,
   ]);
 
+    const handleTextUpdate = useCallback((config: any) => {
+    const node = editingTextNode;
+    if (!node) return;
+    
+    // Instead of destroying and recreating, just update the existing node
+    const newConfig = { ...node.attrs, ...config };
+    
+    // Destroy and recreate the node to apply structural changes like curvature
+    handleAddOrUpdateText(newConfig);
+    
+  }, [editingTextNode, handleAddOrUpdateText]);
+
+
   return {
     handleAddOrUpdateText,
+    handleTextUpdate,
   };
 };

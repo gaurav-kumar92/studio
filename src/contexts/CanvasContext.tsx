@@ -103,6 +103,7 @@ type CanvasContextType = {
   handleAddShape: (config: any) => void;
   handleUpdateShape: (attrs: any) => void;
   handleAddOrUpdateText: (config: any) => void;
+  handleTextUpdate: (config: any) => void;
   handleAddFrame: (config: any) => void;
   handleUpdateFrame: (attrs: any) => void;
   handleAddMask: (config: any) => void;
@@ -495,7 +496,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   useSelection({ isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
-  const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
+  const { handleAddOrUpdateText, handleTextUpdate } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
   const { handleAddShape, handleUpdateShape } = useShapeHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick, editingShapeNode, setEditingShapeNode, forceRecord });
   const { handleAddFrame, handleUpdateFrame } = useFrameHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick });
 
@@ -1062,6 +1063,7 @@ const handleBackgroundImageReset = useCallback(() => {
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
+    handleTextUpdate,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,

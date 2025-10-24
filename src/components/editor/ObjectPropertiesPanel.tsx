@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette, Type } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -11,6 +11,7 @@ import AnimationPanel from './AnimationPanel';
 import ClipartPropertiesPanel from './ClipartPropertiesPanel';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
+import TextPropertiesPanel from './TextDialog';
 
 type ObjectPropertiesPanelProps = {
   selectedNodes: any[];
@@ -18,6 +19,7 @@ type ObjectPropertiesPanelProps = {
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
   onColorChange: (config: any) => void;
+  onTextUpdate: (config: any) => void;
   onMaskImageZoom: (direction: 'in' | 'out') => void;
   onMaskImageReset: () => void;
   onMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
@@ -35,6 +37,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onOpacityChange,
   onFlip,
   onColorChange,
+  onTextUpdate,
   onMaskImageZoom,
   onMaskImageReset,
   onMaskImagePan,
@@ -63,6 +66,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     onOpacityChange(newOpacity);
   };
   
+  const isText = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'));
   const isClipart = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('clipart');
   const canHaveColor = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame'));
   const isLineOrCurve = hasSelection && selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
@@ -119,6 +123,22 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
           />
         </PopoverContent>
       </Popover>
+      
+      {isText && (
+         <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8">
+                <Type className="h-4 w-4 mr-2" /> Text
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px]">
+              <TextPropertiesPanel
+                editingNode={selectedNode}
+                onUpdateText={onTextUpdate}
+              />
+            </PopoverContent>
+          </Popover>
+      )}
 
       <Popover>
         <PopoverTrigger asChild>
