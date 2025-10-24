@@ -44,6 +44,10 @@ export const useClipartHandler = ({
 
         // Compute bounding box (untransformed)
         const bounds = group.getClientRect({ skipTransform: true });
+        
+        // Increase initial size
+        const scale = Math.min(150 / bounds.width, 150 / bounds.height);
+        group.scale({ x: scale, y: scale });
 
         // Shift offset to center
         const centerX = bounds.x + bounds.width / 2;
