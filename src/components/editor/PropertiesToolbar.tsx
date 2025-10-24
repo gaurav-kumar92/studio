@@ -35,8 +35,8 @@ const PropertiesToolbar = () => {
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
 
   return (
-    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col lg:flex-row items-center justify-center gap-4">
-      {/* Canvas Properties Section */}
+    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
+      {/* Top section: Always visible canvas controls */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
         <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
         <BackgroundColorPicker
@@ -46,16 +46,12 @@ const PropertiesToolbar = () => {
         <ZoomControls />
       </div>
 
-      {/* Conditional Separator and Object Properties */}
+      {/* Bottom section: Conditional object properties */}
       {selectedNode && (
         <>
           <Separator
-            orientation="vertical"
-            className="hidden lg:block h-6 mx-2"
-          />
-          <Separator
             orientation="horizontal"
-            className="block lg:hidden w-4/5 my-2"
+            className="w-4/5"
           />
           <ObjectPropertiesPanel
             selectedNodes={selectedNodes}
