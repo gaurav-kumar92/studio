@@ -89,12 +89,14 @@ export const useTextHandler = ({
     };
 
     let newNode: any;
+    const x = editingTextNode ? editingTextNode.x() : stage.width() / 2;
+    const y = editingTextNode ? editingTextNode.y() : stage.height() / 2;
 
     if (config.curvature > 0) {
       // ----- Circular Text -----
       const circularGroup = new window.Konva.Group({
-        x: stage.width() / 2,
-        y: stage.height() / 2,
+        x,
+        y,
         draggable: true,
         name: 'circularText',
         id: uniqueId,
@@ -115,7 +117,7 @@ export const useTextHandler = ({
       const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
 
       let cumulativeAngle = 0;
-      const fontStyle = `${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim();
+      const fontStyle = `${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic ' : ''}`.trim();
       const decorations: string[] = [];
       if (config.isUnderline) decorations.push('underline');
       if (config.isStrikethrough) decorations.push('line-through');
@@ -182,8 +184,8 @@ export const useTextHandler = ({
     } else {
       // ----- Straight Text -----
       const textGroup = new window.Konva.Group({
-        x: stage.width() / 2,
-        y: stage.height() / 2,
+        x,
+        y,
         draggable: true,
         name: 'textGroup',
         id: uniqueId,
@@ -205,7 +207,7 @@ export const useTextHandler = ({
       if (config.isUnderline) decorations.push('underline');
       if (config.isStrikethrough) decorations.push('line-through');
       mainText.textDecoration(decorations.join(' '));
-      mainText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic' : ''}`.trim());
+      mainText.fontStyle(`${config.isBold ? 'bold ' : ''}${config.isItalic ? 'italic ' : ''}`.trim());
 
       if (config.isGlow) {
         const glowText = mainText.clone({

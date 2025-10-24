@@ -47,8 +47,6 @@ type CanvasContextType = {
   setAddItemDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isShapeDialogOpen: boolean;
   setShapeDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isTextDialogOpen: boolean;
-  setTextDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isFrameDialogOpen: boolean;
   setFrameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isMaskDialogOpen: boolean;
@@ -136,7 +134,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
   const [editingShapeNode, setEditingShapeNode] = useState<any>(null);
-  const [isTextDialogOpen, setTextDialogOpen] = useState(false);
   const [editingTextNode, setEditingTextNode] = useState<any>(null);
   const [isFrameDialogOpen, setFrameDialogOpen] = useState(false);
   const [editingFrameNode, setEditingFrameNode] = useState<any>(null);
@@ -339,7 +336,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [handleUngroup, handleDoubleClick]);
 
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
-  const nodeHandlers = useNodeHandlers({ setEditingTextNode, setTextDialogOpen, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
+  const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
   const { handleAnimationChange, playAllAnimations } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
   const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
@@ -386,7 +383,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   useSelection({ isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
-  const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, setTextDialogOpen, forceRecord });
+  const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
   const { handleAddShape, handleUpdateShape } = useShapeHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick, editingShapeNode, setEditingShapeNode, forceRecord });
   const { handleAddFrame, handleUpdateFrame } = useFrameHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick });
 
@@ -430,7 +427,30 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     deselectNodes();
     if (!canvasRef.current) return;
     switch (itemType) {
-      case 'text': setEditingTextNode(null); setTextDialogOpen(true); break;
+      case 'text':
+        handleAddOrUpdateText({
+          text: 'New Text',
+          fontSize: 48,
+          fontFamily: 'Inter',
+          isBold: false,
+          isItalic: false,
+          isUnderline: false,
+          isStrikethrough: false,
+          letterSpacing: 0,
+          lineHeight: 1.2,
+          align: 'center',
+          isShadow: false,
+          shadowBlur: 10,
+          shadowDistance: 5,
+          shadowOpacity: 0.5,
+          isGlow: false,
+          glowColor: '#0000ff',
+          glowBlur: 10,
+          glowOpacity: 0.7,
+          radius: 150,
+          curvature: 0,
+        });
+        break;
       case 'shape': setEditingShapeNode(null); setShapeDialogOpen(true); break;
       case 'image': addImageFromComputer(); break;
       case 'frame': setEditingFrameNode(null); setFrameDialogOpen(true); break;
@@ -438,7 +458,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'clipart': setClipartDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, setTextDialogOpen, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setEditingTextNode, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
   const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
     if (!canvasRef.current?.layer) return;
@@ -795,7 +815,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const value: CanvasContextType = {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
-    setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isTextDialogOpen, setTextDialogOpen, isFrameDialogOpen,
+    setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
