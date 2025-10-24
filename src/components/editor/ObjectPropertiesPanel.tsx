@@ -24,7 +24,6 @@ type ObjectPropertiesPanelProps = {
   onGroup: () => void;
   onUngroup: () => void;
   onAnimationChange: (animation: any) => void;
-  onClipartPartColorChange: (partName: string, color: string) => void;
 };
 
 const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
@@ -41,7 +40,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onGroup,
   onUngroup,
   onAnimationChange,
-  onClipartPartColorChange,
 }) => {
   const [opacity, setOpacity] = React.useState(1);
   
@@ -134,10 +132,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent>
-            <ClipartPropertiesPanel 
-                selectedNode={selectedNode}
-                onColorChange={onClipartPartColorChange}
-            />
+            <ClipartPropertiesPanel />
           </PopoverContent>
         </Popover>
       )}

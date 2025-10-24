@@ -219,8 +219,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
 
       targetNodes.forEach((n: any) => {
-        if (isNodeLocked(n)) return;
-        if (typeof n.fill !== 'function') return;
+        if (isNodeLocked(n) || typeof n.fill !== 'function') return;
 
         n.fill(null);
         n.fillLinearGradientColorStops([]);
@@ -581,7 +580,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     if (partsToUpdate.length > 0) {
         partsToUpdate.forEach((part: any) => {
             part.fill(color);
-            part.setAttr(`data-${partName}-color`, color);
+            part.setAttr(`data-color-${partName}`, color);
         });
         canvasRef.current?.layer.draw();
         forceRecord?.();
@@ -838,5 +837,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
