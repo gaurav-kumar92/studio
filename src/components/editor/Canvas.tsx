@@ -140,8 +140,8 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
     // Compute new position to keep the stage centered
     stage.position({
-      x: (parentWidth - targetWidth * currentScale) / 2,
-      y: (parentHeight - targetHeight * currentScale) / 2,
+        x: (parentWidth - targetWidth * currentScale) / 2,
+        y: (parentHeight - targetHeight * currentScale) / 2,
     });
 
     stage.batchDraw();
