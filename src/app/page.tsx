@@ -93,20 +93,7 @@ function Editor() {
 
     const preventPinchZoom = (e: TouchEvent) => {
       if (e.touches.length > 1) {
-        const canvasWrapper = document.getElementById('canvas-wrapper');
-        let target = e.target as HTMLElement;
-        let isOverCanvas = false;
-        while(target && target !== document.body) {
-            if (target === canvasWrapper) {
-                isOverCanvas = true;
-                break;
-            }
-            target = target.parentElement as HTMLElement;
-        }
-
-        if (!isOverCanvas) {
-            e.preventDefault();
-        }
+        e.preventDefault();
       }
     };
 

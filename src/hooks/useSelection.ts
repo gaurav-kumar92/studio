@@ -318,7 +318,7 @@ stage.on('history:applied', onHistoryApplied);
           borderStrokeWidth: 1.5,
           anchorFill: '#a855f7',
           anchorStroke: '#a855f7',
-  
+          resizeEnabled: true, // This enables pinch-to-scale on mobile
           anchorStrokeWidth: 1,
           enabledAnchors: [
             'top-left', 'top-center', 'top-right',
