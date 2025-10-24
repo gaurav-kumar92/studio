@@ -38,29 +38,25 @@ const PropertiesToolbar = () => {
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <ZoomControls />
+        {backgroundImage && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" title="Edit Background Image">
+                  <Menu size={16} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <BackgroundImagePanel
+                  onZoom={handleBackgroundImageZoom}
+                  onPan={handleBackgroundImagePan}
+                  onReset={handleBackgroundImageReset}
+                />
+              </PopoverContent>
+            </Popover>
+        )}
       </div>
-
-      {backgroundImage && (
-        <>
-          <Separator orientation="horizontal" className="w-4/5" />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" title="Edit Background Image">
-                <Menu size={16} />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent>
-              <BackgroundImagePanel
-                onZoom={handleBackgroundImageZoom}
-                onPan={handleBackgroundImagePan}
-                onReset={handleBackgroundImageReset}
-              />
-            </PopoverContent>
-          </Popover>
-        </>
-      )}
 
       {selectedNode && (
         <>
