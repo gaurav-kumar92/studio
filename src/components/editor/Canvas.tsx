@@ -117,7 +117,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
     fitStageIntoParent();
     
-    // We only want this to run when the canvas size changes.
+    // We only want this to run when the canvas size or circular state changes.
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
   // EFFECT TO HANDLE ZOOM SCALING AND SCROLLING
