@@ -10,10 +10,15 @@ import MaskDialog from '@/components/editor/MaskDialog';
 import AddItemDialog from '@/components/editor/AddItemDialog';
 import LayersPanel from '@/components/editor/LayersPanel';
 import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
-import { CanvasProvider, useCanvas } from '@/contexts/CanvasContext';
+import {
+  CanvasProvider,
+  useCanvas,
+} from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
 import ClipartDialog from '@/components/editor/ClipartDialog';
 import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
+import CanvasSizeSelector from '@/components/editor/CanvasSizeSelector';
+import BackgroundColorPicker from '@/components/editor/BackgroundColorPicker';
 
 declare global {
   interface Window {
@@ -57,6 +62,9 @@ function Editor() {
     handleMoveNode,
     isLoading,
     canvasSize,
+    setCanvasSize,
+    backgroundColor,
+    setBackgroundColor,
   } = useCanvas();
 
   useEffect(() => {
@@ -95,7 +103,13 @@ function Editor() {
       ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
-          <h2 className="text-xl font-semibold text-center mb-4">Canvas Editor</h2>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
+            <BackgroundColorPicker
+              value={backgroundColor}
+              onChange={setBackgroundColor}
+            />
+          </div>
           <Toolbar />
           <Canvas
             ref={canvasRef}

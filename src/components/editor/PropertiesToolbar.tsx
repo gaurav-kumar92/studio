@@ -4,17 +4,11 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
-import CanvasSizeSelector from './CanvasSizeSelector';
-import BackgroundColorPicker from './BackgroundColorPicker';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 import ZoomControls from './ZoomControls';
 
 const PropertiesToolbar = () => {
   const {
-    canvasSize,
-    setCanvasSize,
-    backgroundColor,
-    setBackgroundColor,
     selectedNodes,
     handleAlign,
     handleOpacityChange,
@@ -38,11 +32,6 @@ const PropertiesToolbar = () => {
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
       {/* Top section: Always visible canvas controls */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-        <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-        <BackgroundColorPicker
-          value={backgroundColor}
-          onChange={setBackgroundColor}
-        />
         <ZoomControls />
       </div>
 
