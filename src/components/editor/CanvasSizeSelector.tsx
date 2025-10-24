@@ -47,16 +47,34 @@ const canvasOptions = [
 
 const allOptions = canvasOptions.flatMap(group => group.options);
 
+const getShortLabel = (label: string) => {
+    if (label.includes('A4')) return 'A4';
+    if (label.includes('A5')) return 'A5';
+    if (label.includes('US Letter')) return 'Letter';
+    return null;
+}
+
 const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange }) => {
   const selectedOption = allOptions.find(opt => opt.value === value);
+
+  let displayLabel = selectedOption?.label || '';
+  const shortLabel = getShortLabel(displayLabel);
   const dimensions = value.split('-')[0].replace('x', ' x ');
+
+  const triggerLabel = shortLabel || dimensions;
+  
+  const getItemLabel = (option: typeof allOptions[0]) => {
+      const short = getShortLabel(option.label);
+      const dims = option.value.split('-')[0].replace('x', ' x ');
+      return short ? `${option.label} (${short})` : `${option.label} (${dims})`;
+  }
 
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-auto h-8 px-2">
         <div className="flex items-center gap-2">
            {selectedOption?.icon}
-           <span className="text-xs font-mono">{dimensions}</span>
+           <span className="text-xs font-mono">{triggerLabel}</span>
         </div>
       </SelectTrigger>
       <SelectContent className="max-h-[50vh]">
@@ -67,7 +85,7 @@ const CanvasSizeSelector: React.FC<CanvasSizeSelectorProps> = ({ value, onChange
                     <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center gap-3">
                             {option.icon}
-                            <span>{option.label} ({option.value.split('-')[0].replace('x', ' x ')})</span>
+                            <span>{getItemLabel(option)}</span>
                         </div>
                     </SelectItem>
                 ))}
