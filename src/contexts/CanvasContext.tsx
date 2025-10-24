@@ -737,8 +737,8 @@ const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' 
     switch (direction) {
         case 'up': newY -= panAmount; break;
         case 'down': newY += panAmount; break;
-        case 'left': newX -= panAmount; break;
-        case 'right': newX += panAmount; break;
+        case 'left': newX += panAmount; break;
+        case 'right': newX -= panAmount; break;
     }
     setBackgroundImageProps(prev => ({...prev, x: newX, y: newY}));
     forceRecord?.();
