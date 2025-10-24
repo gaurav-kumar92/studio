@@ -58,35 +58,33 @@ const PropertiesToolbar = () => {
         )}
       </div>
 
-      {/* This container will always be present, reserving space */}
+      <div className="w-full flex items-center justify-center">
+        {selectedNode && <Separator orientation="horizontal" className="w-4/5 my-2" />}
+      </div>
+      
       <div className="min-h-[40px] w-full flex flex-col items-center justify-center">
-        {selectedNode && (
-          <>
-            <Separator orientation="horizontal" className="w-4/5 mb-4" />
-            <ObjectPropertiesPanel
-              selectedNodes={selectedNodes}
-              onAlign={handleAlign}
-              onOpacityChange={handleOpacityChange}
-              onFlip={handleFlip}
-              onColorChange={handleColorUpdate}
-              onMaskImageZoom={handleMaskImageZoom}
-              onMaskImageReset={handleMaskImageReset}
-              onMaskImagePan={handleMaskImagePan}
-              isMultiSelectMode={isMultiSelectMode}
-              onAnimationChange={handleAnimationChange}
-              onClipartPartColorChange={handleClipartPartColorChange}
-              onMultiSelectToggle={() => {
-                const newMode = !isMultiSelectMode;
-                setMultiSelectMode(newMode);
-                if (!newMode && selectedNodes.length > 1) {
-                  setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
-                }
-              }}
-              onGroup={handleGroup}
-              onUngroup={handleUngroup}
-            />
-          </>
-        )}
+        <ObjectPropertiesPanel
+          selectedNodes={selectedNodes}
+          onAlign={handleAlign}
+          onOpacityChange={handleOpacityChange}
+          onFlip={handleFlip}
+          onColorChange={handleColorUpdate}
+          onMaskImageZoom={handleMaskImageZoom}
+          onMaskImageReset={handleMaskImageReset}
+          onMaskImagePan={handleMaskImagePan}
+          isMultiSelectMode={isMultiSelectMode}
+          onAnimationChange={handleAnimationChange}
+          onClipartPartColorChange={handleClipartPartColorChange}
+          onMultiSelectToggle={() => {
+            const newMode = !isMultiSelectMode;
+            setMultiSelectMode(newMode);
+            if (!newMode && selectedNodes.length > 1) {
+              setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
+            }
+          }}
+          onGroup={handleGroup}
+          onUngroup={handleUngroup}
+        />
       </div>
     </div>
   );
