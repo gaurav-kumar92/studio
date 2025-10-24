@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -14,6 +15,7 @@ const buttonVariants = cva(
         destructive: "bg-red-500 text-white hover:bg-red-600",
         selected: "bg-red-500 text-white",
         ghost: "bg-transparent hover:bg-gray-100",
+        active: "bg-green-500 text-white hover:bg-green-600",
       },
       size: {
         default: "h-10 px-4 py-2",

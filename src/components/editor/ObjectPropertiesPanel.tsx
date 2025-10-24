@@ -99,7 +99,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   return (
     <div id="object-properties" className={`inline-flex items-center justify-center gap-2 flex-nowrap p-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
        <Button
-          variant={isMultiSelectMode ? "destructive" : "ghost"}
+          variant={isMultiSelectMode ? "active" : "ghost"}
           size="icon"
           onClick={onMultiSelectToggle}
           title={isMultiSelectMode ? "Exit Multi-Select" : "Select Multiple"}
