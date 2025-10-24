@@ -801,8 +801,8 @@ const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' 
     let newX = backgroundImageProps.x;
     let newY = backgroundImageProps.y;
     switch (direction) {
-        case 'up': newY -= panAmount; break;
-        case 'down': newY += panAmount; break;
+        case 'up': newY += panAmount; break;
+        case 'down': newY -= panAmount; break;
         case 'left': newX += panAmount; break;
         case 'right': newX -= panAmount; break;
     }
@@ -1033,23 +1033,6 @@ const handleBackgroundImageReset = useCallback(() => {
 
       fitToScreen();
       window.addEventListener('resize', fitToScreen);
-
-      stage.on('dragmove', (e: any) => {
-          const node = e.target;
-          const stageWidth = stage.width();
-          const stageHeight = stage.height();
-
-          const box = node.getClientRect({ relativeTo: stage });
-          let newX = node.x();
-          let newY = node.y();
-
-          if (box.x < 0) newX -= box.x;
-          if (box.y < 0) newY -= box.y;
-          if (box.x + box.width > stageWidth) newX -= (box.x + box.width - stageWidth);
-          if (box.y + box.height > stageHeight) newY -= (box.y + box.height - stageHeight);
-          
-          node.position({ x: newX, y: newY });
-      });
 
       return () => {
           window.removeEventListener('resize', fitToScreen);
