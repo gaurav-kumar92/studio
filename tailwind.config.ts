@@ -11,7 +11,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
-        headline: ['"Kaushan Script"', 'cursive'],
+        headline: ['"Great Vibes"', 'cursive'],
       },
       colors: {
         background: 'hsl(var(--background))',
