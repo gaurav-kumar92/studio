@@ -79,8 +79,8 @@ function Editor() {
       ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
-          <h1 className="text-6xl font-bold text-center my-4" style={{ fontFamily: "'Great Vibes', cursive" }}>
-            <span className="bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-6xl font-bold text-center my-4" style={{ fontFamily: "'Pacifico', cursive" }}>
+            <span className="bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
               CHITRA
             </span>
           </h1>
