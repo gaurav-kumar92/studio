@@ -7,6 +7,7 @@ import { useCanvas } from '@/contexts/CanvasContext';
 import CanvasSizeSelector from './CanvasSizeSelector';
 import BackgroundColorPicker from './BackgroundColorPicker';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
+import ZoomControls from './ZoomControls';
 
 const PropertiesToolbar = () => {
   const {
@@ -48,6 +49,9 @@ const PropertiesToolbar = () => {
         />
         </div>
       </div>
+
+      <Separator orientation="vertical" />
+      <ZoomControls />
 
       {/* Conditional Separator and Object Properties */}
       {selectedNode && (
