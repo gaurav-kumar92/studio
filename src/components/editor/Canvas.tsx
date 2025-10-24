@@ -21,6 +21,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
   const [layer, setLayer] = useState<any>(null);
   const [background, setBackground] = useState<any>(null);
   const { setInitialScale, setCanvasReady, setCurrentScale, currentScale } = useCanvas();
+  const [containerStyle, setContainerStyle] = useState({});
 
   // Expose stage, layer, and background to the parent component
   useImperativeHandle(ref, () => ({
@@ -88,14 +89,15 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       // Scale to fit the parent container, with a small margin
       const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight) * 0.9;
   
+      // Set the base size of the Konva stage to the real pixel size of the design
       stage.width(targetWidth);
       stage.height(targetHeight);
   
-      // Resize background
+      // Resize background to match
       background.width(targetWidth);
       background.height(targetHeight);
   
-      // Optional circular clipping
+      // Optional circular clipping for the entire layer
       if (isCircular) {
         const radius = Math.min(targetWidth, targetHeight) / 2;
         layer.clipFunc((ctx: any) => {
@@ -105,12 +107,16 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
         layer.clipFunc(null);
       }
       
-      // Use Konva's scaling and positioning
-      stage.scale({ x: scale, y: scale });
-      stage.position({
-        x: (containerWidth - targetWidth * scale) / 2,
-        y: (containerHeight - targetHeight * scale) / 2,
+      // Use CSS transform on the container for scaling
+      setContainerStyle({
+        transform: `scale(${scale})`,
+        width: `${targetWidth}px`,
+        height: `${targetHeight}px`,
       });
+      
+      // The Konva stage itself is not scaled internally
+      stage.scale({ x: 1, y: 1 });
+      stage.position({ x: 0, y: 0 }); // Position is handled by flexbox centering now
   
       stage.draw();
       setInitialScale(scale);
@@ -123,44 +129,30 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     return () => window.removeEventListener('resize', fitStageIntoParent);
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
-  // EFFECT TO HANDLE ZOOM SCALING (Proper Konva Method)
+
+  // EFFECT TO HANDLE ZOOM SCALING (CSS Transform Method)
   useEffect(() => {
-    if (!stage) return;
+      const canvasContainer = document.getElementById('canvas-container');
+      if (!canvasContainer || !stage) return;
+      
+      const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
-    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
+      setContainerStyle({
+          transform: `scale(${currentScale})`,
+          width: `${targetWidth}px`,
+          height: `${targetHeight}px`,
+      });
 
-    // Find the center of the stage
-    const stageCenter = {
-      x: targetWidth / 2,
-      y: targetHeight / 2,
-    };
+      // Konva stage remains at 1:1 scale internally
+      stage.scale({ x: 1, y: 1 });
+      stage.draw();
 
-    // Calculate new scale
-    const scale = currentScale;
-
-    // Apply scale (both x and y)
-    stage.scale({ x: scale, y: scale });
-
-    // Keep canvas centered by adjusting position
-    const parent = document.getElementById('canvas-container')?.parentElement;
-    if (!parent) return;
-
-    const parentWidth = parent.clientWidth;
-    const parentHeight = parent.clientHeight;
-
-    // Compute new position so the stage stays centered
-    stage.position({
-      x: parentWidth / 2 - stageCenter.x * scale,
-      y: parentHeight / 2 - stageCenter.y * scale,
-    });
-
-    stage.batchDraw();
   }, [currentScale, stage, canvasSize]);
 
 
   return (
     <div className="relative-canvas">
-      <div id="canvas-container"></div>
+      <div id="canvas-container" style={containerStyle}></div>
     </div>
   );
 });

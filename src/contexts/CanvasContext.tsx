@@ -97,7 +97,9 @@ type CanvasContextType = {
   playAllAnimations: () => void;
   handleClipartPartColorChange: (partName: string, color: string) => void;
 
+  initialScale: number;
   setInitialScale: React.Dispatch<React.SetStateAction<number>>;
+  currentScale: number;
   setCurrentScale: React.Dispatch<React.SetStateAction<number>>;
   canZoomOut: boolean;
   undo: () => void;
@@ -521,28 +523,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const handleZoom = useCallback(
     (direction: 'in' | 'out') => {
-      const canvasContainer = document.getElementById('canvas-container');
-      if (!canvasContainer) return;
-  
-      const transform = window.getComputedStyle(canvasContainer).transform;
-      let oldScale = 1;
-      if (transform && transform !== 'none') {
-        const matrix = new DOMMatrix(transform);
-        oldScale = matrix.a;
-      }
-  
-      const scaleBy = 1.1;
-      let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-  
-      if (direction === 'out' && newScale < initialScale) {
-        newScale = initialScale;
-      }
-  
-      canvasContainer.style.transform = `scale(${newScale})`;
-      setCurrentScale(newScale);
+        const scaleBy = 1.1;
+        setCurrentScale(prev => {
+            const oldScale = prev;
+            let newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+            if (direction === 'out' && newScale < initialScale) {
+                newScale = initialScale;
+            }
+            return newScale;
+        });
     },
     [initialScale]
-  );
+);
+
   
   const canZoomOut = currentScale > initialScale;
 
@@ -825,8 +818,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleZoom, handleAnimationChange, playAllAnimations,
     handleClipartPartColorChange,
-     setInitialScale,
-    setCurrentScale, canZoomOut,
+    initialScale, setInitialScale,
+    currentScale, setCurrentScale, canZoomOut,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
@@ -842,3 +835,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    

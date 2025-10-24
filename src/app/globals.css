@@ -174,7 +174,7 @@ body {
     position: relative;
     width: 100%;
     background-color: #e5e7eb;
-    overflow: auto;
+    overflow: hidden; /* Hide overflow to prevent scrollbars */
     flex: 1;
     display: flex;
     justify-content: center;
@@ -183,6 +183,8 @@ body {
 
 #canvas-container {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform-origin: center center;
+    transition: transform 0.2s ease-in-out;
 }
 
 
@@ -624,3 +626,5 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+
+    
