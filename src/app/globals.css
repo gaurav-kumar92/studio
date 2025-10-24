@@ -137,7 +137,8 @@ body {
     background-color: #e5e7eb;
     overflow: auto;
     flex-grow: 1;
-    min-height: 300px;
+    min-height: 400px;
+    flex-shrink: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -590,3 +591,5 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+
+    

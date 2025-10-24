@@ -89,7 +89,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       const containerHeight = relativeCanvas.clientHeight;
   
       // Scale to fit the parent container
-      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
+      const scale = Math.min((containerWidth / targetWidth) * 0.95, (containerHeight / targetHeight) * 0.95);
   
       // Apply scaling and centering via Konva itself
       stage.width(targetWidth);
@@ -174,3 +174,5 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
+
+    
