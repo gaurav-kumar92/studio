@@ -5,8 +5,6 @@ import React from 'react';
 import {
   Undo,
   Redo,
-  ZoomIn,
-  ZoomOut,
   Plus,
   Trash2,
   Save,
@@ -19,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
+import ZoomSelector from './ZoomSelector';
 
 const Toolbar = () => {
   const {
@@ -26,12 +25,10 @@ const Toolbar = () => {
     deselectNodes,
     selectedNodes,
     handleSave,
-    handleZoom,
     undo,
     redo,
     canUndo,
     canRedo,
-    canZoomOut,
     handleDelete,
     isSelectionLocked,
     isAnySelectedLocked,
@@ -62,25 +59,7 @@ const Toolbar = () => {
           <Plus className="h-4 w-4" />
         </Button>
         <Separator orientation="vertical" />
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Zoom in"
-          title="Zoom in"
-          onClick={() => handleZoom('in')}
-        >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Zoom out"
-          title="Zoom out"
-          onClick={() => handleZoom('out')}
-          disabled={!canZoomOut}
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
+        <ZoomSelector />
         <Separator orientation="vertical" />
         <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
           <Save className="h-4 w-4" />
