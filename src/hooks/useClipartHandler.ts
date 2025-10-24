@@ -31,7 +31,6 @@ export const useClipartHandler = ({
             y: stage.height() / 2,
             draggable: true,
             name: 'clipart',
-            scale: { x: 5, y: 5 }
         });
         
         Object.entries(clipart.parts).forEach(([partName, pathData]) => {
@@ -44,8 +43,12 @@ export const useClipartHandler = ({
         });
 
         const bounds = group.getClientRect({ skipTransform: true });
-        group.offsetX(bounds.width / 2);
-        group.offsetY(bounds.height / 2);
+        group.setAttrs({
+            offsetX: bounds.width / 2,
+            offsetY: bounds.height / 2,
+            width: bounds.width,
+            height: bounds.height,
+        });
 
         attachDoubleClick(group);
         layer.add(group);
