@@ -47,7 +47,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
         container: 'canvas-container',
         width: targetWidth,
         height: targetHeight,
-        draggable: false, // Draggable is now controlled by spacebar
+        draggable: false, 
       });
       setStage(tempStage);
 
@@ -74,33 +74,37 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 
   useEffect(() => {
     if (!stage || !layer || !background) return;
-
+  
     const canvasContainer = document.getElementById('canvas-container');
     const relativeCanvas = canvasContainer?.parentElement;
     if (!canvasContainer || !relativeCanvas) return;
-
+  
     const fitStageIntoParent = () => {
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
-
+  
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
-      
-      const scale = Math.min(
-        (containerWidth / targetWidth) * 0.9, 
-        (containerHeight / targetHeight) * 0.9
-      );
-      
+  
+      // Scale to fit the parent container
+      const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
+  
+      // Apply scaling and centering
       stage.width(targetWidth);
       stage.height(targetHeight);
-      
-      // We only apply scale via transform. Centering is handled by flexbox on parent.
-      canvasContainer.style.transform = `scale(${scale})`;
+  
       canvasContainer.style.width = `${targetWidth}px`;
       canvasContainer.style.height = `${targetHeight}px`;
-
+      canvasContainer.style.position = 'absolute';
+      canvasContainer.style.top = '50%';
+      canvasContainer.style.left = '50%';
+      canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      canvasContainer.style.transformOrigin = 'center center';
+  
+      // Resize background
       background.width(targetWidth);
       background.height(targetHeight);
-      
+  
+      // Optional circular clipping
       if (isCircular) {
         const radius = Math.min(targetWidth, targetHeight) / 2;
         layer.clipFunc((ctx: any) => {
@@ -109,34 +113,28 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       } else {
         layer.clipFunc(null);
       }
-      
+  
       stage.draw();
-      
       setInitialScale(scale);
       setCurrentScale(scale);
     };
-
+  
     fitStageIntoParent();
-    
-    // We only want this to run when the canvas size or circular state changes.
+    window.addEventListener('resize', fitStageIntoParent);
+  
+    return () => window.removeEventListener('resize', fitStageIntoParent);
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
-  // EFFECT TO HANDLE ZOOM SCALING AND SCROLLING
+  // EFFECT TO HANDLE ZOOM SCALING 
   useEffect(() => {
     if (!stage) return;
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
-
-    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
-
-    // Apply scale transform
-    canvasContainer.style.transform = `scale(${currentScale})`;
     
-    // Update container dimensions to trigger scrollbar recalculation
-    canvasContainer.style.width = `${targetWidth}px`;
-    canvasContainer.style.height = `${targetHeight}px`;
+    // The translate is for centering, the scale is for zooming.
+    canvasContainer.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
 
-  }, [currentScale, stage, canvasSize]);
+  }, [currentScale, stage]);
 
 
   return (
@@ -149,5 +147,3 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
 Canvas.displayName = 'Canvas';
 
 export default Canvas;
-
-    

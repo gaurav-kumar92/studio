@@ -134,17 +134,12 @@ body {
 .relative-canvas {
     position: relative;
     width: 100%;
-    /* CRITICAL: Constrain container height to screen and allow scrolling for large canvases (A1) */
-    max-height: calc(100vh - 150px); /* Adjust 150px based on toolbar/header height */
+    max-height: calc(100vh - 150px); 
     background-color: #e5e7eb;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    overflow: auto; /* Allows scrolling if canvas is larger than container */
+    overflow: auto;
     flex-grow: 1;
     min-height: 300px;
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /* This ensures the canvas itself gets the rounded corners */
@@ -153,8 +148,6 @@ body {
 }
 
 #canvas-container {
-    /* The canvas container itself is now positioned by its parent */
-    /* This allows the Konva stage to be centered correctly */
     transform-origin: center center;
 }
 
@@ -597,9 +590,3 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
-
-    
-
-    
-
-    
