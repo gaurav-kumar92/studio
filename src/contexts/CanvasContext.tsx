@@ -436,16 +436,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     runAsSingleHistoryStep(() => {
       const layer = canvasRef.current!.layer;
   
-      // Compute min/max from absolute positions (not clientRect)
-      let minX = Infinity,
-        minY = Infinity;
+      // Find the bounding box that contains all selected nodes
+      let minX = Infinity, minY = Infinity;
+      let maxX = -Infinity, maxY = -Infinity;
+  
       selectedNodes.forEach((node) => {
-        const pos = node.getAbsolutePosition();
-        minX = Math.min(minX, pos.x);
-        minY = Math.min(minY, pos.y);
+        const box = node.getClientRect({ relativeTo: layer });
+        minX = Math.min(minX, box.x);
+        minY = Math.min(minY, box.y);
+        maxX = Math.max(maxX, box.x + box.width);
+        maxY = Math.max(maxY, box.y + box.height);
       });
   
-      // Create group
+      // Create group at the top-left of the bounding box
       const group = new window.Konva.Group({
         name: 'group',
         draggable: true,
@@ -455,13 +458,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
       layer.add(group);
   
-      // Move children relative to group
+      // Move children to group with positions relative to group's origin
       selectedNodes.forEach((node) => {
-        const absPos = node.getAbsolutePosition();
+        const box = node.getClientRect({ relativeTo: layer });
+        const currentX = node.x();
+        const currentY = node.y();
+        
+        // Calculate offset from node's current position to its visual position
+        const offsetX = box.x - currentX;
+        const offsetY = box.y - currentY;
+        
         node.moveTo(group);
+        
+        // Set position relative to group, accounting for any offset
         node.position({
-          x: absPos.x - minX,
-          y: absPos.y - minY,
+          x: box.x - minX - offsetX,
+          y: box.y - minY - offsetY,
         });
       });
   
@@ -490,16 +502,28 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       return;
   
     runAsSingleHistoryStep(() => {
-      // Ensure layer is correct and visible
       const layer = canvasRef.current?.layer ?? group.getLayer();
       const children = group.getChildren().slice();
       const nodesToSelect: Node[] = [];
   
+      // Store group's absolute position
+      const groupPos = group.getAbsolutePosition();
+  
       children.forEach((child: Node) => {
-        const absPos = child.getAbsolutePosition();
+        // Get child's current position relative to group
+        const childRelativePos = child.position();
+        
+        // Calculate absolute position
+        const childAbsX = groupPos.x + childRelativePos.x;
+        const childAbsY = groupPos.y + childRelativePos.y;
+        
+        // Move to layer
         child.moveTo(layer);
-        child.position(absPos);
+        
+        // Set absolute position
+        child.position({ x: childAbsX, y: childAbsY });
         child.draggable(true);
+        
         nodesToSelect.push(child);
       });
   
