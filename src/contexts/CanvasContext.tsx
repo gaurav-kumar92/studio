@@ -29,6 +29,12 @@ declare global {
   }
 }
 
+type BackgroundImageProps = {
+  x: number;
+  y: number;
+  scale: number;
+};
+
 type CanvasContextType = {
   canvasRef: React.RefObject<{ stage: any; layer: any; background: any }>;
   konvaObjects: any[];
@@ -68,6 +74,7 @@ type CanvasContextType = {
   setBackgroundColor: (color: any) => void;
   backgroundImage: string | null;
   setBackgroundImage: React.Dispatch<React.SetStateAction<string | null>>;
+  backgroundImageProps: BackgroundImageProps;
   
   canvasScale: number;
   canvasPosition: { x: number; y: number };
@@ -107,6 +114,9 @@ type CanvasContextType = {
   playAllAnimations: () => void;
   handleClipartPartColorChange: (partName: string, color: string) => void;
   handleSetBackgroundImage: () => void;
+  handleBackgroundImageZoom: (direction: 'in' | 'out') => void;
+  handleBackgroundImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  handleBackgroundImageReset: () => void;
 
   undo: () => void;
   redo: () => void;
@@ -163,6 +173,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     ],
   });
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [backgroundImageProps, setBackgroundImageProps] = useState<BackgroundImageProps>({ x: 0, y: 0, scale: 1 });
 
   const {
     undo: undoBase,
@@ -195,6 +206,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         const reader = new FileReader();
         reader.onload = (event) => {
           setBackgroundImage(event.target?.result as string);
+          setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
           setBackgroundColorState(prev => ({ ...prev, solidColor: 'transparent', isGradient: false }));
           forceRecord();
         };
@@ -709,6 +721,35 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord?.();
   }, [selectedNodes, forceRecord, isNodeLocked]);
 
+  const handleBackgroundImageZoom = useCallback((direction: 'in' | 'out') => {
+    if (!backgroundImage) return;
+    const scaleBy = 1.1;
+    const newScale = direction === 'in' ? backgroundImageProps.scale * scaleBy : backgroundImageProps.scale / scaleBy;
+    setBackgroundImageProps(prev => ({...prev, scale: newScale}));
+    forceRecord?.();
+}, [backgroundImage, backgroundImageProps, forceRecord]);
+
+const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!backgroundImage) return;
+    const panAmount = 10;
+    let newX = backgroundImageProps.x;
+    let newY = backgroundImageProps.y;
+    switch (direction) {
+        case 'up': newY -= panAmount; break;
+        case 'down': newY += panAmount; break;
+        case 'left': newX -= panAmount; break;
+        case 'right': newX += panAmount; break;
+    }
+    setBackgroundImageProps(prev => ({...prev, x: newX, y: newY}));
+    forceRecord?.();
+}, [backgroundImage, backgroundImageProps, forceRecord]);
+
+const handleBackgroundImageReset = useCallback(() => {
+    if (!backgroundImage) return;
+    setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
+    forceRecord?.();
+}, [backgroundImage, forceRecord]);
+
   const handleDelete = useCallback(() => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
@@ -887,13 +928,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
-    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, clipboard,
+    canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
-    handleClipartPartColorChange, handleSetBackgroundImage,
+    handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,

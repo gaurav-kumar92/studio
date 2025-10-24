@@ -23,6 +23,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
     fitToScreen, 
     canvasScale,
     canvasPosition, 
+    backgroundImageProps,
   } = useCanvas();
 
   const stageRef = useRef<any>(null);
@@ -107,10 +108,21 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
               img.onload = () => {
                   backgroundRef.current.fillPatternImage(img);
                   backgroundRef.current.fillPatternRepeat('no-repeat');
+                  
+                  const bgWidth = backgroundRef.current.width();
+                  const bgHeight = backgroundRef.current.height();
+                  
+                  const imgScale = Math.max(bgWidth / img.width, bgHeight / img.height);
+                  
                   backgroundRef.current.fillPatternScale({ 
-                      x: backgroundRef.current.width() / img.width, 
-                      y: backgroundRef.current.height() / img.height 
+                      x: imgScale * backgroundImageProps.scale, 
+                      y: imgScale * backgroundImageProps.scale,
                   });
+                  backgroundRef.current.fillPatternOffset({
+                      x: backgroundImageProps.x,
+                      y: backgroundImageProps.y,
+                  });
+
                   backgroundRef.current.fill(null);
                   backgroundRef.current.fillLinearGradientColorStops(null);
                   backgroundRef.current.fillRadialGradientColorStops(null);
@@ -118,7 +130,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
               };
           }
       }
-  }, [backgroundImage]);
+  }, [backgroundImage, backgroundImageProps]);
 
   return (
     <div className="relative-canvas" id="canvas-wrapper">

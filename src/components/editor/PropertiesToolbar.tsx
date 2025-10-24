@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 import ZoomControls from './ZoomControls';
+import BackgroundImagePanel from './BackgroundImagePanel';
 
 const PropertiesToolbar = () => {
   const {
@@ -24,18 +25,34 @@ const PropertiesToolbar = () => {
     setSelectedNodes,
     handleAnimationChange,
     handleClipartPartColorChange,
+    backgroundImage,
+    handleBackgroundImageZoom,
+    handleBackgroundImagePan,
+    handleBackgroundImageReset,
   } = useCanvas();
 
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col items-center justify-center gap-4">
-      {/* Top section: Always visible canvas controls */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
         <ZoomControls />
       </div>
 
-      {/* Bottom section: Conditional object properties */}
+      {backgroundImage && (
+        <>
+           <Separator
+            orientation="horizontal"
+            className="w-4/5"
+          />
+          <BackgroundImagePanel 
+            onZoom={handleBackgroundImageZoom}
+            onPan={handleBackgroundImagePan}
+            onReset={handleBackgroundImageReset}
+          />
+        </>
+      )}
+
       {selectedNode && (
         <>
           <Separator
