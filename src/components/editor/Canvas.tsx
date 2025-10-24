@@ -82,24 +82,26 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     const fitStageIntoParent = () => {
       const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
   
+      // Reset any external scaling on the container
+      canvasContainer.style.transform = '';
+      
       const containerWidth = relativeCanvas.clientWidth;
       const containerHeight = relativeCanvas.clientHeight;
   
       // Scale to fit the parent container
       const scale = Math.min(containerWidth / targetWidth, containerHeight / targetHeight);
   
-      // Apply scaling and centering
+      // Apply scaling and centering via Konva itself
       stage.width(targetWidth);
       stage.height(targetHeight);
-  
-      canvasContainer.style.width = `${targetWidth}px`;
-      canvasContainer.style.height = `${targetHeight}px`;
-      canvasContainer.style.position = 'absolute';
-      canvasContainer.style.top = '50%';
-      canvasContainer.style.left = '50%';
-      // This transform both centers and scales the canvas
-      canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      stage.scale({ x: scale, y: scale });
+
+      const stageCenter = { x: targetWidth / 2, y: targetHeight / 2 };
       
+      stage.position({
+        x: (containerWidth - targetWidth * scale) / 2,
+        y: (containerHeight - targetHeight * scale) / 2
+      });
   
       // Resize background
       background.width(targetWidth);
@@ -126,16 +128,40 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     return () => window.removeEventListener('resize', fitStageIntoParent);
   }, [canvasSize, isCircular, stage, layer, background, setInitialScale, setCurrentScale]);
 
-  // EFFECT TO HANDLE ZOOM SCALING 
+  // EFFECT TO HANDLE ZOOM SCALING (Proper Konva Method)
   useEffect(() => {
     if (!stage) return;
-    const canvasContainer = document.getElementById('canvas-container');
-    if (!canvasContainer) return;
-    
-    // The translate is for centering, the scale is for zooming.
-    canvasContainer.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
 
-  }, [currentScale, stage]);
+    const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
+
+    // Find the center of the stage
+    const stageCenter = {
+      x: targetWidth / 2,
+      y: targetHeight / 2,
+    };
+
+    // Calculate new scale
+    const scale = currentScale;
+
+    // Apply scale (both x and y)
+    stage.scale({ x: scale, y: scale });
+
+    // Keep canvas centered by adjusting position
+    const canvasContainer = document.getElementById('canvas-container');
+    const parent = canvasContainer?.parentElement;
+    if (!parent) return;
+
+    const parentWidth = parent.clientWidth;
+    const parentHeight = parent.clientHeight;
+
+    // Compute new position so the stage stays centered
+    stage.position({
+      x: parentWidth / 2 - stageCenter.x * scale,
+      y: parentHeight / 2 - stageCenter.y * scale,
+    });
+
+    stage.batchDraw();
+  }, [currentScale, stage, canvasSize]);
 
 
   return (
