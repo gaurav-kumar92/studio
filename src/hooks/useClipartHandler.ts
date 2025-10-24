@@ -45,18 +45,13 @@ export const useClipartHandler = ({
         // After adding all parts, get the bounding box.
         const bounds = group.getClientRect({ skipTransform: true });
         
-        // Set the offset to the center of the bounding box.
+        // Set the offset to the center of the bounding box, as per the user's explicit instructions.
         group.setAttrs({
             width: bounds.width,
             height: bounds.height,
             offsetX: bounds.width / 2,
             offsetY: bounds.height / 2,
         });
-        
-        // Adjust the position because the offset moves the group.
-        group.x(group.x() + bounds.width / 2);
-        group.y(group.y() + bounds.height / 2);
-
 
         attachDoubleClick(group);
         layer.add(group);
@@ -69,5 +64,3 @@ export const useClipartHandler = ({
 
     return { handleAddClipart };
 };
-
-    
