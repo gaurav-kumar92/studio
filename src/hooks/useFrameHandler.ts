@@ -25,8 +25,8 @@ export const useFrameHandler = ({
         
         let newFrame;
         const size = 100;
-        const x = stage.width() / 4;
-        const y = stage.height() / 4;
+        const x = stage.width() / 2;
+        const y = stage.height() / 2;
         
     
         const commonAttrs = {
@@ -40,22 +40,22 @@ export const useFrameHandler = ({
     
         switch (config.type) {
           case 'rect':
-            newFrame = new window.Konva.Rect({ ...commonAttrs, width: size, height: size });
+            newFrame = new window.Konva.Rect({ ...commonAttrs, width: size, height: size, offsetX: size/2, offsetY: size/2 });
             break;
           case 'circle':
-            newFrame = new window.Konva.Circle({ ...commonAttrs, radius: size / 2, x: x + size/2, y: y + size/2 });
+            newFrame = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
             break;
           case 'triangle':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2, x: x + size/2, y: y + size/2 });
+            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
             break;
           case 'star':
-            newFrame = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40, x: x + size/2, y: y + size/2 });
+            newFrame = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: 20, outerRadius: 40 });
             break;
           case 'polygon':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2, x: x + size/2, y: y + size/2 });
+            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size/2 });
             break;
           case 'diamond':
-            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)), x: x + size/2, y: y + size/2 });
+            newFrame = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
             break;
         }
     

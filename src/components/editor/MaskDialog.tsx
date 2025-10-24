@@ -141,7 +141,7 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
                                     <svg viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none"><path d="M12 2L22 12 12 22 2 12 12 2Z"/></svg>
                                 </button>
                                 <button className="shape-btn" data-mask-shape="heart" title="Heart Mask" onClick={() => handleShapeSelection('heart')}>
-                                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="currentColor"><path d="M12 5.67L10.94 4.61c-2.57-2.57-6.72-2.57-9.29 0s-2.57 6.72 0 9.29L12 21.23l10.35-10.35c2.57-2.57 2.57-6.72 0-9.29s-6.72-2.57-9.29 0L12 5.67z"/></svg>
                                 </button>
                             </div>
                             <div id="alphabet-masks-container" className="shape-button-container mt-4">
@@ -171,7 +171,3 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
 };
 
 export default MaskDialog;
-
-    
-
-    

@@ -177,8 +177,8 @@ export const useTextHandler = ({
     } else {
       // ----- Straight Text -----
       const textGroup = new window.Konva.Group({
-        x: stage.width() / 4,
-        y: stage.height() / 4,
+        x: stage.width() / 2,
+        y: stage.height() / 2,
         draggable: true,
         name: 'textGroup',
         id: uniqueId,
@@ -191,6 +191,10 @@ export const useTextHandler = ({
         fill: '#000000',
         name: 'text',
       });
+
+      // Center the text group
+      textGroup.offsetX(mainText.width() / 2);
+      textGroup.offsetY(mainText.height() / 2);
 
       const decorations: string[] = [];
       if (config.isUnderline) decorations.push('underline');

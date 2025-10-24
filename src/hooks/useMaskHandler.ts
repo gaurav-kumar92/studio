@@ -164,8 +164,8 @@ export const useMaskHandler = ({
         const size = 150;
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const group = new window.Konva.Group({
-            x: stage.width() / 4,
-            y: stage.height() / 4,
+            x: stage.width() / 2,
+            y: stage.height() / 2,
             width: size,
             height: size,
             draggable: true,
@@ -173,6 +173,8 @@ export const useMaskHandler = ({
             'data-type': config.type,
             'data-letter': config.letter,
             id: uniqueId,
+            offsetX: size/2,
+            offsetY: size/2
         });
     
         let borderShape: any;
@@ -189,18 +191,28 @@ export const useMaskHandler = ({
         switch (config.type) {
             case 'circle':
                 borderShape = new window.Konva.Circle({ ...commonAttrs, radius: size / 2 });
+                group.offsetX(0);
+                group.offsetY(0);
                 break;
             case 'star':
                 borderShape = new window.Konva.Star({ ...commonAttrs, numPoints: 5, innerRadius: size / 4, outerRadius: size / 2 });
+                group.offsetX(0);
+                group.offsetY(0);
                 break;
             case 'triangle':
                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 3, radius: size / 2 });
+                group.offsetX(0);
+                group.offsetY(0);
                 break;
             case 'polygon':
                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: config.sides || 6, radius: size / 2 });
+                group.offsetX(0);
+                group.offsetY(0);
                 break;
             case 'diamond':
                 borderShape = new window.Konva.RegularPolygon({ ...commonAttrs, sides: 4, radius: size / (Math.sqrt(2)) });
+                group.offsetX(0);
+                group.offsetY(0);
                 break;
             case 'heart':
                 borderShape = new window.Konva.Path({
@@ -226,6 +238,8 @@ export const useMaskHandler = ({
                 
                 group.width(textForClip.width());
                 group.height(textForClip.height());
+                group.offsetX(textForClip.width() / 2);
+                group.offsetY(textForClip.height() / 2);
     
                 borderShape = new window.Konva.Text({
                     x: 0,
@@ -280,7 +294,7 @@ export const useMaskHandler = ({
                 const isPath = borderShape.getClassName() === 'Path';
         
                 let localPos = {x: 0, y: 0};
-                if (!isRect && !isText) {
+                if (!isRect && !isText && group.offsetX() === 0) {
                     localPos.x = size/2;
                     localPos.y = size/2;
                 }
@@ -298,17 +312,14 @@ export const useMaskHandler = ({
                     ctx.scale(scale, scale);
                     
                     // Heart path data translated to canvas commands
-                    ctx.moveTo(20.84, 4.61);
-                    ctx.bezierCurveTo(18.27, 2.04, 14.39, 2.04, 11.82, 4.61);
-                    ctx.lineTo(12, 5.67);
-                    ctx.lineTo(10.94, 4.61);
-                    ctx.bezierCurveTo(8.37, 2.04, 4.49, 2.04, 1.92, 4.61);
-                    ctx.bezierCurveTo(-0.65, 7.18, -0.65, 11.06, 1.92, 13.63);
-                    ctx.lineTo(2.98, 14.69);
+                    ctx.moveTo(12, 5.67);
+                    ctx.bezierCurveTo(10.94, 4.61, 8.37, 2.04, 5.92, 2.04);
+                    ctx.bezierCurveTo(2.32, 2.04, -0.65, 5.94, -0.65, 9.54);
+                    ctx.bezierCurveTo(-0.65, 11.58, 0.44, 13.38, 2.98, 14.69);
                     ctx.lineTo(12, 21.23);
-                    ctx.lineTo(19.78, 13.45);
-                    ctx.lineTo(20.84, 12.39);
-                    ctx.bezierCurveTo(23.41, 9.82, 23.41, 5.94, 20.84, 3.37);
+                    ctx.lineTo(21.02, 14.69);
+                    ctx.bezierCurveTo(24.65, 12.33, 24.65, 7.18, 20.84, 4.61);
+
                     ctx.closePath();
                     
                     ctx.restore();
@@ -329,7 +340,7 @@ export const useMaskHandler = ({
                 } else if (borderShape.getClassName() === 'RegularPolygon') {
                     let sides = borderShape.sides();
                     let radius = borderShape.radius();
-                    const startAngle = sides === 3 ? -Math.PI / 2 : 0;
+                    const startAngle = sides === 3 ? -Math.PI / 2 : (sides === 4 ? Math.PI / 4 : 0);
                     ctx.moveTo(localPos.x + radius * Math.cos(startAngle), localPos.y + radius * Math.sin(startAngle));
                     for (let i = 1; i <= sides; i++) {
                         ctx.lineTo(localPos.x + radius * Math.cos(startAngle + i * 2 * Math.PI / sides), localPos.y + radius * Math.sin(startAngle + i * 2 * Math.PI / sides));

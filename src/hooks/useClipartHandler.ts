@@ -27,8 +27,8 @@ export const useClipartHandler = ({
         
         const group = new window.Konva.Group({
             id: uniqueId,
-            x: stage.width() / 4,
-            y: stage.height() / 4,
+            x: stage.width() / 2,
+            y: stage.height() / 2,
             draggable: true,
             name: 'clipart',
             scale: { x: 5, y: 5 }
