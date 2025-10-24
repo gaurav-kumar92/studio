@@ -49,6 +49,9 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       width: width,
       height: height,
       draggable: false, // We handle dragging manually for smoother touch control
+      clipFunc: (ctx: any) => {
+        ctx.rect(0, 0, width, height);
+      }
     });
     stageRef.current = stage;
 
@@ -72,9 +75,12 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
 
   useEffect(() => {
     if (!stageRef.current) return;
+    const [width, height] = canvasSize.split('x').map(Number);
+    stageRef.current.clipFunc((ctx: any) => {
+      ctx.rect(0, 0, width, height);
+    });
 
     if (isCircular) {
-        const [width, height] = canvasSize.split('x').map(Number);
         const radius = Math.min(width, height) / 2;
         layerRef.current.clipFunc((ctx: any) => {
           ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
