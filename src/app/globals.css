@@ -155,7 +155,7 @@ body {
 #canvas-container {
     /* The canvas container itself is now positioned by its parent */
     /* This allows the Konva stage to be centered correctly */
-    transform-origin: top left;
+    transform-origin: center center;
 }
 
 /* --- Layers Panel --- */
@@ -597,5 +597,7 @@ body {
     align-items: center;
     gap: 0.125rem;
 }
+
+    
 
     
