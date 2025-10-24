@@ -31,7 +31,6 @@ function Editor() {
   const {
     canvasRef,
     isCanvasReady,
-    setCanvasReady,
     konvaObjects,
     selectedNodes,
     setSelectedNodes,
@@ -68,25 +67,6 @@ function Editor() {
     setBackgroundColor,
     backgroundImage,
   } = useCanvas();
-
-  useEffect(() => {
-    let checkInterval: NodeJS.Timeout;
-
-    if (typeof window !== 'undefined') {
-      checkInterval = setInterval(() => {
-        if ((window as any).Konva) {
-          setCanvasReady(true);
-          clearInterval(checkInterval);
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (checkInterval) {
-        clearInterval(checkInterval);
-      }
-    };
-  }, [setCanvasReady]);
 
   const isCircular = canvasSize.endsWith('-circle');
   const sizeString = canvasSize.split('-')[0];

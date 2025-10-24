@@ -1021,6 +1021,18 @@ const handleBackgroundImageReset = useCallback(() => {
   
 
   useEffect(() => {
+    let checkInterval: NodeJS.Timeout;
+    if (typeof window !== 'undefined') {
+        checkInterval = setInterval(() => {
+            if ((window as any).Konva) {
+                if (canvasRef.current?.stage && canvasRef.current?.layer) {
+                    setIsLoading(false);
+                    clearInterval(checkInterval);
+                }
+            }
+        }, 100);
+    }
+
     if (isCanvasReady && canvasRef.current?.stage) {
         const stage = canvasRef.current.stage;
 
@@ -1045,10 +1057,15 @@ const handleBackgroundImageReset = useCallback(() => {
         });
 
         return () => {
+            if (checkInterval) clearInterval(checkInterval);
             window.removeEventListener('resize', fitToScreen);
             stage.off('dragmove');
         };
     }
+
+    return () => {
+        if (checkInterval) clearInterval(checkInterval);
+    };
 }, [isCanvasReady, fitToScreen, canvasRef]);
 
 
