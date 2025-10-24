@@ -68,44 +68,51 @@ export const useSelection = ({
       return null;
     };
 
-    // Promote a clicked child to its selectable root.
-    // IMPORTANT: group root takes precedence — members of a group cannot be selected individually.
     const getSelectableRoot = (node: any) => {
       if (!node) return null;
       if (isTransformer(node) || node?.name?.() === 'background') return null;
-
-      // If inside a group, always resolve to the group root
-      const groupRoot = getGroupRoot(node);
-      if (groupRoot) return groupRoot;
-
-      // Otherwise walk up to a known selectable container/primitive
+  
       let n = node;
       while (n?.parent) {
-        const name = n?.name?.();
-        const className = n?.getClassName?.();
-        const isSelectable =
-          n?.hasName?.('textGroup') ||
-          n?.hasName?.('circularText') ||
-          n?.hasName?.('mask') ||
-          n?.hasName?.('clipart') ||
-          name === 'shape' ||
-          name === 'image' ||
-          name === 'frame' ||
-          className === 'Image' ||
-          className === 'Rect' ||
-          className === 'Circle' ||
-          className === 'Line' ||
-          className === 'RegularPolygon' ||
-          className === 'Star' ||
-          className === 'Path';
-        if (isSelectable) break;
-        n = n.parent;
+          const name = n?.name?.();
+          const hasName = n?.hasName?.(name);
+          const className = n?.getClassName?.();
+  
+          // Check for top-level selectable groups/containers first
+          if (
+              hasName &&
+              (name === 'group' || name === 'textGroup' || name === 'circularText' || name === 'mask' || name === 'clipart')
+          ) {
+              return n;
+          }
+  
+          // Then check for individual selectable shapes/images if not in a group
+          if (
+              !n.parent || (n.parent && n.parent === layer) // is a direct child of the layer
+          ) {
+              const isSelectablePrimitive = 
+                  name === 'shape' ||
+                  name === 'image' ||
+                  name === 'frame' ||
+                  className === 'Image' ||
+                  className === 'Rect' ||
+                  className === 'Circle' ||
+                  className === 'Line' ||
+                  className === 'RegularPolygon' ||
+                  className === 'Star' ||
+                  className === 'Path';
+              
+              if(isSelectablePrimitive) {
+                  return n;
+              }
+          }
+          
+          n = n.parent;
       }
-
-      if (!n?.id?.()) return null;
-      if (isTransformer(n) || n?.name?.() === 'background') return null;
+  
+      if (!n || !n.id?.() || n === layer || n === stage) return null;
       return n;
-    };
+  };
 
     // Coalesce a list of nodes to canonical selection:
     // 1) Replace any node that is inside a group by the group root.
