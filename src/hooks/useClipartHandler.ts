@@ -31,7 +31,7 @@ export const useClipartHandler = ({
             y: stage.height() / 4,
             draggable: true,
             name: 'clipart',
-            scale: { x: 2.5, y: 2.5 }
+            scale: { x: 5, y: 5 }
         });
         
         Object.entries(clipart.parts).forEach(([partName, pathData]) => {
