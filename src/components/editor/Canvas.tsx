@@ -48,12 +48,15 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
       container: 'canvas-container',
       width: width,
       height: height,
-      draggable: false, // We handle dragging manually for smoother touch control
-      clipFunc: (ctx: any) => {
-        ctx.rect(0, 0, width, height);
-      }
+      draggable: false,
     });
     stageRef.current = stage;
+    
+    // Add clip function to the stage
+    stage.clipFunc((ctx: any) => {
+      const [clipWidth, clipHeight] = (canvasSize || '1080x1080').split('x').map(Number);
+      ctx.rect(0, 0, clipWidth, clipHeight);
+    });
 
     const layer = new window.Konva.Layer();
     stage.add(layer);
@@ -72,46 +75,42 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular, backgroun
     setCanvasReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasSize, setCanvasReady]);
-
+  
   useEffect(() => {
-    if (stageRef.current && stageRef.current.getStage()) {
+    if (stageRef.current?.getStage() && layerRef.current) {
         const [width, height] = canvasSize.split('x').map(Number);
-        
-        stageRef.current.clipFunc((ctx: any) => {
-            ctx.rect(0, 0, width, height);
-        });
+        const stage = stageRef.current;
+        const layer = layerRef.current;
 
-        if (isCircular) {
-            const radius = Math.min(width, height) / 2;
-            if (layerRef.current) {
-                layerRef.current.clipFunc((ctx: any) => {
-                    ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
-                });
-            }
-        } else {
-            if (layerRef.current) {
-                layerRef.current.clipFunc(null);
-            }
+        // Update dimensions
+        stage.width(width);
+        stage.height(height);
+        if(backgroundRef.current) {
+          backgroundRef.current.width(width);
+          backgroundRef.current.height(height);
         }
 
-        // Always redraw after changing clipping
-        stageRef.current.draw();
-    }
-  }, [isCircular, canvasSize]);
+        // Update stage clipping for boundaries
+        stage.clipFunc((ctx: any) => {
+          ctx.rect(0, 0, width, height);
+        });
+        
+        // Update layer clipping for circular/rectangular shape
+        if (isCircular) {
+            const radius = Math.min(width, height) / 2;
+            layer.clipFunc((ctx: any) => {
+                ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2, false);
+            });
+        } else {
+            layer.clipFunc(null);
+        }
 
-  useEffect(() => {
-    if (stageRef.current && stageRef.current.getStage()) {
-      const [width, height] = canvasSize.split('x').map(Number);
-      stageRef.current.width(width);
-      stageRef.current.height(height);
-      if(backgroundRef.current) {
-        backgroundRef.current.width(width);
-        backgroundRef.current.height(height);
-      }
-      fitToScreen();
+        // Always redraw after changing clipping or dimensions
+        stage.batchDraw();
+        fitToScreen();
     }
-  }, [canvasSize, fitToScreen]);
-  
+  }, [isCircular, canvasSize, fitToScreen]);
+
   useEffect(() => {
       if (backgroundRef.current) {
           if (backgroundImage) {
