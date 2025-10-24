@@ -49,6 +49,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onClipartPartColorChange,
 }) => {
   const [opacity, setOpacity] = useState(1);
+  const [isAnimationPopoverOpen, setAnimationPopoverOpen] = useState(false);
   
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
   const hasSelection = selectedNodes.length > 0;
@@ -89,6 +90,11 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   const currentColor = canHaveColor && (selectedNode.getAttr('data-is-gradient') 
     ? 'linear-gradient(to right, #3b82f6, #a855f7)'
     : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
+
+  const handleAnimationApplied = (config: any) => {
+    onAnimationChange(config);
+    setAnimationPopoverOpen(false);
+  };
 
   return (
     <div id="object-properties" className={`inline-flex items-center justify-center gap-2 flex-nowrap p-2 ${!hasSelection ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -183,14 +189,14 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
       
        <Separator orientation="vertical" />
        
-       <Popover>
+       <Popover open={isAnimationPopoverOpen} onOpenChange={setAnimationPopoverOpen}>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8" disabled={!hasSelection}>
               <Sparkles className="h-4 w-4 mr-2" /> Animate
             </Button>
           </PopoverTrigger>
           <PopoverContent>
-            <AnimationPanel selectedNode={selectedNode} onAnimationChange={onAnimationChange} />
+            <AnimationPanel selectedNode={selectedNode} onAnimationChange={handleAnimationApplied} />
           </PopoverContent>
         </Popover>
 
