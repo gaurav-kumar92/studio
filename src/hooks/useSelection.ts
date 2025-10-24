@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
@@ -86,6 +87,7 @@ export const useSelection = ({
           n?.hasName?.('textGroup') ||
           n?.hasName?.('circularText') ||
           n?.hasName?.('mask') ||
+          n?.hasName?.('clipart') ||
           name === 'shape' ||
           name === 'image' ||
           name === 'frame' ||
@@ -316,6 +318,7 @@ stage.on('history:applied', onHistoryApplied);
           borderStrokeWidth: 1.5,
           anchorFill: '#a855f7',
           anchorStroke: '#a855f7',
+  
           anchorStrokeWidth: 1,
           enabledAnchors: [
             'top-left', 'top-center', 'top-right',
