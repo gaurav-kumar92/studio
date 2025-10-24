@@ -7,6 +7,9 @@ import { useCanvas } from '@/contexts/CanvasContext';
 import ObjectPropertiesPanel from './ObjectPropertiesPanel';
 import ZoomControls from './ZoomControls';
 import BackgroundImagePanel from './BackgroundImagePanel';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Button } from '../ui/button';
+import { Menu } from 'lucide-react';
 
 const PropertiesToolbar = () => {
   const {
@@ -41,24 +44,27 @@ const PropertiesToolbar = () => {
 
       {backgroundImage && (
         <>
-           <Separator
-            orientation="horizontal"
-            className="w-4/5"
-          />
-          <BackgroundImagePanel 
-            onZoom={handleBackgroundImageZoom}
-            onPan={handleBackgroundImagePan}
-            onReset={handleBackgroundImageReset}
-          />
+          <Separator orientation="horizontal" className="w-4/5" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" title="Edit Background Image">
+                <Menu size={16} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <BackgroundImagePanel
+                onZoom={handleBackgroundImageZoom}
+                onPan={handleBackgroundImagePan}
+                onReset={handleBackgroundImageReset}
+              />
+            </PopoverContent>
+          </Popover>
         </>
       )}
 
       {selectedNode && (
         <>
-          <Separator
-            orientation="horizontal"
-            className="w-4/5"
-          />
+          <Separator orientation="horizontal" className="w-4/5" />
           <ObjectPropertiesPanel
             selectedNodes={selectedNodes}
             onAlign={handleAlign}
