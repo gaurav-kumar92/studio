@@ -93,14 +93,11 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
       stage.width(targetWidth);
       stage.height(targetHeight);
       
-      canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      // We only apply scale via transform. Centering is handled by flexbox on parent.
+      canvasContainer.style.transform = `scale(${scale})`;
       canvasContainer.style.width = `${targetWidth}px`;
       canvasContainer.style.height = `${targetHeight}px`;
-      canvasContainer.style.position = 'absolute';
-      canvasContainer.style.top = '50%';
-      canvasContainer.style.left = '50%';
 
-      
       background.width(targetWidth);
       background.height(targetHeight);
       
@@ -133,7 +130,7 @@ const Canvas = forwardRef<any, CanvasProps>(({ canvasSize, isCircular }, ref) =>
     const [targetWidth, targetHeight] = canvasSize.split('x').map(Number);
 
     // Apply scale transform
-    canvasContainer.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
+    canvasContainer.style.transform = `scale(${currentScale})`;
     
     // Update container dimensions to trigger scrollbar recalculation
     canvasContainer.style.width = `${targetWidth}px`;
