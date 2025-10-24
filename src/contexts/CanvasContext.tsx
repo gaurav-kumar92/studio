@@ -441,24 +441,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const nodesToSelect: Node[] = [];
   
       children.forEach((child: Node) => {
-        // Save absolute transform
         const absTransform = child.getAbsoluteTransform();
-  
-        // Move child to layer (removes from group)
         child.moveTo(layer);
-  
-        // Decompose the transform and apply properties
-        const { x, y, rotation, scaleX, scaleY } = absTransform.decompose();
-  
-        child.setAttrs({
-          x: x,
-          y: y,
-          scaleX: scaleX,
-          scaleY: scaleY,
-          rotation: rotation,
-          draggable: true
-        });
-  
+        const { x, y, scaleX, scaleY, rotation } = absTransform.decompose();
+        child.setAttrs({ x, y, scaleX, scaleY, rotation, draggable: true });
         nodesToSelect.push(child);
       });
   
@@ -846,10 +832,10 @@ const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' 
     let newX = backgroundImageProps.x;
     let newY = backgroundImageProps.y;
     switch (direction) {
-        case 'up': newY -= panAmount; break;
-        case 'down': newY += panAmount; break;
-        case 'left': newX -= panAmount; break;
-        case 'right': newX += panAmount; break;
+        case 'up': newY += panAmount; break;
+        case 'down': newY -= panAmount; break;
+        case 'left': newX += panAmount; break;
+        case 'right': newX -= panAmount; break;
     }
     setBackgroundImageProps(prev => ({...prev, x: newX, y: newY}));
     forceRecord?.();
@@ -1075,10 +1061,11 @@ const handleBackgroundImageReset = useCallback(() => {
     if (isCanvasReady && canvasRef.current?.stage) {
       const stage = canvasRef.current.stage;
       
-      setIsLoading(false);
-      
       fitToScreen();
       window.addEventListener('resize', fitToScreen);
+
+      // Set initial loading to false only after everything is ready
+      setIsLoading(false);
 
       return () => {
           window.removeEventListener('resize', fitToScreen);
@@ -1163,6 +1150,8 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
 
     
 
