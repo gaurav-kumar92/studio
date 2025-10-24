@@ -178,7 +178,7 @@ body {
     position: relative;
     width: 100%;
     background-color: #e5e7eb;
-    overflow: hidden; /* Hide overflow to prevent scrollbars */
+    overflow: auto; /* Allow scrolling when zoomed */
     flex: 1;
     display: flex;
     justify-content: center;
