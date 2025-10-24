@@ -66,6 +66,13 @@ type CanvasContextType = {
   setCanvasSize: (size: string) => void;
   backgroundColor: any;
   setBackgroundColor: (color: any) => void;
+  
+  canvasScale: number;
+  canvasPosition: { x: number; y: number };
+  zoomIn: () => void;
+  zoomOut: () => void;
+  fitToScreen: () => void;
+
 
   clipboard: any[];
 
@@ -92,18 +99,10 @@ type CanvasContextType = {
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
   handleMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
-  handleZoomChange: (value: string) => void;
   handleAnimationChange: (animation: any) => void;
   playAllAnimations: () => void;
   handleClipartPartColorChange: (partName: string, color: string) => void;
 
-  initialScale: number;
-  setInitialScale: React.Dispatch<React.SetStateAction<number>>;
-  currentScale: number;
-  setCurrentScale: React.Dispatch<React.SetStateAction<number>>;
-  canZoomOut: boolean;
-  autoZoomEnabled: boolean;
-  setAutoZoomEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -131,10 +130,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isMultiSelectMode, setMultiSelectMode] = useState(false);
   const [isCanvasReady, setCanvasReady] = useState(false);
   const [isKonvaReady, setKonvaReady] = useState(false);
-  const [initialScale, setInitialScale] = useState(1);
-  const [currentScale, setCurrentScale] = useState(1);
-  const [autoZoomEnabled, setAutoZoomEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [canvasScale, setCanvasScale] = useState(1);
+  const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
+
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
@@ -186,6 +186,48 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     (nodes: any[]) => nodes.filter((n) => !isNodeLocked(n)),
     [isNodeLocked]
   );
+  
+  const fitToScreen = useCallback(() => {
+    if (!canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+    const container = document.getElementById('canvas-wrapper');
+    if (!container) return;
+
+    const padding = 30;
+    const containerWidth = container.clientWidth - padding;
+    const containerHeight = container.clientHeight - padding;
+
+    const scale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
+
+    setCanvasScale(scale);
+    setCanvasPosition({
+        x: (container.clientWidth - stage.width() * scale) / 2,
+        y: (container.clientHeight - stage.height() * scale) / 2,
+    });
+  }, []);
+
+  const zoom = useCallback((direction: 'in' | 'out') => {
+    if (!canvasRef.current?.stage) return;
+    const stage = canvasRef.current.stage;
+    const scaleBy = 1.1;
+    const oldScale = canvasScale;
+    
+    const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
+    
+    const container = document.getElementById('canvas-wrapper');
+    if (!container) return;
+
+    const newPos = {
+      x: (container.clientWidth - stage.width() * newScale) / 2,
+      y: (container.clientHeight - stage.height() * newScale) / 2
+    };
+
+    setCanvasScale(newScale);
+    setCanvasPosition(newPos);
+  }, [canvasScale]);
+
+  const zoomIn = useCallback(() => zoom('in'), [zoom]);
+  const zoomOut = useCallback(() => zoom('out'), [zoom]);
 
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
@@ -524,30 +566,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord?.();
   }, [selectedNodes, forceRecord, getUnlocked]);
 
-  const handleZoomChange = useCallback((value: string) => {
-    const canvasWrapper = document.getElementById('canvas-wrapper');
-    const stage = canvasRef.current?.stage;
-
-    if (!canvasWrapper || !stage) return;
-  
-    let newScale;
-    if (value === 'auto') {
-      setAutoZoomEnabled(true);
-      const containerWidth = canvasWrapper.clientWidth - 30; // padding
-      const containerHeight = canvasWrapper.clientHeight - 30; // padding
-      const scaleX = containerWidth / stage.width();
-      const scaleY = containerHeight / stage.height();
-      newScale = Math.min(scaleX, scaleY) * 0.9;
-    } else {
-      setAutoZoomEnabled(false);
-      newScale = parseFloat(value);
-    }
-  
-    setCurrentScale(newScale);
-  }, [canvasRef, setAutoZoomEnabled, setCurrentScale]);
-  
-  const canZoomOut = currentScale > initialScale;
-
   const handleColorUpdate = useCallback((config: any) => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
@@ -769,8 +787,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isCanvasReady) {
       setIsLoading(false);
+      fitToScreen();
+      window.addEventListener('resize', fitToScreen);
+      return () => window.removeEventListener('resize', fitToScreen);
     }
-  }, [isCanvasReady]);
+  }, [isCanvasReady, fitToScreen]);
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
@@ -822,14 +843,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, clipboard,
+    canvasScale, canvasPosition, zoomIn, zoomOut, fitToScreen,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, addImageToMask, handleMaskImageZoom,
-    handleMaskImageReset, handleMaskImagePan, handleZoomChange, handleAnimationChange, playAllAnimations,
+    handleMaskImageReset, handleMaskImagePan, handleAnimationChange, playAllAnimations,
     handleClipartPartColorChange,
-    initialScale, setInitialScale,
-    currentScale, setCurrentScale, canZoomOut,
-    autoZoomEnabled, setAutoZoomEnabled,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,

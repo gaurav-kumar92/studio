@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
-import ZoomSelector from './ZoomSelector';
+import ZoomControls from './ZoomControls';
 
 const Toolbar = () => {
   const {
@@ -59,7 +59,7 @@ const Toolbar = () => {
           <Plus className="h-4 w-4" />
         </Button>
         <Separator orientation="vertical" />
-        <ZoomSelector />
+        <ZoomControls />
         <Separator orientation="vertical" />
         <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
           <Save className="h-4 w-4" />
