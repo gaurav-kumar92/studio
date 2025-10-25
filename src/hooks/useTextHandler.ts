@@ -285,8 +285,8 @@ export const useTextHandler = ({
 
     // The config from the dialog has all the new values.
     // The node.attrs has the old ones. We need to merge them.
-    const newConfig = { ...node.getAttrs(), ...config };
-
+    const newConfig = { ...node.getAttrs(), ...config, id: node.id() };
+    
     // Simply call the main update function which handles recreation.
     handleAddOrUpdateText(newConfig);
 
