@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 
 type UseTextHandlerProps = {
   canvasRef: React.RefObject<{ stage: any; layer: any }>;
@@ -32,6 +32,8 @@ export const useTextHandler = ({
   };
 
   const handleAddOrUpdateText = useCallback((config: any) => {
+    console.log('handleAddOrUpdateText called with:', config);
+    
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) {
       console.warn('Stage or layer not available');
       return;
@@ -56,7 +58,6 @@ export const useTextHandler = ({
     let oldAttrs: { [key: string]: any } = {};
 
     if (oldNode) {
-      // Preserve all data attributes from old node
       Object.keys(oldNode.attrs).forEach((key) => {
         if (key.startsWith('data-')) oldAttrs[key] = oldNode.attrs[key];
       });
@@ -66,13 +67,12 @@ export const useTextHandler = ({
       }
     }
     
-    // Merge old data, current node data, and new config from dialog
+    // Merge old data with new config - config takes priority
     const dataAttrs: any = {
       ...oldAttrs,
-      ...(editingTextNode?.getAttrs?.() || {}),
       'data-text': config.text ?? oldAttrs['data-text'] ?? 'New Text',
       'data-font-size': config.fontSize ?? oldAttrs['data-font-size'] ?? 24,
-      'data-font-family': config.fontFamily ?? oldAttrs['data-font-family'] ?? 'Arial',
+      'data-font-family': config.fontFamily ?? oldAttrs['data-font-family'] ?? 'Inter',
       'data-letter-spacing': config.letterSpacing ?? oldAttrs['data-letter-spacing'] ?? 0,
       'data-line-height': config.lineHeight ?? oldAttrs['data-line-height'] ?? 1.2,
       'data-align': config.align ?? oldAttrs['data-align'] ?? 'left',
@@ -90,118 +90,94 @@ export const useTextHandler = ({
       'data-glow-opacity': config.glowOpacity ?? oldAttrs['data-glow-opacity'] ?? 0.8,
       'data-radius': config.radius ?? oldAttrs['data-radius'] ?? 100,
       'data-curvature': config.curvature ?? oldAttrs['data-curvature'] ?? 0,
-      // Preserve color configuration
       'data-is-gradient': config.isGradient ?? oldAttrs['data-is-gradient'] ?? false,
       'data-solid-color': config.solidColor ?? oldAttrs['data-solid-color'] ?? '#000000',
       'data-color-stops': config.colorStops ?? oldAttrs['data-color-stops'] ?? [],
       'data-gradient-direction': config.gradientDirection ?? oldAttrs['data-gradient-direction'] ?? 'top-to-bottom',
     };
 
-    // Extract config values with defaults
-    const textConfig = {
-      text: dataAttrs['data-text'],
-      fontSize: dataAttrs['data-font-size'],
-      fontFamily: dataAttrs['data-font-family'],
-      letterSpacing: dataAttrs['data-letter-spacing'],
-      lineHeight: dataAttrs['data-line-height'],
-      align: dataAttrs['data-align'],
-      isBold: dataAttrs['data-is-bold'],
-      isItalic: dataAttrs['data-is-italic'],
-      isUnderline: dataAttrs['data-is-underline'],
-      isStrikethrough: dataAttrs['data-is-strikethrough'],
-      isShadow: dataAttrs['data-is-shadow'],
-      shadowBlur: dataAttrs['data-shadow-blur'],
-      shadowDistance: dataAttrs['data-shadow-distance'],
-      shadowOpacity: dataAttrs['data-shadow-opacity'],
-      isGlow: dataAttrs['data-is-glow'],
-      glowColor: dataAttrs['data-glow-color'],
-      glowBlur: dataAttrs['data-glow-blur'],
-      glowOpacity: dataAttrs['data-glow-opacity'],
-      radius: dataAttrs['data-radius'],
-      curvature: dataAttrs['data-curvature'],
-    };
+    console.log('Creating node with dataAttrs:', dataAttrs);
 
     let newNode: any;
     const x = oldNode ? oldNode.x() : stage.width() / 2;
     const y = oldNode ? oldNode.y() : stage.height() / 2;
 
-    if (textConfig.curvature > 0) {
-      // Circular text
+    if (dataAttrs['data-curvature'] > 0) {
       const circularGroup = new window.Konva.Group({
         x, y, draggable: true, name: 'circularText', id: uniqueId, ...dataAttrs,
       });
       newNode = circularGroup;
 
       const tempText = new window.Konva.Text({ 
-        text: textConfig.text, 
-        fontSize: textConfig.fontSize, 
-        fontFamily: textConfig.fontFamily 
+        text: dataAttrs['data-text'], 
+        fontSize: dataAttrs['data-font-size'], 
+        fontFamily: dataAttrs['data-font-family'] 
       });
       const charHeight = tempText.height();
 
-      const maxAngleRadians = 2 * Math.PI * (textConfig.curvature / 100);
+      const maxAngleRadians = 2 * Math.PI * (dataAttrs['data-curvature'] / 100);
       let totalFlatWidth = 0;
-      for (const char of textConfig.text) {
+      for (const char of dataAttrs['data-text']) {
         tempText.text(char);
         totalFlatWidth += tempText.width();
       }
-      const totalFlatAngle = totalFlatWidth / textConfig.radius;
+      const totalFlatAngle = totalFlatWidth / dataAttrs['data-radius'];
       const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
 
       let cumulativeAngle = 0;
-      const fontStyle = `${textConfig.isBold ? 'bold ' : ''}${textConfig.isItalic ? 'italic ' : ''}`.trim();
+      const fontStyle = `${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim();
       const decorations: string[] = [];
-      if (textConfig.isUnderline) decorations.push('underline');
-      if (textConfig.isStrikethrough) decorations.push('line-through');
+      if (dataAttrs['data-is-underline']) decorations.push('underline');
+      if (dataAttrs['data-is-strikethrough']) decorations.push('line-through');
 
-      for (let i = 0; i < textConfig.text.length; i++) {
-        const ch = textConfig.text[i];
+      for (let i = 0; i < dataAttrs['data-text'].length; i++) {
+        const ch = dataAttrs['data-text'][i];
         tempText.text(ch);
         const charWidth = tempText.width();
-        const charAngularWidth = charWidth / textConfig.radius;
+        const charAngularWidth = charWidth / dataAttrs['data-radius'];
         const scaledAngularWidth = charAngularWidth * scaleFactor;
         const centerAngle = cumulativeAngle + scaledAngularWidth / 2;
         const placementAngle = centerAngle - Math.PI / 2;
 
-        const charNodeX = textConfig.radius * Math.cos(placementAngle);
-        const charNodeY = textConfig.radius * Math.sin(placementAngle);
+        const charNodeX = dataAttrs['data-radius'] * Math.cos(placementAngle);
+        const charNodeY = dataAttrs['data-radius'] * Math.sin(placementAngle);
         const rotationDegrees = (centerAngle * 180) / Math.PI;
 
         const charNode = new window.Konva.Text({
           text: ch, 
           x: charNodeX, 
           y: charNodeY, 
-          fontSize: textConfig.fontSize, 
-          fontFamily: textConfig.fontFamily,
+          fontSize: dataAttrs['data-font-size'], 
+          fontFamily: dataAttrs['data-font-family'],
           fontStyle, 
           textDecoration: decorations.join(' '), 
           rotation: rotationDegrees,
           offsetX: charWidth / 2, 
           offsetY: charHeight / 2, 
           name: 'mainChar', 
-          fill: dataAttrs['data-solid-color'], // Use actual color from config
+          fill: dataAttrs['data-solid-color'],
         });
 
-        if (textConfig.isGlow) {
+        if (dataAttrs['data-is-glow']) {
           const glowNode = charNode.clone({
-            fill: textConfig.glowColor, 
-            stroke: textConfig.glowColor, 
-            strokeWidth: textConfig.glowBlur, 
+            fill: dataAttrs['data-glow-color'], 
+            stroke: dataAttrs['data-glow-color'], 
+            strokeWidth: dataAttrs['data-glow-blur'], 
             name: 'glowEffect',
           });
           glowNode.cache();
           glowNode.filters([window.Konva.Filters.Blur]);
-          glowNode.blurRadius(textConfig.glowBlur);
-          glowNode.opacity(textConfig.glowOpacity);
+          glowNode.blurRadius(dataAttrs['data-glow-blur']);
+          glowNode.opacity(dataAttrs['data-glow-opacity']);
           circularGroup.add(glowNode);
         }
 
-        if (textConfig.isShadow) {
+        if (dataAttrs['data-is-shadow']) {
           charNode.shadowEnabled(true);
           charNode.shadowColor('#000000');
-          charNode.shadowBlur(textConfig.shadowBlur);
-          charNode.shadowOffset({ x: textConfig.shadowDistance, y: textConfig.shadowDistance });
-          charNode.shadowOpacity(textConfig.shadowOpacity);
+          charNode.shadowBlur(dataAttrs['data-shadow-blur']);
+          charNode.shadowOffset({ x: dataAttrs['data-shadow-distance'], y: dataAttrs['data-shadow-distance'] });
+          charNode.shadowOpacity(dataAttrs['data-shadow-opacity']);
         } else {
           charNode.shadowEnabled(false);
         }
@@ -212,22 +188,21 @@ export const useTextHandler = ({
       const totalArcWidth = cumulativeAngle;
       circularGroup.rotation(-(totalArcWidth * 180) / (2 * Math.PI));
       
-      tempText.destroy(); // Clean up temp text
+      tempText.destroy();
     } else {
-      // Regular text
       const textGroup = new window.Konva.Group({
         x, y, draggable: true, name: 'textGroup', id: uniqueId, ...dataAttrs,
       });
       newNode = textGroup;
 
       const mainText = new window.Konva.Text({
-        text: textConfig.text,
-        fontSize: textConfig.fontSize,
-        fontFamily: textConfig.fontFamily,
-        letterSpacing: textConfig.letterSpacing,
-        lineHeight: textConfig.lineHeight,
-        align: textConfig.align,
-        fill: dataAttrs['data-solid-color'], // Use actual color from config
+        text: dataAttrs['data-text'],
+        fontSize: dataAttrs['data-font-size'],
+        fontFamily: dataAttrs['data-font-family'],
+        letterSpacing: dataAttrs['data-letter-spacing'],
+        lineHeight: dataAttrs['data-line-height'],
+        align: dataAttrs['data-align'],
+        fill: dataAttrs['data-solid-color'],
         name: 'text',
       });
 
@@ -235,31 +210,31 @@ export const useTextHandler = ({
       textGroup.offsetY(mainText.height() / 2);
 
       const decorations: string[] = [];
-      if (textConfig.isUnderline) decorations.push('underline');
-      if (textConfig.isStrikethrough) decorations.push('line-through');
+      if (dataAttrs['data-is-underline']) decorations.push('underline');
+      if (dataAttrs['data-is-strikethrough']) decorations.push('line-through');
       mainText.textDecoration(decorations.join(' '));
-      mainText.fontStyle(`${textConfig.isBold ? 'bold ' : ''}${textConfig.isItalic ? 'italic ' : ''}`.trim());
+      mainText.fontStyle(`${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim());
 
-      if (textConfig.isGlow) {
+      if (dataAttrs['data-is-glow']) {
         const glowText = mainText.clone({
-          fill: textConfig.glowColor, 
-          stroke: textConfig.glowColor, 
-          strokeWidth: textConfig.glowBlur, 
+          fill: dataAttrs['data-glow-color'], 
+          stroke: dataAttrs['data-glow-color'], 
+          strokeWidth: dataAttrs['data-glow-blur'], 
           name: 'glowEffect',
         });
         glowText.cache();
         glowText.filters([window.Konva.Filters.Blur]);
-        glowText.blurRadius(textConfig.glowBlur);
-        glowText.opacity(textConfig.glowOpacity);
+        glowText.blurRadius(dataAttrs['data-glow-blur']);
+        glowText.opacity(dataAttrs['data-glow-opacity']);
         textGroup.add(glowText);
       }
 
-      if (textConfig.isShadow) {
+      if (dataAttrs['data-is-shadow']) {
         mainText.shadowEnabled(true);
         mainText.shadowColor('#000000');
-        mainText.shadowBlur(textConfig.shadowBlur);
-        mainText.shadowOffset({ x: textConfig.shadowDistance, y: textConfig.shadowDistance });
-        mainText.shadowOpacity(textConfig.shadowOpacity);
+        mainText.shadowBlur(dataAttrs['data-shadow-blur']);
+        mainText.shadowOffset({ x: dataAttrs['data-shadow-distance'], y: dataAttrs['data-shadow-distance'] });
+        mainText.shadowOpacity(dataAttrs['data-shadow-opacity']);
       } else {
         mainText.shadowEnabled(false);
       }
@@ -271,7 +246,6 @@ export const useTextHandler = ({
       attachDoubleClick(newNode);
       layer.add(newNode);
 
-      // Apply gradient/fill only if gradient is enabled
       const colorConfig = {
         isGradient: dataAttrs['data-is-gradient'],
         solidColor: dataAttrs['data-solid-color'],
@@ -289,6 +263,8 @@ export const useTextHandler = ({
 
       ensureId(newNode);
       forceRecord?.();
+      
+      console.log('Text node created/updated successfully');
     }
   }, [
     canvasRef,
@@ -303,17 +279,36 @@ export const useTextHandler = ({
   ]);
 
   const handleTextUpdate = useCallback((config: any) => {
-    const node = editingTextNode;
-    if (!node) {
+    console.log('handleTextUpdate called');
+    console.log('editingTextNode:', editingTextNode);
+    console.log('config received:', config);
+    
+    if (!editingTextNode) {
       console.warn('No editing text node found');
       return;
     }
   
-    // Combine all attributes: existing node attributes, plus the new config from the dialog
-    const newConfig = { ...node.getAttrs(), ...config, id: node.id() };
+    // Get the node's ID
+    const nodeId = editingTextNode.id?.() || editingTextNode.attrs?.id;
+    console.log('Node ID:', nodeId);
     
-    // Call the single, reliable update function
-    handleAddOrUpdateText(newConfig);
+    if (!nodeId) {
+      console.error('Node has no ID!');
+      return;
+    }
+    
+    // Merge existing node attrs with new config
+    const existingAttrs = editingTextNode.getAttrs?.() || editingTextNode.attrs || {};
+    const mergedConfig = { 
+      ...existingAttrs, 
+      ...config, 
+      id: nodeId 
+    };
+    
+    console.log('Merged config:', mergedConfig);
+    
+    // Call the main update function
+    handleAddOrUpdateText(mergedConfig);
   
   }, [editingTextNode, handleAddOrUpdateText]);
 

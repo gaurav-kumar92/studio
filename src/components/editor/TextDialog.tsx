@@ -4,11 +4,13 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
+import ColorPropertiesPanel from './ColorPropertiesPanel';
 
 type TextPropertiesPanelProps = {
     onUpdateText: (config: any) => void;
     editingNode: any;
     onClose: () => void;
+    onColorChange: (config: any) => void;
 };
 
 const fontFamilies = [
@@ -18,7 +20,7 @@ const fontFamilies = [
     'Pacifico', 'Lobster', 'Anton', 'Shadows Into Light', 'Caveat', 'Bebas Neue', 'Josefin Sans'
 ];
 
-const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode, onClose }) => {
+const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode, onClose, onColorChange }) => {
     const [text, setText] = useState('');
     const [fontSize, setFontSize] = useState(24);
     const [fontFamily, setFontFamily] = useState('Inter');
@@ -39,33 +41,12 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
     const [glowOpacity, setGlowOpacity] = useState(0.7);
     const [radius, setRadius] = useState(150);
     const [curvature, setCurvature] = useState(0);
-
-    const handleApply = () => {
-        onUpdateText({
-            // Pass all state values to the update function
-            text: text || 'New Text',
-            fontSize,
-            fontFamily,
-            letterSpacing,
-            lineHeight,
-            align,
-            isBold,
-            isItalic,
-            isUnderline,
-            isStrikethrough,
-            isShadow,
-            shadowBlur,
-            shadowDistance,
-            shadowOpacity,
-            isGlow,
-            glowColor,
-            glowBlur,
-            glowOpacity,
-            radius,
-            curvature
-        });
-        onClose();
-    };
+    const [colorConfig, setColorConfig] = useState({
+        isGradient: false,
+        solidColor: '#000000',
+        colorStops: [{ id: 0, stop: 0, color: '#3b82f6' }, { id: 1, stop: 1, color: '#a855f7' }],
+        gradientDirection: 'top-to-bottom',
+    });
 
     useEffect(() => {
         if (editingNode) {
@@ -90,9 +71,44 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
             setGlowOpacity(data['data-glow-opacity'] || 0.7);
             setRadius(data['data-radius'] || 150);
             setCurvature(data['data-curvature'] || 0);
+
+            setColorConfig({
+                isGradient: data['data-is-gradient'] || false,
+                solidColor: data['data-solid-color'] || '#000000',
+                colorStops: data['data-color-stops'] || [{ id: 0, stop: 0, color: '#3b82f6' }, { id: 1, stop: 1, color: '#a855f7' }],
+                gradientDirection: data['data-gradient-direction'] || 'top-to-bottom',
+            });
         }
     }, [editingNode]);
-    
+
+    const handleApply = () => {
+        onUpdateText({
+            text: text || 'New Text',
+            fontSize,
+            fontFamily,
+            letterSpacing,
+            lineHeight,
+            align,
+            isBold,
+            isItalic,
+            isUnderline,
+            isStrikethrough,
+            isShadow,
+            shadowBlur,
+            shadowDistance,
+            shadowOpacity,
+            isGlow,
+            glowColor,
+            glowBlur,
+            glowOpacity,
+            radius,
+            curvature,
+            // Pass color config
+            ...colorConfig,
+        });
+        onClose();
+    };
+
     if (!editingNode) {
         return null;
     }
@@ -100,6 +116,11 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
 
     return (
         <div className="flex flex-col gap-4 p-4 overflow-y-auto max-h-96">
+            <ColorPropertiesPanel
+              selectedNode={editingNode}
+              onColorChange={setColorConfig}
+              isStroke={false}
+            />
             <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700">Text</label>
                 <textarea

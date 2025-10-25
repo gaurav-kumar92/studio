@@ -144,6 +144,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
                 editingNode={selectedNode}
                 onUpdateText={onTextUpdate}
                 onClose={() => setTextPopoverOpen(false)}
+                onColorChange={onColorChange}
               />
             </PopoverContent>
           </Popover>
