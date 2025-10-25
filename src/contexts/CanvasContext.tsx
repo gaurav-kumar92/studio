@@ -90,7 +90,7 @@ type CanvasContextType = {
   // Functions
   updateLayers: () => void;
   deselectNodes: () => void;
-  handleSave: () => void;
+  handleSave: (format?: 'png' | 'jpg' | 'svg' | 'pdf') => void;
   handleMoveNode: (action: 'up' | 'down', nodeId: string) => void;
   handleAlign: (position: string) => void;
   handleOpacityChange: (opacity: number) => void;
@@ -898,7 +898,7 @@ const handleBackgroundImageReset = useCallback(() => {
     forceRecord?.();
   }, [selectedNodes, deselectNodes, updateLayers, forceRecord, getUnlocked]);
 
-  const handleSave = useCallback((format: 'png' | 'jpg' | 'svg' | 'pdf' | 'gif' = 'png', quality: number = 1) => {
+  const handleSave = useCallback((format: 'png' | 'jpg' | 'svg' | 'pdf' = 'png', quality: number = 1) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer || !canvasRef.current?.background) return;
     const stage = canvasRef.current.stage;
     const layer = canvasRef.current.layer;
@@ -968,10 +968,6 @@ const handleBackgroundImageReset = useCallback(() => {
           quality: quality
         });
         filename = 'konva-design.jpg';
-      } else if (format === 'gif') {
-        dataURL = tempStage.toDataURL({ mimeType: 'image/png', quality: 1 });
-        filename = 'konva-design.png';
-        console.warn('Animated GIF export not supported. Exported as PNG instead.');
       } else {
         dataURL = tempStage.toDataURL({ 
           mimeType: 'image/png', 
