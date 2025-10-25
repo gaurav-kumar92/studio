@@ -898,17 +898,103 @@ const handleBackgroundImageReset = useCallback(() => {
     forceRecord?.();
   }, [selectedNodes, deselectNodes, updateLayers, forceRecord, getUnlocked]);
 
-  const handleSave = useCallback(() => {
-    if (!canvasRef.current?.stage) return;
+  const handleSave = useCallback((format: 'png' | 'jpg' | 'svg' | 'pdf' | 'gif' = 'png', quality: number = 1) => {
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer || !canvasRef.current?.background) return;
     const stage = canvasRef.current.stage;
+    const layer = canvasRef.current.layer;
+    const background = canvasRef.current.background;
+    
+    // Deselect all nodes
     deselectNodes();
-    const dataURL = stage.toDataURL({ mimeType: 'image/png', quality: 1 });
-    const link = document.createElement('a');
-    link.download = 'konva-design.png';
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    // Hide all transformers
+    const transformers = layer.find('Transformer');
+    transformers.forEach((tr: any) => tr.visible(false));
+    
+    // Wait for the layer to redraw before capturing
+    layer.batchDraw();
+    
+    // Use setTimeout to ensure the draw is complete
+    setTimeout(() => {
+      // Get canvas dimensions
+      const canvasWidth = background.width();
+      const canvasHeight = background.height();
+      
+      // Create a temporary stage with exact canvas dimensions
+      const tempStage = new window.Konva.Stage({
+        container: document.createElement('div'),
+        width: canvasWidth,
+        height: canvasHeight,
+      });
+      
+      const tempLayer = new window.Konva.Layer();
+      tempStage.add(tempLayer);
+      
+      // Clone the background
+      const bgClone = background.clone();
+      bgClone.position({ x: 0, y: 0 });
+      tempLayer.add(bgClone);
+      
+      // Clone all visible objects (excluding transformers)
+      layer.getChildren().forEach((child: any) => {
+        if (child === background) return; // Already added
+        if (child.getClassName?.() === 'Transformer') return;
+        if (child.hasName?.('Transformer')) return;
+        if (child.name?.() === 'background') return;
+        if (child.name?.() === 'selection-rect') return;
+        
+        const clone = child.clone();
+        tempLayer.add(clone);
+      });
+      
+      tempLayer.batchDraw();
+      
+      let dataURL: string;
+      let filename: string;
+      
+      if (format === 'svg') {
+        dataURL = tempStage.toDataURL({ mimeType: 'image/svg+xml' });
+        filename = 'konva-design.svg';
+      } else if (format === 'pdf') {
+        dataURL = tempStage.toDataURL({ 
+          mimeType: 'image/png', 
+          quality: 1,
+          pixelRatio: 3
+        });
+        filename = 'konva-design-print.png';
+      } else if (format === 'jpg') {
+        dataURL = tempStage.toDataURL({ 
+          mimeType: 'image/jpeg', 
+          quality: quality
+        });
+        filename = 'konva-design.jpg';
+      } else if (format === 'gif') {
+        dataURL = tempStage.toDataURL({ mimeType: 'image/png', quality: 1 });
+        filename = 'konva-design.png';
+        console.warn('Animated GIF export not supported. Exported as PNG instead.');
+      } else {
+        dataURL = tempStage.toDataURL({ 
+          mimeType: 'image/png', 
+          quality: quality,
+          pixelRatio: quality === 1 ? 2 : 1
+        });
+        filename = 'konva-design.png';
+      }
+      
+      // Clean up temp stage
+      tempStage.destroy();
+      
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Restore transformers visibility
+      transformers.forEach((tr: any) => tr.visible(true));
+      layer.batchDraw();
+    }, 100);
   }, [deselectNodes]);
 
   const handleCopy = useCallback(() => {

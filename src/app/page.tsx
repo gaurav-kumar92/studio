@@ -80,8 +80,8 @@ function Editor() {
       <div id="editor-ui">
         <div className="editor-main-column">
           <h1 className="text-4xl text-center my-4 font-headline" style={{ fontWeight: 400 }}>
-            <span className="bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300 bg-clip-text text-transparent">
-              CHITRA
+            <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+              chitra
             </span>
           </h1>
           <Toolbar />

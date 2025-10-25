@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCanvas } from '@/contexts/CanvasContext';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Toolbar = () => {
   const {
@@ -56,9 +57,18 @@ const Toolbar = () => {
           <Plus className="h-4 w-4" />
         </Button>
         <Separator orientation="vertical" />
-        <Button variant="default" size="sm" aria-label="Save" title="Save" onClick={handleSave}>
-          <Save className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" size="sm" aria-label="Save" title="Save">
+              <Save className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleSave('png')}>Save as PNG</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSave('jpg')}>Save as JPG</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSave('svg')}>Save as SVG</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Bottom Section */}
