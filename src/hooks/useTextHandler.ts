@@ -279,16 +279,17 @@ export const useTextHandler = ({
     forceRecord,
   ]);
 
-    const handleTextUpdate = useCallback((config: any) => {
+  const handleTextUpdate = useCallback((config: any) => {
     const node = editingTextNode;
     if (!node) return;
-    
-    // Instead of destroying and recreating, just update the existing node
-    const newConfig = { ...node.attrs, ...config };
-    
-    // Destroy and recreate the node to apply structural changes like curvature
+
+    // The config from the dialog has all the new values.
+    // The node.attrs has the old ones. We need to merge them.
+    const newConfig = { ...node.getAttrs(), ...config };
+
+    // Simply call the main update function which handles recreation.
     handleAddOrUpdateText(newConfig);
-    
+
   }, [editingTextNode, handleAddOrUpdateText]);
 
 

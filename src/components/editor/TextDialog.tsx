@@ -42,7 +42,7 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
 
     const handleApply = () => {
         onUpdateText({
-            ...editingNode.attrs,
+            // Pass all state values to the update function
             text: text || 'New Text',
             fontSize,
             fontFamily,
