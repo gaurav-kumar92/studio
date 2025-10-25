@@ -16,6 +16,7 @@ import {
 } from '@/contexts/CanvasContext';
 import Toolbar from '@/components/editor/Toolbar';
 import ClipartDialog from '@/components/editor/ClipartDialog';
+import IconDialog from '@/components/editor/IconDialog';
 import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
 
 declare global {
@@ -42,6 +43,8 @@ function Editor() {
     setMaskDialogOpen,
     isClipartDialogOpen,
     setClipartDialogOpen,
+    isIconDialogOpen,
+    setIconDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -55,6 +58,7 @@ function Editor() {
     handleAddMask,
     handleUpdateMask,
     handleAddClipart,
+    handleAddIcon,
     handleSelectItem,
     handleMoveNode,
     isLoading,
@@ -80,9 +84,12 @@ function Editor() {
       <div id="editor-ui">
         <div className="editor-main-column">
           <h1 className="text-4xl text-center my-4 font-headline" style={{ fontWeight: 400 }}>
-            <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-              chitra
-            </span>
+            <span style={{ color: '#F25912' }}>c</span>
+            <span style={{ color: '#FFC400' }}>h</span>
+            <span style={{ color: '#16C47F' }}>i</span>
+            <span style={{ color: '#7C00FE' }}>t</span>
+            <span style={{ color: '#D91656' }}>r</span>
+            <span style={{ color: '#640D5F' }}>a</span>
           </h1>
           <Toolbar />
           <Canvas
@@ -156,6 +163,12 @@ function Editor() {
           isOpen={isClipartDialogOpen}
           onClose={() => setClipartDialogOpen(false)}
           onAddClipart={handleAddClipart}
+        />
+
+        <IconDialog
+          isOpen={isIconDialogOpen}
+          onClose={() => setIconDialogOpen(false)}
+          onAddIcon={handleAddIcon}
         />
       </div>
     </>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -59,7 +60,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
       icon = (
         <svg
           className="icon"
-          xmlns="http://www.w3.org/2000/svg"
+          xmlns="http://wwww3.org/2000/svg"
           width="24"
           height="24"
           viewBox="0 0 24 24"
@@ -75,6 +76,11 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
       name = `Shape: ${
         shapeType ? shapeType.charAt(0).toUpperCase() + shapeType.slice(1) : ''
       }`;
+    } else if (node.hasName('icon')) {
+        icon = (
+            <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12.5 6.477 2.5 12 2.5z"/><path d="M12 17.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/><path d="M12 7.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/></svg>
+        );
+        name = 'Icon';
     } else if (node.hasName('image')) {
       icon = (
         <svg
@@ -234,5 +240,3 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
 };
 
 export default LayersPanel;
-
-    
