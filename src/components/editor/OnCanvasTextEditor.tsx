@@ -22,6 +22,7 @@ const OnCanvasTextEditor: React.FC<OnCanvasTextEditorProps> = ({ node, onClose, 
       if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
         const fullConfig = {
             ...node.attrs,
+            id: node.id(), // Pass the ID for the update handler
             'data-text': text,
             text: text,
         };
