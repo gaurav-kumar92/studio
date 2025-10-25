@@ -3,10 +3,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
 
 type TextPropertiesPanelProps = {
     onUpdateText: (config: any) => void;
     editingNode: any;
+    onClose: () => void;
 };
 
 const fontFamilies = [
@@ -16,7 +18,7 @@ const fontFamilies = [
     'Pacifico', 'Lobster', 'Anton', 'Shadows Into Light', 'Caveat', 'Bebas Neue', 'Josefin Sans'
 ];
 
-const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode }) => {
+const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode, onClose }) => {
     const [text, setText] = useState('');
     const [fontSize, setFontSize] = useState(24);
     const [fontFamily, setFontFamily] = useState('Inter');
@@ -38,8 +40,9 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
     const [radius, setRadius] = useState(150);
     const [curvature, setCurvature] = useState(0);
 
-    const updateAllProperties = () => {
+    const handleApply = () => {
         onUpdateText({
+            ...editingNode.attrs,
             text: text || 'New Text',
             fontSize,
             fontFamily,
@@ -88,18 +91,6 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
             setCurvature(data['data-curvature'] || 0);
         }
     }, [editingNode]);
-
-    useEffect(() => {
-        if (editingNode) {
-            updateAllProperties();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        text,
-        fontSize, fontFamily, letterSpacing, lineHeight, align, isBold, isItalic, 
-        isUnderline, isStrikethrough, isShadow, shadowBlur, shadowDistance, 
-        shadowOpacity, isGlow, glowColor, glowBlur, glowOpacity, radius, curvature
-    ]);
     
     if (!editingNode) {
         return null;
@@ -223,11 +214,12 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
                   <input type="range" value={glowOpacity} onChange={(e) => setGlowOpacity(Number(e.target.value))} min="0" max="1" step="0.1" />
                 </div>
             </div>
+            <div className="flex justify-end gap-2 mt-6">
+                <Button variant="ghost" onClick={onClose}>Done</Button>
+                <Button onClick={handleApply}>Apply</Button>
+            </div>
         </div>
     );
 }
 
 export default TextPropertiesPanel;
-    
-
-    

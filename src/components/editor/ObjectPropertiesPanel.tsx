@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -50,6 +49,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 }) => {
   const [opacity, setOpacity] = useState(1);
   const [isAnimationPopoverOpen, setAnimationPopoverOpen] = useState(false);
+  const [isTextPopoverOpen, setTextPopoverOpen] = useState(false);
   
   const selectedNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
   const hasSelection = selectedNodes.length > 0;
@@ -133,7 +133,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
       </Popover>
       
       {isText && (
-         <Popover>
+         <Popover open={isTextPopoverOpen} onOpenChange={setTextPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8">
                 <Type className="h-4 w-4 mr-2" /> Text
@@ -143,6 +143,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
               <TextPropertiesPanel
                 editingNode={selectedNode}
                 onUpdateText={onTextUpdate}
+                onClose={() => setTextPopoverOpen(false)}
               />
             </PopoverContent>
           </Popover>
