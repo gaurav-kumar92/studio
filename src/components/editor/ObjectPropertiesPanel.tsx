@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import ClipartPropertiesPanel from './ClipartPropertiesPanel';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
 import TextPropertiesPanel from './TextDialog';
+import { useCanvas } from '@/contexts/CanvasContext';
 
 type ObjectPropertiesPanelProps = {
   selectedNodes: any[];
@@ -18,7 +20,6 @@ type ObjectPropertiesPanelProps = {
   onOpacityChange: (opacity: number) => void;
   onFlip: (direction: 'horizontal' | 'vertical') => void;
   onColorChange: (config: any) => void;
-  onTextUpdate: (config: any) => void;
   onMaskImageZoom: (direction: 'in' | 'out') => void;
   onMaskImageReset: () => void;
   onMaskImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
@@ -36,7 +37,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onOpacityChange,
   onFlip,
   onColorChange,
-  onTextUpdate,
   onMaskImageZoom,
   onMaskImageReset,
   onMaskImagePan,
@@ -47,6 +47,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   onAnimationChange,
   onClipartPartColorChange,
 }) => {
+  const { handleAddOrUpdateText } = useCanvas();
   const [opacity, setOpacity] = useState(1);
   const [isAnimationPopoverOpen, setAnimationPopoverOpen] = useState(false);
   const [isTextPopoverOpen, setTextPopoverOpen] = useState(false);
@@ -142,9 +143,8 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
             <PopoverContent className="w-[300px]">
               <TextPropertiesPanel
                 editingNode={selectedNode}
-                onUpdateText={onTextUpdate}
+                onUpdateText={handleAddOrUpdateText}
                 onClose={() => setTextPopoverOpen(false)}
-                onColorChange={onColorChange}
               />
             </PopoverContent>
           </Popover>

@@ -10,7 +10,6 @@ type TextPropertiesPanelProps = {
     onUpdateText: (config: any) => void;
     editingNode: any;
     onClose: () => void;
-    onColorChange: (config: any) => void;
 };
 
 const fontFamilies = [
@@ -20,7 +19,7 @@ const fontFamilies = [
     'Pacifico', 'Lobster', 'Anton', 'Shadows Into Light', 'Caveat', 'Bebas Neue', 'Josefin Sans'
 ];
 
-const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode, onClose, onColorChange }) => {
+const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode, onClose }) => {
     const [text, setText] = useState('');
     const [fontSize, setFontSize] = useState(24);
     const [fontFamily, setFontFamily] = useState('Inter');
@@ -83,7 +82,8 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
 
     const handleApply = () => {
         onUpdateText({
-            text: text || 'New Text',
+            id: editingNode.id(), // Pass ID for update
+            text,
             fontSize,
             fontFamily,
             letterSpacing,
@@ -103,7 +103,6 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
             glowOpacity,
             radius,
             curvature,
-            // Pass color config
             ...colorConfig,
         });
         onClose();

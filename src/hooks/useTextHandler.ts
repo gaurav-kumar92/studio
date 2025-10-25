@@ -1,3 +1,4 @@
+
 'use client';
 import { useCallback } from 'react';
 
@@ -24,176 +25,115 @@ export const useTextHandler = ({
   setEditingTextNode,
   forceRecord,
 }: UseTextHandlerProps) => {
-  const ensureId = (node: any) => {
-    if (!node?.id?.()) {
-      node.id(`node-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
-    }
-    return node.id();
-  };
 
   const handleAddOrUpdateText = useCallback((config: any) => {
-    console.log('handleAddOrUpdateText called with:', config);
-    
-    if (!canvasRef.current?.stage || !canvasRef.current?.layer) {
-      console.warn('Stage or layer not available');
-      return;
-    }
-    
-    if (typeof window === 'undefined' || !window.Konva) {
-      console.error('Konva is not loaded');
+    if (!canvasRef.current?.stage || !canvasRef.current?.layer || !window.Konva) {
+      console.warn('Canvas or Konva not ready');
       return;
     }
 
     const { stage, layer } = canvasRef.current;
+    const uniqueId = config.id || `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    const isEditing = !!(config.id && layer.findOne(`#${config.id}`));
-
-    if (!isEditing && (!config.text || config.text.trim() === '')) {
-      config.text = 'New Text';
+    // Destroy the old node if it exists to ensure a clean rebuild
+    const oldNode = layer.findOne(`#${uniqueId}`);
+    const oldNodePosition = oldNode ? oldNode.position() : { x: stage.width() / 2, y: stage.height() / 2 };
+    if (oldNode) {
+      oldNode.destroy();
     }
 
-    const uniqueId = config.id ?? `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-    let oldNode = layer.findOne(`#${uniqueId}`);
-    let oldAttrs: { [key: string]: any } = {};
-
-    if (oldNode) {
-      Object.keys(oldNode.attrs).forEach((key) => {
-        if (key.startsWith('data-')) oldAttrs[key] = oldNode.attrs[key];
-      });
-      oldNode.destroy();
-      if(editingTextNode?.id?.() === uniqueId) {
-          setEditingTextNode(null);
-      }
+    if (editingTextNode?.id?.() === uniqueId) {
+      setEditingTextNode(null);
     }
     
-    // Merge old data with new config - config takes priority
-    const dataAttrs: any = {
-      ...oldAttrs,
-      'data-text': config.text ?? oldAttrs['data-text'] ?? 'New Text',
-      'data-font-size': config.fontSize ?? oldAttrs['data-font-size'] ?? 24,
-      'data-font-family': config.fontFamily ?? oldAttrs['data-font-family'] ?? 'Inter',
-      'data-letter-spacing': config.letterSpacing ?? oldAttrs['data-letter-spacing'] ?? 0,
-      'data-line-height': config.lineHeight ?? oldAttrs['data-line-height'] ?? 1.2,
-      'data-align': config.align ?? oldAttrs['data-align'] ?? 'left',
-      'data-is-bold': config.isBold ?? oldAttrs['data-is-bold'] ?? false,
-      'data-is-italic': config.isItalic ?? oldAttrs['data-is-italic'] ?? false,
-      'data-is-underline': config.isUnderline ?? oldAttrs['data-is-underline'] ?? false,
-      'data-is-strikethrough': config.isStrikethrough ?? oldAttrs['data-is-strikethrough'] ?? false,
-      'data-is-shadow': config.isShadow ?? oldAttrs['data-is-shadow'] ?? false,
-      'data-shadow-blur': config.shadowBlur ?? oldAttrs['data-shadow-blur'] ?? 10,
-      'data-shadow-distance': config.shadowDistance ?? oldAttrs['data-shadow-distance'] ?? 5,
-      'data-shadow-opacity': config.shadowOpacity ?? oldAttrs['data-shadow-opacity'] ?? 0.5,
-      'data-is-glow': config.isGlow ?? oldAttrs['data-is-glow'] ?? false,
-      'data-glow-color': config.glowColor ?? oldAttrs['data-glow-color'] ?? '#ffffff',
-      'data-glow-blur': config.glowBlur ?? oldAttrs['data-glow-blur'] ?? 10,
-      'data-glow-opacity': config.glowOpacity ?? oldAttrs['data-glow-opacity'] ?? 0.8,
-      'data-radius': config.radius ?? oldAttrs['data-radius'] ?? 100,
-      'data-curvature': config.curvature ?? oldAttrs['data-curvature'] ?? 0,
-      'data-is-gradient': config.isGradient ?? oldAttrs['data-is-gradient'] ?? false,
-      'data-solid-color': config.solidColor ?? oldAttrs['data-solid-color'] ?? '#000000',
-      'data-color-stops': config.colorStops ?? oldAttrs['data-color-stops'] ?? [],
-      'data-gradient-direction': config.gradientDirection ?? oldAttrs['data-gradient-direction'] ?? 'top-to-bottom',
+    // Define all attributes for the new node based on the incoming config
+    const dataAttrs = {
+      'data-text': config.text || 'New Text',
+      'data-font-size': config.fontSize || 24,
+      'data-font-family': config.fontFamily || 'Inter',
+      'data-letter-spacing': config.letterSpacing ?? 0,
+      'data-line-height': config.lineHeight ?? 1.2,
+      'data-align': config.align || 'left',
+      'data-is-bold': config.isBold || false,
+      'data-is-italic': config.isItalic || false,
+      'data-is-underline': config.isUnderline || false,
+      'data-is-strikethrough': config.isStrikethrough || false,
+      'data-is-shadow': config.isShadow || false,
+      'data-shadow-blur': config.shadowBlur ?? 10,
+      'data-shadow-distance': config.shadowDistance ?? 5,
+      'data-shadow-opacity': config.shadowOpacity ?? 0.5,
+      'data-is-glow': config.isGlow || false,
+      'data-glow-color': config.glowColor || '#0000ff',
+      'data-glow-blur': config.glowBlur ?? 10,
+      'data-glow-opacity': config.glowOpacity ?? 0.7,
+      'data-radius': config.radius || 150,
+      'data-curvature': config.curvature ?? 0,
+      'data-is-gradient': config.isGradient || false,
+      'data-solid-color': config.solidColor || '#000000',
+      'data-color-stops': config.colorStops || [],
+      'data-gradient-direction': config.gradientDirection || 'top-to-bottom',
     };
 
-    console.log('Creating node with dataAttrs:', dataAttrs);
-
     let newNode: any;
-    const x = oldNode ? oldNode.x() : stage.width() / 2;
-    const y = oldNode ? oldNode.y() : stage.height() / 2;
-
+    
     if (dataAttrs['data-curvature'] > 0) {
+      // Logic for Circular Text
       const circularGroup = new window.Konva.Group({
-        x, y, draggable: true, name: 'circularText', id: uniqueId, ...dataAttrs,
+        id: uniqueId,
+        name: 'circularText',
+        x: oldNodePosition.x,
+        y: oldNodePosition.y,
+        draggable: true,
+        ...dataAttrs,
       });
-      newNode = circularGroup;
 
-      const tempText = new window.Konva.Text({ 
-        text: dataAttrs['data-text'], 
-        fontSize: dataAttrs['data-font-size'], 
-        fontFamily: dataAttrs['data-font-family'] 
-      });
+      const tempText = new window.Konva.Text({ text: 'A', fontSize: dataAttrs['data-font-size'], fontFamily: dataAttrs['data-font-family'] });
       const charHeight = tempText.height();
-
-      const maxAngleRadians = 2 * Math.PI * (dataAttrs['data-curvature'] / 100);
-      let totalFlatWidth = 0;
-      for (const char of dataAttrs['data-text']) {
-        tempText.text(char);
-        totalFlatWidth += tempText.width();
-      }
-      const totalFlatAngle = totalFlatWidth / dataAttrs['data-radius'];
-      const scaleFactor = (totalFlatAngle > 0 && maxAngleRadians > 0) ? maxAngleRadians / totalFlatAngle : 0;
+      const fontStyle = `${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim();
+      const decorations = [
+        dataAttrs['data-is-underline'] ? 'underline' : '',
+        dataAttrs['data-is-strikethrough'] ? 'line-through' : '',
+      ].filter(Boolean).join(' ');
 
       let cumulativeAngle = 0;
-      const fontStyle = `${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim();
-      const decorations: string[] = [];
-      if (dataAttrs['data-is-underline']) decorations.push('underline');
-      if (dataAttrs['data-is-strikethrough']) decorations.push('line-through');
-
-      for (let i = 0; i < dataAttrs['data-text'].length; i++) {
-        const ch = dataAttrs['data-text'][i];
-        tempText.text(ch);
+      for (const char of dataAttrs['data-text']) {
+        tempText.text(char);
         const charWidth = tempText.width();
-        const charAngularWidth = charWidth / dataAttrs['data-radius'];
-        const scaledAngularWidth = charAngularWidth * scaleFactor;
-        const centerAngle = cumulativeAngle + scaledAngularWidth / 2;
+        const charAngularWidth = (charWidth + dataAttrs['data-letter-spacing']) / dataAttrs['data-radius'];
+        const centerAngle = cumulativeAngle + charAngularWidth / 2;
         const placementAngle = centerAngle - Math.PI / 2;
 
-        const charNodeX = dataAttrs['data-radius'] * Math.cos(placementAngle);
-        const charNodeY = dataAttrs['data-radius'] * Math.sin(placementAngle);
-        const rotationDegrees = (centerAngle * 180) / Math.PI;
-
         const charNode = new window.Konva.Text({
-          text: ch, 
-          x: charNodeX, 
-          y: charNodeY, 
-          fontSize: dataAttrs['data-font-size'], 
+          text: char,
+          x: dataAttrs['data-radius'] * Math.cos(placementAngle),
+          y: dataAttrs['data-radius'] * Math.sin(placementAngle),
+          fontSize: dataAttrs['data-font-size'],
           fontFamily: dataAttrs['data-font-family'],
-          fontStyle, 
-          textDecoration: decorations.join(' '), 
-          rotation: rotationDegrees,
-          offsetX: charWidth / 2, 
-          offsetY: charHeight / 2, 
-          name: 'mainChar', 
+          fontStyle,
+          textDecoration: decorations,
+          rotation: (centerAngle * 180) / Math.PI,
+          offsetX: charWidth / 2,
+          offsetY: charHeight / 2,
+          name: 'mainChar',
           fill: dataAttrs['data-solid-color'],
         });
-
-        if (dataAttrs['data-is-glow']) {
-          const glowNode = charNode.clone({
-            fill: dataAttrs['data-glow-color'], 
-            stroke: dataAttrs['data-glow-color'], 
-            strokeWidth: dataAttrs['data-glow-blur'], 
-            name: 'glowEffect',
-          });
-          glowNode.cache();
-          glowNode.filters([window.Konva.Filters.Blur]);
-          glowNode.blurRadius(dataAttrs['data-glow-blur']);
-          glowNode.opacity(dataAttrs['data-glow-opacity']);
-          circularGroup.add(glowNode);
-        }
-
-        if (dataAttrs['data-is-shadow']) {
-          charNode.shadowEnabled(true);
-          charNode.shadowColor('#000000');
-          charNode.shadowBlur(dataAttrs['data-shadow-blur']);
-          charNode.shadowOffset({ x: dataAttrs['data-shadow-distance'], y: dataAttrs['data-shadow-distance'] });
-          charNode.shadowOpacity(dataAttrs['data-shadow-opacity']);
-        } else {
-          charNode.shadowEnabled(false);
-        }
-
         circularGroup.add(charNode);
-        cumulativeAngle += scaledAngularWidth;
+        cumulativeAngle += charAngularWidth;
       }
-      const totalArcWidth = cumulativeAngle;
-      circularGroup.rotation(-(totalArcWidth * 180) / (2 * Math.PI));
-      
       tempText.destroy();
+      circularGroup.rotation(-(cumulativeAngle * 180) / (2 * Math.PI));
+      newNode = circularGroup;
+
     } else {
+      // Logic for Regular Text
       const textGroup = new window.Konva.Group({
-        x, y, draggable: true, name: 'textGroup', id: uniqueId, ...dataAttrs,
+        id: uniqueId,
+        name: 'textGroup',
+        x: oldNodePosition.x,
+        y: oldNodePosition.y,
+        draggable: true,
+        ...dataAttrs,
       });
-      newNode = textGroup;
 
       const mainText = new window.Konva.Text({
         text: dataAttrs['data-text'],
@@ -204,30 +144,12 @@ export const useTextHandler = ({
         align: dataAttrs['data-align'],
         fill: dataAttrs['data-solid-color'],
         name: 'text',
+        fontStyle: `${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim(),
+        textDecoration: [
+          dataAttrs['data-is-underline'] ? 'underline' : '',
+          dataAttrs['data-is-strikethrough'] ? 'line-through' : '',
+        ].filter(Boolean).join(' '),
       });
-
-      textGroup.offsetX(mainText.width() / 2);
-      textGroup.offsetY(mainText.height() / 2);
-
-      const decorations: string[] = [];
-      if (dataAttrs['data-is-underline']) decorations.push('underline');
-      if (dataAttrs['data-is-strikethrough']) decorations.push('line-through');
-      mainText.textDecoration(decorations.join(' '));
-      mainText.fontStyle(`${dataAttrs['data-is-bold'] ? 'bold ' : ''}${dataAttrs['data-is-italic'] ? 'italic ' : ''}`.trim());
-
-      if (dataAttrs['data-is-glow']) {
-        const glowText = mainText.clone({
-          fill: dataAttrs['data-glow-color'], 
-          stroke: dataAttrs['data-glow-color'], 
-          strokeWidth: dataAttrs['data-glow-blur'], 
-          name: 'glowEffect',
-        });
-        glowText.cache();
-        glowText.filters([window.Konva.Filters.Blur]);
-        glowText.blurRadius(dataAttrs['data-glow-blur']);
-        glowText.opacity(dataAttrs['data-glow-opacity']);
-        textGroup.add(glowText);
-      }
 
       if (dataAttrs['data-is-shadow']) {
         mainText.shadowEnabled(true);
@@ -235,11 +157,12 @@ export const useTextHandler = ({
         mainText.shadowBlur(dataAttrs['data-shadow-blur']);
         mainText.shadowOffset({ x: dataAttrs['data-shadow-distance'], y: dataAttrs['data-shadow-distance'] });
         mainText.shadowOpacity(dataAttrs['data-shadow-opacity']);
-      } else {
-        mainText.shadowEnabled(false);
       }
 
       textGroup.add(mainText);
+      textGroup.offsetX(mainText.width() / 2);
+      textGroup.offsetY(mainText.height() / 2);
+      newNode = textGroup;
     }
 
     if (newNode) {
@@ -252,7 +175,7 @@ export const useTextHandler = ({
         colorStops: dataAttrs['data-color-stops'],
         gradientDirection: dataAttrs['data-gradient-direction'],
       };
-      
+
       if (colorConfig.isGradient && colorConfig.colorStops?.length > 0) {
         applyFill(newNode, colorConfig);
       }
@@ -260,61 +183,20 @@ export const useTextHandler = ({
       setSelectedNodes([newNode]);
       updateLayers();
       layer.draw();
-
-      ensureId(newNode);
       forceRecord?.();
-      
-      console.log('Text node created/updated successfully');
     }
   }, [
     canvasRef,
-    editingTextNode,
-    deselectNode,
     setSelectedNodes,
     updateLayers,
     applyFill,
-    setEditingTextNode,
     attachDoubleClick,
     forceRecord,
+    editingTextNode,
+    setEditingTextNode
   ]);
-
-  const handleTextUpdate = useCallback((config: any) => {
-    console.log('handleTextUpdate called');
-    console.log('editingTextNode:', editingTextNode);
-    console.log('config received:', config);
-    
-    if (!editingTextNode) {
-      console.warn('No editing text node found');
-      return;
-    }
-  
-    // Get the node's ID
-    const nodeId = editingTextNode.id?.() || editingTextNode.attrs?.id;
-    console.log('Node ID:', nodeId);
-    
-    if (!nodeId) {
-      console.error('Node has no ID!');
-      return;
-    }
-    
-    // Merge existing node attrs with new config
-    const existingAttrs = editingTextNode.getAttrs?.() || editingTextNode.attrs || {};
-    const mergedConfig = { 
-      ...existingAttrs, 
-      ...config, 
-      id: nodeId 
-    };
-    
-    console.log('Merged config:', mergedConfig);
-    
-    // Call the main update function
-    handleAddOrUpdateText(mergedConfig);
-  
-  }, [editingTextNode, handleAddOrUpdateText]);
-
 
   return {
     handleAddOrUpdateText,
-    handleTextUpdate,
   };
 };
