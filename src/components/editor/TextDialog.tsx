@@ -9,6 +9,13 @@ type TextPropertiesPanelProps = {
     editingNode: any;
 };
 
+const fontFamilies = [
+    'Inter', 'Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia', 'Impact',
+    'Comic Sans MS', 'Trebuchet MS', 'Arial Black', 'Garamond', 'Roboto', 'Open Sans', 'Lato',
+    'Montserrat', 'Oswald', 'Raleway', 'Merriweather', 'Playfair Display', 'Dancing Script',
+    'Pacifico', 'Lobster', 'Anton', 'Shadows Into Light', 'Caveat', 'Bebas Neue', 'Josefin Sans'
+];
+
 const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText, editingNode }) => {
     const [text, setText] = useState('');
     const [fontSize, setFontSize] = useState(24);
@@ -117,17 +124,9 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
                     onChange={(e) => setFontFamily(e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded-md"
                 >
-                    <option value="Inter">Inter</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Verdana">Verdana</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Courier New">Courier New</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Impact">Impact</option>
-                    <option value="Comic Sans MS">Comic Sans MS</option>
-                    <option value="Trebuchet MS">Trebuchet MS</option>
-                    <option value="Arial Black">Arial Black</option>
-                    <option value="Garamond">Garamond</option>
+                    {fontFamilies.map(font => (
+                        <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
+                    ))}
                 </select>
             </div>
              <div className="mb-4 flex items-center justify-between">
