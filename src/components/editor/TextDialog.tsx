@@ -64,6 +64,7 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
             radius,
             curvature
         });
+        onClose();
     };
 
     useEffect(() => {
@@ -215,7 +216,7 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
                 </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-                <Button variant="ghost" onClick={onClose}>Done</Button>
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
                 <Button onClick={handleApply}>Apply</Button>
             </div>
         </div>
