@@ -95,6 +95,7 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
+        text,
         fontSize, fontFamily, letterSpacing, lineHeight, align, isBold, isItalic, 
         isUnderline, isStrikethrough, isShadow, shadowBlur, shadowDistance, 
         shadowOpacity, isGlow, glowColor, glowBlur, glowOpacity, radius, curvature
@@ -107,6 +108,15 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
 
     return (
         <div className="flex flex-col gap-4 p-4 overflow-y-auto max-h-96">
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Text</label>
+                <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    rows={3}
+                />
+            </div>
             <div className="mb-4 mt-4">
                 <label className="block text-sm font-medium text-gray-700">Font Size</label>
                 <input 
@@ -218,4 +228,6 @@ const TextPropertiesPanel: React.FC<TextPropertiesPanelProps> = ({ onUpdateText,
 }
 
 export default TextPropertiesPanel;
+    
+
     
