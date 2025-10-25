@@ -11,8 +11,6 @@ type UseTextHandlerProps = {
   attachDoubleClick: (node: any) => void;
   editingTextNode: any;
   setEditingTextNode: (node: any) => void;
-
-  // NEW: allow this hook to push history entries
   forceRecord?: () => void;
 };
 
@@ -25,9 +23,8 @@ export const useTextHandler = ({
   attachDoubleClick,
   editingTextNode,
   setEditingTextNode,
-  forceRecord, // NEW
+  forceRecord,
 }: UseTextHandlerProps) => {
-  // Utility: ensure the node has a stable id before we record
   const ensureId = (node: any) => {
     if (!node?.id?.()) {
       node.id(`node-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
@@ -39,40 +36,31 @@ export const useTextHandler = ({
     if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
     const { stage, layer } = canvasRef.current;
 
-    const isEditing = !!editingTextNode || (config.id && layer.findOne(`#${config.id}`));
+    const isEditing = !!(config.id && layer.findOne(`#${config.id}`));
 
-    // Use a placeholder for new text to avoid adding empty objects
     if (!isEditing && (!config.text || config.text.trim() === '')) {
       config.text = 'New Text';
     }
 
-
-    // Reuse id when editing; new id when adding
-    const uniqueId =
-      config.id ??
-      editingTextNode?.id?.() ?? `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const uniqueId = config.id ?? `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     let oldNode = layer.findOne(`#${uniqueId}`);
-
-    // When editing, you destroy & rebuild — we’ll keep the same id so this becomes an UPDATE
     let oldAttrs: { [key: string]: any } = {};
+
     if (oldNode) {
-      // Preserve all "data-*" attrs (your design settings)
       Object.keys(oldNode.attrs).forEach((key) => {
         if (key.startsWith('data-')) oldAttrs[key] = oldNode.attrs[key];
       });
-
-      // Remove old node (we’ll create a new node with the SAME id)
       oldNode.destroy();
-      if(editingTextNode) {
-          deselectNode();
+      if(editingTextNode?.id?.() === uniqueId) {
           setEditingTextNode(null);
       }
     }
-
-    // Merge old + new “data-*” attributes (dialog values override)
+    
+    // Merge old data, current node data, and new config from dialog
     const dataAttrs: any = {
       ...oldAttrs,
+      ...(editingTextNode?.getAttrs() || {}),
       'data-text': config.text,
       'data-font-size': config.fontSize,
       'data-font-family': config.fontFamily,
@@ -95,19 +83,14 @@ export const useTextHandler = ({
       'data-curvature': config.curvature,
     };
 
+
     let newNode: any;
     const x = oldNode ? oldNode.x() : stage.width() / 2;
     const y = oldNode ? oldNode.y() : stage.height() / 2;
 
     if (config.curvature > 0) {
-      // ----- Circular Text -----
       const circularGroup = new window.Konva.Group({
-        x,
-        y,
-        draggable: true,
-        name: 'circularText',
-        id: uniqueId,
-        ...dataAttrs,
+        x, y, draggable: true, name: 'circularText', id: uniqueId, ...dataAttrs,
       });
       newNode = circularGroup;
 
@@ -138,31 +121,19 @@ export const useTextHandler = ({
         const centerAngle = cumulativeAngle + scaledAngularWidth / 2;
         const placementAngle = centerAngle - Math.PI / 2;
 
-        const x = config.radius * Math.cos(placementAngle);
-        const y = config.radius * Math.sin(placementAngle);
+        const charNodeX = config.radius * Math.cos(placementAngle);
+        const charNodeY = config.radius * Math.sin(placementAngle);
         const rotationDegrees = (centerAngle * 180) / Math.PI;
 
         const charNode = new window.Konva.Text({
-          text: ch,
-          x,
-          y,
-          fontSize: config.fontSize,
-          fontFamily: config.fontFamily,
-          fontStyle,
-          textDecoration: decorations.join(' '),
-          rotation: rotationDegrees,
-          offsetX: charWidth / 2,
-          offsetY: charHeight / 2,
-          name: 'mainChar',
-          fill: '#000000',
+          text: ch, x: charNodeX, y: charNodeY, fontSize: config.fontSize, fontFamily: config.fontFamily,
+          fontStyle, textDecoration: decorations.join(' '), rotation: rotationDegrees,
+          offsetX: charWidth / 2, offsetY: charHeight / 2, name: 'mainChar', fill: '#000000',
         });
 
         if (config.isGlow) {
           const glowNode = charNode.clone({
-            fill: config.glowColor,
-            stroke: config.glowColor,
-            strokeWidth: config.glowBlur,
-            name: 'glowEffect',
+            fill: config.glowColor, stroke: config.glowColor, strokeWidth: config.glowBlur, name: 'glowEffect',
           });
           glowNode.cache();
           glowNode.filters([window.Konva.Filters.Blur]);
@@ -184,29 +155,25 @@ export const useTextHandler = ({
         circularGroup.add(charNode);
         cumulativeAngle += scaledAngularWidth;
       }
-
-      // center the arc visually
       const totalArcWidth = cumulativeAngle;
       circularGroup.rotation(-(totalArcWidth * 180) / (2 * Math.PI));
     } else {
-      // ----- Straight Text -----
       const textGroup = new window.Konva.Group({
-        x,
-        y,
-        draggable: true,
-        name: 'textGroup',
-        id: uniqueId,
-        ...dataAttrs,
+        x, y, draggable: true, name: 'textGroup', id: uniqueId, ...dataAttrs,
       });
       newNode = textGroup;
 
       const mainText = new window.Konva.Text({
-        ...config,
+        text: config.text,
+        fontSize: config.fontSize,
+        fontFamily: config.fontFamily,
+        letterSpacing: config.letterSpacing,
+        lineHeight: config.lineHeight,
+        align: config.align,
         fill: '#000000',
         name: 'text',
       });
 
-      // Center the text group
       textGroup.offsetX(mainText.width() / 2);
       textGroup.offsetY(mainText.height() / 2);
 
@@ -218,10 +185,7 @@ export const useTextHandler = ({
 
       if (config.isGlow) {
         const glowText = mainText.clone({
-          fill: config.glowColor,
-          stroke: config.glowColor,
-          strokeWidth: config.glowBlur,
-          name: 'glowEffect',
+          fill: config.glowColor, stroke: config.glowColor, strokeWidth: config.glowBlur, name: 'glowEffect',
         });
         glowText.cache();
         glowText.filters([window.Konva.Filters.Blur]);
@@ -247,7 +211,6 @@ export const useTextHandler = ({
       attachDoubleClick(newNode);
       layer.add(newNode);
 
-      // Re-apply final color/gradient settings (your CanvasContext.applyFill handles text groups)
       const colorConfig = {
         isGradient: dataAttrs['data-is-gradient'] ?? false,
         solidColor: dataAttrs['data-solid-color'] ?? '#000000',
@@ -255,15 +218,11 @@ export const useTextHandler = ({
         gradientDirection: dataAttrs['data-gradient-direction'] ?? 'top-to-bottom',
       };
       applyFill(newNode, colorConfig);
-
-      // Select + refresh UI
+      
       setSelectedNodes([newNode]);
       updateLayers();
       layer.draw();
 
-      // Make sure it has an id, then record:
-      // - If brand-new text: this becomes ADD
-      // - If editing existing text (same id): this becomes UPDATE
       ensureId(newNode);
       forceRecord?.();
     }
@@ -282,14 +241,13 @@ export const useTextHandler = ({
   const handleTextUpdate = useCallback((config: any) => {
     const node = editingTextNode;
     if (!node) return;
-
-    // The config from the dialog has all the new values.
-    // The node.attrs has the old ones. We need to merge them.
+  
+    // Combine all attributes: existing node attributes, plus the new config from the dialog
     const newConfig = { ...node.getAttrs(), ...config, id: node.id() };
     
-    // Simply call the main update function which handles recreation.
+    // Call the single, reliable update function
     handleAddOrUpdateText(newConfig);
-
+  
   }, [editingTextNode, handleAddOrUpdateText]);
 
 
