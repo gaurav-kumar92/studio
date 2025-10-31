@@ -11,7 +11,7 @@ import AnimationPanel from './AnimationPanel';
 import ClipartPropertiesPanel from './ClipartPropertiesPanel';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
-import TextPropertiesPanel from './TextDialog';
+import TextPropertiesPanel from './TextPropertiesPanel';
 import { useCanvas } from '@/contexts/CanvasContext';
 
 type ObjectPropertiesPanelProps = {
@@ -234,3 +234,5 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 };
 
 export default ObjectPropertiesPanel;
+
+    

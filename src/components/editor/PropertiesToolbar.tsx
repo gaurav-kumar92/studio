@@ -25,7 +25,6 @@ const PropertiesToolbar = () => {
     handleRotationChange,
     handleFlip,
     handleColorUpdate,
-    handleTextUpdate,
     handleMaskImageZoom,
     handleMaskImageReset,
     handleMaskImagePan,
@@ -181,7 +180,6 @@ const PropertiesToolbar = () => {
           onOpacityChange={handleOpacityChange}
           onFlip={handleFlip}
           onColorChange={handleColorUpdate}
-          onTextUpdate={handleTextUpdate}
           onMaskImageZoom={handleMaskImageZoom}
           onMaskImageReset={handleMaskImageReset}
           onMaskImagePan={handleMaskImagePan}
@@ -198,3 +196,5 @@ const PropertiesToolbar = () => {
 };
 
 export default PropertiesToolbar;
+
+    

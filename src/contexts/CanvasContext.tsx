@@ -1401,5 +1401,3 @@ export const useCanvas = (): CanvasContextType => {
 };
 
     
-
-    
