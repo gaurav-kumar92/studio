@@ -1277,39 +1277,65 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-    if (!isCanvasReady || !isKonvaReady) {
+    if (!isCanvasReady || !isKonvaReady || typeof window === 'undefined') {
       return;
     }
 
-    const croppedImage = localStorage.getItem('croppedImage');
-    const imageNodeId = localStorage.getItem('imageNodeToCrop');
+    const processCroppedImage = () => {
+        const croppedImage = localStorage.getItem('croppedImage');
+        const imageNodeId = localStorage.getItem('imageNodeToCrop');
 
-    if (croppedImage && imageNodeId && canvasRef.current?.layer) {
-      const layer = canvasRef.current.layer;
-      const imageNode = layer.findOne(`#${imageNodeId}`);
+        if (croppedImage && imageNodeId && canvasRef.current?.layer) {
+            const layer = canvasRef.current.layer;
+            const imageNode = layer.findOne(`#${imageNodeId}`);
 
-      if (imageNode) {
-        const imageObj = new window.Image();
-        imageObj.onload = () => {
-          imageNode.image(imageObj);
-          imageNode.setAttr('data-original-src', croppedImage);
-          imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
+            if (imageNode) {
+                const imageObj = new window.Image();
+                imageObj.onload = () => {
+                    imageNode.image(imageObj);
+                    imageNode.setAttr('data-original-src', croppedImage);
+                    
+                    const newWidth = imageObj.width;
+                    const newHeight = imageObj.height;
+                    
+                    // Adjust scale to fit if necessary, or just update dimensions
+                    const currentScaleX = imageNode.scaleX();
+                    const currentScaleY = imageNode.scaleY();
+                    
+                    const oldWidth = imageNode.width();
+                    const oldHeight = imageNode.height();
 
-          layer.batchDraw();
-          forceRecord?.();
+                    // Update node dimensions and reset offset to keep it centered
+                    imageNode.width(newWidth);
+                    imageNode.height(newHeight);
+                    imageNode.offsetX(newWidth / 2);
+                    imageNode.offsetY(newHeight / 2);
+                    
+                    // Optionally adjust scale if you want to maintain visual size
+                    // imageNode.scaleX(currentScaleX * (oldWidth / newWidth));
+                    // imageNode.scaleY(currentScaleY * (oldHeight / newHeight));
 
-          // Clean up local storage
-          localStorage.removeItem('croppedImage');
-          localStorage.removeItem('imageNodeToCrop');
-        };
-        imageObj.src = croppedImage;
-      } else {
-        // Node not found, clean up
-        localStorage.removeItem('croppedImage');
-        localStorage.removeItem('imageNodeToCrop');
-      }
-    }
-  }, [isCanvasReady, isKonvaReady, canvasRef, getDragBoundFunc, forceRecord]);
+                    imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
+
+                    layer.batchDraw();
+                    forceRecord?.();
+
+                    // Clean up local storage
+                    localStorage.removeItem('croppedImage');
+                    localStorage.removeItem('imageNodeToCrop');
+                };
+                imageObj.src = croppedImage;
+            } else {
+                localStorage.removeItem('croppedImage');
+                localStorage.removeItem('imageNodeToCrop');
+            }
+        }
+    };
+    
+    // Check on initial load/return to page
+    processCroppedImage();
+
+  }, [isCanvasReady, isKonvaReady, canvasRef, getDragBoundFunc, forceRecord, router]); // Added router to dependency array
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
