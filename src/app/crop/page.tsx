@@ -55,14 +55,9 @@ export default function CropPage() {
     if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       localStorage.setItem('croppedImage', dataUrl);
-      // Dispatch a storage event to notify the other tab/page
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: 'croppedImage',
-          newValue: dataUrl,
-        })
-      );
-      router.back();
+      // We no longer navigate back automatically. The main page will handle it.
+      alert("Crop applied! Please return to the editor tab.");
+      window.close(); // Attempt to close the tab
     }
   };
 
@@ -70,6 +65,7 @@ export default function CropPage() {
     localStorage.removeItem('imageToCrop');
     localStorage.removeItem('croppedImage');
     localStorage.removeItem('imageNodeToCrop');
+    window.close(); // Attempt to close the tab
     router.back();
   };
 

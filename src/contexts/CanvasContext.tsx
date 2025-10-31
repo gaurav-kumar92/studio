@@ -1277,47 +1277,53 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-  const handleStorageChange = (event: StorageEvent) => {
-    if (event.key === 'croppedImage' && event.newValue) {
-      const croppedImage = event.newValue;
-      const imageNodeId = localStorage.getItem('imageNodeToCrop');
+    const handleFocus = () => {
+        if (!isKonvaReady || !isCanvasReady) return;
 
-      if (croppedImage && imageNodeId) {
-        const checkCanvas = () => {
-          if (!isKonvaReady || !isCanvasReady || !canvasRef.current?.layer) {
-            setTimeout(checkCanvas, 100);
-            return;
-          }
+        const croppedImage = localStorage.getItem('croppedImage');
+        const imageNodeId = localStorage.getItem('imageNodeToCrop');
 
-          const layer = canvasRef.current.layer;
-          const imageNode = layer.findOne(`#${imageNodeId}`);
+        if (croppedImage && imageNodeId && canvasRef.current?.layer) {
+            const layer = canvasRef.current.layer;
+            const imageNode = layer.findOne(`#${imageNodeId}`);
 
-          if (imageNode) {
-            const imageObj = new window.Image();
-            imageObj.onload = () => {
-              imageNode.image(imageObj);
-              imageNode.setAttr('data-original-src', croppedImage);
-              layer.batchDraw();
-              forceRecord?.();
+            if (imageNode) {
+                const imageObj = new window.Image();
+                imageObj.onload = () => {
+                    imageNode.image(imageObj);
+                    imageNode.setAttr('data-original-src', croppedImage);
+                    layer.batchDraw();
+                    forceRecord?.();
 
-              // Cleanup
-              localStorage.removeItem('croppedImage');
-              localStorage.removeItem('imageNodeToCrop');
-              localStorage.removeItem('imageToCrop');
-            };
-            imageObj.src = croppedImage;
-          }
-        };
-        checkCanvas();
-      }
-    }
-  };
+                    // Cleanup
+                    localStorage.removeItem('croppedImage');
+                    localStorage.removeItem('imageNodeToCrop');
+                    localStorage.removeItem('imageToCrop');
+                    
+                    // Navigate back to the main page if we are not already there
+                    if (window.location.pathname.startsWith('/crop')) {
+                        router.push('/');
+                    }
+                };
+                imageObj.src = croppedImage;
+            } else {
+                 // Cleanup if node not found
+                localStorage.removeItem('croppedImage');
+                localStorage.removeItem('imageNodeToCrop');
+                localStorage.removeItem('imageToCrop');
+            }
+        }
+    };
 
-  window.addEventListener('storage', handleStorageChange);
-  return () => {
-    window.removeEventListener('storage', handleStorageChange);
-  };
-}, [isKonvaReady, isCanvasReady, canvasRef, forceRecord]);
+    window.addEventListener('focus', handleFocus);
+
+    // Also run on mount in case the focus event was missed
+    handleFocus();
+
+    return () => {
+        window.removeEventListener('focus', handleFocus);
+    };
+}, [isKonvaReady, isCanvasReady, canvasRef, forceRecord, router]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
@@ -1394,3 +1400,4 @@ export const useCanvas = (): CanvasContextType => {
 };
 
     
+
