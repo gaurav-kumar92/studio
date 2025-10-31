@@ -8,7 +8,7 @@ import ZoomControls from './ZoomControls';
 import BackgroundImagePanel from './BackgroundImagePanel';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
-import { Menu, RotateCw, Scaling } from 'lucide-react';
+import { Menu, RotateCw, Scaling, Crop } from 'lucide-react';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
 import CanvasSizeSelector from './CanvasSizeSelector';
@@ -46,6 +46,7 @@ const PropertiesToolbar = () => {
     setCanvasSize,
     backgroundColor,
     setBackgroundColor,
+    handleCropImage,
   } = useCanvas();
 
   const [scale, setScale] = useState(1);
@@ -95,6 +96,8 @@ const PropertiesToolbar = () => {
       setSelectedNodes([selectedNodes[selectedNodes.length - 1]]);
     }
   };
+
+  const canCrop = selectedNodes.length === 1 && selectedNodes[0].hasName('image');
 
   return (
     <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
@@ -164,6 +167,10 @@ const PropertiesToolbar = () => {
                 </div>
             </PopoverContent>
         </Popover>
+        
+        <Button variant="ghost" size="icon" disabled={!canCrop} onClick={handleCropImage}>
+            <Crop size={16} />
+        </Button>
 
       </div>
       

@@ -22,6 +22,7 @@ import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
 import { useLockHandler } from '@/hooks/useLockHandler';
 import { useAnimationHandler } from '@/hooks/useAnimationHandler';
 import { Node } from 'konva/lib/Node';
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -123,6 +124,7 @@ type CanvasContextType = {
   handleBackgroundImagePan: (direction: 'up' | 'down' | 'left' | 'right') => void;
   handleBackgroundImageReset: () => void;
   handleRemoveBackgroundImage: () => void;
+  handleCropImage: () => void;
 
   undo: () => void;
   redo: () => void;
@@ -145,6 +147,7 @@ const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const canvasRef = useRef<{ stage: any; layer: any; background: any }>(null);
+  const router = useRouter();
 
   const [konvaObjects, setKonvaObjects] = useState<any[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
@@ -663,6 +666,7 @@ const handleUngroup = useCallback(() => {
                 dragBoundFunc: getDragBoundFunc(img),
                 offsetX: img.width() / 2,
                 offsetY: img.height() / 2,
+                'data-original-src': e.target!.result
             });
 
             attachDoubleClick(img);
@@ -1092,6 +1096,19 @@ const handleBackgroundImageReset = useCallback(() => {
     });
   }, [clipboard, canvasRef, attachDoubleClick, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
 
+  const handleCropImage = useCallback(() => {
+    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('image')) {
+      return;
+    }
+    const imageNode = selectedNodes[0];
+    const imageUrl = imageNode.getAttr('data-original-src') || imageNode.image().src;
+
+    if (imageUrl) {
+      localStorage.setItem('imageToCrop', imageUrl);
+      localStorage.setItem('imageNodeToCrop', imageNode.id());
+      router.push('/crop');
+    }
+  }, [selectedNodes, router]);
 
   useEffect(() => {
     if (canvasRef.current?.background && isCanvasReady) {
@@ -1259,6 +1276,27 @@ const handleBackgroundImageReset = useCallback(() => {
     }
 }, [isCanvasReady, fitToScreen, canvasRef]);
 
+useEffect(() => {
+    const croppedImage = localStorage.getItem('croppedImage');
+    const imageNodeId = localStorage.getItem('imageNodeToCrop');
+
+    if (croppedImage && imageNodeId && canvasRef.current?.layer) {
+      const layer = canvasRef.current.layer;
+      const imageNode = layer.findOne(`#${imageNodeId}`);
+      if (imageNode) {
+        window.Konva.Image.fromURL(croppedImage, (newImg: any) => {
+          imageNode.image(newImg.image());
+          imageNode.setAttr('data-original-src', croppedImage);
+          layer.batchDraw();
+          forceRecord();
+        });
+      }
+      localStorage.removeItem('croppedImage');
+      localStorage.removeItem('imageNodeToCrop');
+      localStorage.removeItem('imageToCrop');
+    }
+  }, [isCanvasReady]);
+
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
@@ -1316,7 +1354,7 @@ const handleBackgroundImageReset = useCallback(() => {
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
-    handleRemoveBackgroundImage,
+    handleRemoveBackgroundImage, handleCropImage,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
