@@ -1106,9 +1106,9 @@ const handleBackgroundImageReset = useCallback(() => {
     if (imageUrl) {
       localStorage.setItem('imageToCrop', imageUrl);
       localStorage.setItem('imageNodeToCrop', imageNode.id());
-      window.open('/crop', '_blank');
+      router.push('/crop');
     }
-  }, [selectedNodes]);
+  }, [selectedNodes, router]);
 
   useEffect(() => {
     if (isKonvaReady && canvasRef.current?.background) {
@@ -1290,7 +1290,10 @@ useEffect(() => {
             const imageObj = new window.Image();
             imageObj.onload = () => {
               imageNode.image(imageObj);
+              // After loading, update original src and re-apply drag bounds
               imageNode.setAttr('data-original-src', croppedImage);
+              imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
+
               layer.batchDraw();
               forceRecord?.();
               
@@ -1309,7 +1312,7 @@ useEffect(() => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [forceRecord, canvasRef]);
+  }, [forceRecord, canvasRef, getDragBoundFunc]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };

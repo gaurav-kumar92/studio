@@ -19,9 +19,14 @@ export default function CropPage() {
       setImageUrl(imageToCrop);
     } else {
       // If no image, we can't do anything.
-      window.close();
+      // Use router.back() if available, otherwise close.
+      try {
+        router.back();
+      } catch (e) {
+        window.close();
+      }
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (imageUrl && imgRef.current) {
@@ -63,8 +68,13 @@ export default function CropPage() {
         key: 'croppedImage',
         newValue: dataUrl
       }));
-
-      window.close();
+      
+      // Navigate back to the editor
+      try {
+        router.back();
+      } catch(e) {
+         window.close();
+      }
     }
   };
 
@@ -72,7 +82,11 @@ export default function CropPage() {
     localStorage.removeItem('imageToCrop');
     localStorage.removeItem('croppedImage');
     localStorage.removeItem('imageNodeToCrop');
-    window.close();
+     try {
+        router.back();
+      } catch(e) {
+         window.close();
+      }
   };
 
   if (!imageUrl) {
