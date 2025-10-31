@@ -327,7 +327,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const isTransformer = className === 'Transformer' || node?.hasName?.('Transformer');
       const isBackground = node?.name?.() === 'background';
       const hasId = !!node?.id?.();
-      return hasId && !isTransformer && !isBackground;
+      return hasId && !isTransformer && isBackground;
     });
 
     setKonvaObjects(Array.from(children));
@@ -1277,26 +1277,31 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-    if (!isKonvaReady) return;
+    if (!isKonvaReady || !isCanvasReady) return;
     const croppedImage = localStorage.getItem('croppedImage');
     const imageNodeId = localStorage.getItem('imageNodeToCrop');
 
     if (croppedImage && imageNodeId && canvasRef.current?.layer) {
       const layer = canvasRef.current.layer;
       const imageNode = layer.findOne(`#${imageNodeId}`);
+      
       if (imageNode) {
-        window.Konva.Image.fromURL(croppedImage, (newImg: any) => {
-          imageNode.image(newImg.image());
-          imageNode.setAttr('data-original-src', croppedImage);
-          layer.batchDraw();
-          forceRecord();
-        });
+        // Use window.Image to load the data URL
+        const imageObj = new window.Image();
+        imageObj.onload = () => {
+            imageNode.image(imageObj);
+            imageNode.setAttr('data-original-src', croppedImage);
+            layer.batchDraw();
+            forceRecord();
+        };
+        imageObj.src = croppedImage;
       }
+      
       localStorage.removeItem('croppedImage');
       localStorage.removeItem('imageNodeToCrop');
       localStorage.removeItem('imageToCrop');
     }
-  }, [isKonvaReady, isCanvasReady]);
+  }, [isKonvaReady, isCanvasReady, forceRecord, canvasRef]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
