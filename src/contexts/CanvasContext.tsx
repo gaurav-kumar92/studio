@@ -1111,7 +1111,7 @@ const handleBackgroundImageReset = useCallback(() => {
   }, [selectedNodes, router]);
 
   useEffect(() => {
-    if (canvasRef.current?.background && isCanvasReady) {
+    if (isKonvaReady && canvasRef.current?.background) {
       const backgroundRect = canvasRef.current.background;
       const layer = canvasRef.current.layer;
 
@@ -1152,7 +1152,7 @@ const handleBackgroundImageReset = useCallback(() => {
       }
       if (layer) layer.draw();
     }
-  }, [backgroundColor, isCanvasReady, backgroundImage]);
+  }, [backgroundColor, isKonvaReady, backgroundImage]);
 
   useEffect(() => {
     if (!canvasRef.current?.layer) return;
@@ -1258,7 +1258,7 @@ const handleBackgroundImageReset = useCallback(() => {
   
 
   useEffect(() => {
-    if (isCanvasReady && canvasRef.current?.stage) {
+    if (isKonvaReady && isCanvasReady && canvasRef.current?.stage) {
       const stage = canvasRef.current.stage;
       
       fitToScreen();
@@ -1274,9 +1274,10 @@ const handleBackgroundImageReset = useCallback(() => {
           }
       };
     }
-}, [isCanvasReady, fitToScreen, canvasRef]);
+}, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
+    if (!isKonvaReady) return;
     const croppedImage = localStorage.getItem('croppedImage');
     const imageNodeId = localStorage.getItem('imageNodeToCrop');
 
@@ -1295,7 +1296,7 @@ useEffect(() => {
       localStorage.removeItem('imageNodeToCrop');
       localStorage.removeItem('imageToCrop');
     }
-  }, [isCanvasReady]);
+  }, [isKonvaReady, isCanvasReady]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };

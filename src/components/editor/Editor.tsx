@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import {
@@ -10,7 +10,6 @@ import {
 } from '@/contexts/CanvasContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Dynamically import components to code-split and improve initial load time
 const Canvas = dynamic(() => import('@/components/editor/Canvas'), { ssr: false });
 const Toolbar = dynamic(() => import('@/components/editor/Toolbar'), {
   ssr: false,
@@ -41,7 +40,7 @@ declare global {
 function EditorUI() {
   const {
     canvasRef,
-    isCanvasReady,
+    setKonvaReady,
     konvaObjects,
     selectedNodes,
     setSelectedNodes,
@@ -74,7 +73,6 @@ function EditorUI() {
     handleAddIcon,
     handleSelectItem,
     handleMoveNode,
-    isLoading,
     canvasSize,
     backgroundImage,
   } = useCanvas();
@@ -86,14 +84,9 @@ function EditorUI() {
     <>
       <Script
         src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
-        strategy="beforeInteractive"
+        strategy="lazyOnload"
+        onLoad={() => setKonvaReady(true)}
       />
-      {isLoading || !isCanvasReady ? (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <p>Loading Editor...</p>
-        </div>
-      ) : null}
       <div id="editor-ui">
         <div className="editor-main-column">
           <h1 className="text-4xl text-center my-4 font-headline" style={{ fontWeight: 400 }}>
