@@ -3,10 +3,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Stage, Layer, Image as KonvaImage, Rect, Transformer } from 'react-konva';
 
 const CropClientPage = () => {
   const router = useRouter();
+  const [Konva, setKonva] = useState<any>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [cropArea, setCropArea] = useState({
     x: 50,
@@ -22,6 +22,15 @@ const CropClientPage = () => {
   const stageRef = useRef<any>(null);
 
   useEffect(() => {
+    // Dynamically import Konva on the client side
+    import('react-konva').then(module => {
+      setKonva(module);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!Konva) return; // Wait for Konva to be loaded
+
     // Load image from localStorage
     const imageUrl = localStorage.getItem('imageToCrop');
     
@@ -38,7 +47,6 @@ const CropClientPage = () => {
     img.onload = () => {
       setImage(img);
       
-      // Calculate dimensions to fit in viewport
       const maxWidth = 800;
       const maxHeight = 600;
       const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
@@ -48,7 +56,6 @@ const CropClientPage = () => {
       
       setImageSize({ width: displayWidth, height: displayHeight });
       
-      // Set initial crop area (centered, 50% of image)
       const cropWidth = displayWidth * 0.5;
       const cropHeight = displayHeight * 0.5;
       setCropArea({
@@ -59,17 +66,17 @@ const CropClientPage = () => {
       });
     };
     img.src = imageUrl;
-  }, [router]);
+  }, [router, Konva]);
 
   useEffect(() => {
-    if (transformerRef.current && cropRef.current && image) {
+    if (Konva && transformerRef.current && cropRef.current && image) {
       transformerRef.current.nodes([cropRef.current]);
       const layer = transformerRef.current.getLayer();
       if (layer) {
         layer.batchDraw();
       }
     }
-  }, [image]);
+  }, [image, Konva]);
 
   const handleCropChange = (e: any) => {
     const node = e.target;
@@ -83,7 +90,6 @@ const CropClientPage = () => {
       height: newHeight
     });
     
-    // Reset scale to prevent compound scaling
     node.scaleX(1);
     node.scaleY(1);
   };
@@ -134,13 +140,16 @@ const CropClientPage = () => {
     }
   };
 
-  if (!image) {
+  if (!Konva || !image) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-xl text-gray-600">Loading image...</div>
       </div>
     );
   }
+
+  // Destructure components from the loaded Konva module
+  const { Stage, Layer, Image: KonvaImage, Rect, Transformer } = Konva;
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100 p-8">
