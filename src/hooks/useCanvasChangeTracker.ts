@@ -90,7 +90,6 @@ export const useCanvasChangeTracker = (
         snapshot.set(node.id(), {
           id: node.id(),
           className: node.getClassName?.(),
-          attrs: deepcopy(node.getAttrs?.() ?? {}), // keep for simple diffing
           json: node.toObject(), // full Konva JSON (safe to recreate)
         });
       });
@@ -108,8 +107,8 @@ export const useCanvasChangeTracker = (
       if (!oldNode) {
         added.push({ id: newNode.id, json: newNode.json });
       } else {
-        const oldAttrs = JSON.stringify(oldNode.attrs ?? {});
-        const newAttrs = JSON.stringify(newNode.attrs ?? {});
+        const oldAttrs = JSON.stringify(oldNode.json.attrs ?? {});
+        const newAttrs = JSON.stringify(newNode.json.attrs ?? {});
         if (oldAttrs !== newAttrs) {
           updated.push({
             before: { id: oldNode.id, attrs: oldNode.json.attrs },
