@@ -4,9 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cropper from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
+import { useToast } from '@/hooks/use-toast';
 
 const CropPage = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const cropperRef = useRef<any>(null);
 
@@ -15,19 +17,32 @@ const CropPage = () => {
     if (url) {
       setImageUrl(url);
     } else {
+      // If no image is found, redirect away.
       router.push('/');
     }
   }, [router]);
 
   const handleCrop = () => {
     if (cropperRef.current?.cropper) {
+      // Get cropped canvas data
       const croppedDataURL = cropperRef.current.cropper.getCroppedCanvas().toDataURL();
+      
+      // Store it in localStorage for the main page to pick up
       localStorage.setItem('croppedImage', croppedDataURL);
+      
+      // Navigate back to the editor
       router.push('/');
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Cropping Error",
+        description: "Could not apply the crop. Please try again.",
+      });
     }
   };
 
   const handleCancel = () => {
+    // Clear localStorage and go back
     localStorage.removeItem('imageToCrop');
     localStorage.removeItem('imageNodeToCrop');
     router.push('/');
