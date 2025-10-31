@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -17,8 +18,8 @@ export default function CropPage() {
     if (imageToCrop) {
       setImageUrl(imageToCrop);
     } else {
-      // If no image, we can't do anything. Maybe go back or show error.
-      // For now, let's assume we can't get here without an image.
+      // If no image, we can't do anything.
+      window.close();
     }
   }, []);
 
@@ -56,7 +57,14 @@ export default function CropPage() {
     if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       localStorage.setItem('croppedImage', dataUrl);
-      window.close(); // Close the tab, the main page will listen for the change
+      
+      // Dispatch storage event to notify main window
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'croppedImage',
+        newValue: dataUrl
+      }));
+
+      window.close();
     }
   };
 
