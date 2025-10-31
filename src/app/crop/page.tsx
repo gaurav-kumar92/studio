@@ -17,9 +17,10 @@ export default function CropPage() {
     if (imageToCrop) {
       setImageUrl(imageToCrop);
     } else {
-      router.push('/');
+      // If no image, we can't do anything. Maybe go back or show error.
+      // For now, let's assume we can't get here without an image.
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (imageUrl && imgRef.current) {
@@ -55,9 +56,7 @@ export default function CropPage() {
     if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       localStorage.setItem('croppedImage', dataUrl);
-      // We no longer navigate back automatically. The main page will handle it.
-      alert("Crop applied! Please return to the editor tab.");
-      window.close(); // Attempt to close the tab
+      window.close(); // Close the tab, the main page will listen for the change
     }
   };
 
@@ -65,8 +64,7 @@ export default function CropPage() {
     localStorage.removeItem('imageToCrop');
     localStorage.removeItem('croppedImage');
     localStorage.removeItem('imageNodeToCrop');
-    window.close(); // Attempt to close the tab
-    router.back();
+    window.close();
   };
 
   if (!imageUrl) {
