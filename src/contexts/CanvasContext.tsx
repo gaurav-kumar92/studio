@@ -1200,7 +1200,7 @@ const handleBackgroundImageReset = useCallback(() => {
     };
   
     const onTouchMove = (e: TouchEvent) => {
-      if (!isPanning || !lastTouch || !e.touches || e.touches.length === 0) return;
+      if (!isPanning || !lastTouch || !e.touches || !e.touches.length) return;
       const touch = e.touches[0];
   
       e.preventDefault();
@@ -1381,3 +1381,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
