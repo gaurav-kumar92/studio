@@ -1277,42 +1277,39 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'croppedImage' && event.newValue) {
-        const croppedImage = event.newValue;
-        const imageNodeId = localStorage.getItem('imageNodeToCrop');
-        
-        if (croppedImage && imageNodeId && canvasRef.current?.layer) {
-          const layer = canvasRef.current.layer;
-          const imageNode = layer.findOne(`#${imageNodeId}`);
-          
-          if (imageNode) {
-            const imageObj = new window.Image();
-            imageObj.onload = () => {
-              imageNode.image(imageObj);
-              // After loading, update original src and re-apply drag bounds
-              imageNode.setAttr('data-original-src', croppedImage);
-              imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
+    if (!isCanvasReady || !isKonvaReady) {
+      return;
+    }
 
-              layer.batchDraw();
-              forceRecord?.();
-              
-              // Clean up local storage
-              localStorage.removeItem('croppedImage');
-              localStorage.removeItem('imageNodeToCrop');
-            };
-            imageObj.src = croppedImage;
-          }
-        }
+    const croppedImage = localStorage.getItem('croppedImage');
+    const imageNodeId = localStorage.getItem('imageNodeToCrop');
+
+    if (croppedImage && imageNodeId && canvasRef.current?.layer) {
+      const layer = canvasRef.current.layer;
+      const imageNode = layer.findOne(`#${imageNodeId}`);
+
+      if (imageNode) {
+        const imageObj = new window.Image();
+        imageObj.onload = () => {
+          imageNode.image(imageObj);
+          imageNode.setAttr('data-original-src', croppedImage);
+          imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
+
+          layer.batchDraw();
+          forceRecord?.();
+
+          // Clean up local storage
+          localStorage.removeItem('croppedImage');
+          localStorage.removeItem('imageNodeToCrop');
+        };
+        imageObj.src = croppedImage;
+      } else {
+        // Node not found, clean up
+        localStorage.removeItem('croppedImage');
+        localStorage.removeItem('imageNodeToCrop');
       }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [forceRecord, canvasRef, getDragBoundFunc]);
+    }
+  }, [isCanvasReady, isKonvaReady, canvasRef, getDragBoundFunc, forceRecord]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
@@ -1387,5 +1384,7 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
 
     
