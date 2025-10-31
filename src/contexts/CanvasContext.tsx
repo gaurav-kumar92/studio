@@ -1277,31 +1277,36 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-    if (!isKonvaReady || !isCanvasReady) return;
-    const croppedImage = localStorage.getItem('croppedImage');
-    const imageNodeId = localStorage.getItem('imageNodeToCrop');
+  // Only run if canvas + Konva are ready
+  if (!isKonvaReady || !isCanvasReady) return;
 
-    if (croppedImage && imageNodeId && canvasRef.current?.layer) {
-      const layer = canvasRef.current.layer;
-      const imageNode = layer.findOne(`#${imageNodeId}`);
-      
-      if (imageNode) {
-        // Use window.Image to load the data URL
-        const imageObj = new window.Image();
-        imageObj.onload = () => {
-            imageNode.image(imageObj);
-            imageNode.setAttr('data-original-src', croppedImage);
-            layer.batchDraw();
-            forceRecord();
-        };
-        imageObj.src = croppedImage;
-      }
-      
-      localStorage.removeItem('croppedImage');
-      localStorage.removeItem('imageNodeToCrop');
-      localStorage.removeItem('imageToCrop');
-    }
-  }, [isKonvaReady, isCanvasReady, forceRecord, canvasRef]);
+  const croppedImage = localStorage.getItem('croppedImage');
+  const imageNodeId = localStorage.getItem('imageNodeToCrop');
+
+  if (!croppedImage || !imageNodeId) return;
+
+  const layer = canvasRef.current?.layer;
+  if (!layer) return;
+
+  const imageNode = layer.findOne(`#${imageNodeId}`);
+  if (!imageNode) return;
+
+  const imageObj = new window.Image();
+  imageObj.onload = () => {
+    imageNode.image(imageObj);
+    imageNode.setAttr('data-original-src', croppedImage);
+    layer.batchDraw();
+    forceRecord();
+  };
+  imageObj.src = croppedImage;
+
+  // cleanup only after applying
+  setTimeout(() => {
+    localStorage.removeItem('croppedImage');
+    localStorage.removeItem('imageNodeToCrop');
+    localStorage.removeItem('imageToCrop');
+  }, 500);
+}, [isKonvaReady, isCanvasReady, forceRecord, canvasRef]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
