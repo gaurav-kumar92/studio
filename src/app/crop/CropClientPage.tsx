@@ -61,7 +61,7 @@ const CropClientPage = () => {
   }, [router]);
 
   useEffect(() => {
-    if (transformerRef.current && cropRef.current) {
+    if (image && transformerRef.current && cropRef.current) {
       transformerRef.current.nodes([cropRef.current]);
       transformerRef.current.getLayer().batchDraw();
     }
@@ -115,7 +115,6 @@ const CropClientPage = () => {
     
     // Store cropped image
     localStorage.setItem('croppedImage', croppedDataURL);
-    localStorage.setItem('imageNodeToCrop', imageNodeId);
     
     // Navigate back
     router.push('/');
