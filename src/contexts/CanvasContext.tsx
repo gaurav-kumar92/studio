@@ -71,6 +71,10 @@ type CanvasContextType = {
   setEditingMaskNode: React.Dispatch<React.SetStateAction<any>>;
   editingTextNode: any;
   setEditingTextNode: React.Dispatch<React.SetStateAction<any>>;
+  isCropModalOpen: boolean;
+  setCropModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  nodeToCrop: any;
+  setNodeToCrop: React.Dispatch<React.SetStateAction<any>>;
 
   canvasSize: string;
   setCanvasSize: (size: string) => void;
@@ -125,6 +129,8 @@ type CanvasContextType = {
   handleBackgroundImageReset: () => void;
   handleRemoveBackgroundImage: () => void;
   handleCropImage: () => void;
+  handleApplyCrop: (croppedDataUrl: string) => void;
+
 
   undo: () => void;
   redo: () => void;
@@ -172,6 +178,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
   const [isClipartDialogOpen, setClipartDialogOpen] = useState(false);
   const [isIconDialogOpen, setIconDialogOpen] = useState(false);
+  const [isCropModalOpen, setCropModalOpen] = useState(false);
+  const [nodeToCrop, setNodeToCrop] = useState<any>(null);
   const [clipboard, setClipboard] = useState<any[]>([]);
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
@@ -1101,14 +1109,38 @@ const handleBackgroundImageReset = useCallback(() => {
       return;
     }
     const imageNode = selectedNodes[0];
-    const imageUrl = imageNode.getAttr('data-original-src') || imageNode.image().src;
-
-    if (imageUrl) {
-      localStorage.setItem('imageToCrop', imageUrl);
-      localStorage.setItem('imageNodeToCrop', imageNode.id());
-      router.push('/crop');
-    }
-  }, [selectedNodes, router]);
+    setNodeToCrop(imageNode);
+    setCropModalOpen(true);
+  }, [selectedNodes]);
+  
+  const handleApplyCrop = useCallback((croppedDataUrl: string) => {
+    if (!nodeToCrop) return;
+  
+    const imageObj = new window.Image();
+    imageObj.onload = () => {
+      // Update the Konva Image object
+      nodeToCrop.image(imageObj);
+      
+      // Update the original source attribute for future crops
+      nodeToCrop.setAttr('data-original-src', croppedDataUrl);
+  
+      // Update dimensions and reset offset
+      const oldScaleX = nodeToCrop.scaleX();
+      const oldScaleY = nodeToCrop.scaleY();
+      
+      nodeToCrop.width(imageObj.width);
+      nodeToCrop.height(imageObj.height);
+      nodeToCrop.scale({ x: oldScaleX, y: oldScaleY });
+  
+      // Redraw the layer
+      canvasRef.current?.layer?.batchDraw();
+      forceRecord?.();
+    };
+    imageObj.src = croppedDataUrl;
+  
+    setCropModalOpen(false);
+    setNodeToCrop(null);
+  }, [nodeToCrop, canvasRef, forceRecord]);
 
   useEffect(() => {
     if (isKonvaReady && canvasRef.current?.background) {
@@ -1276,57 +1308,6 @@ const handleBackgroundImageReset = useCallback(() => {
     }
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
-
-useEffect(() => {
-    // This effect runs when the component mounts and whenever isCanvasReady or isKonvaReady changes.
-    // This is the correct place to handle state restoration after navigation.
-    if (!isCanvasReady || !isKonvaReady || typeof window === 'undefined') {
-      return;
-    }
-
-    const croppedImage = localStorage.getItem('croppedImage');
-    const imageNodeId = localStorage.getItem('imageNodeToCrop');
-
-    if (croppedImage && imageNodeId && canvasRef.current?.layer) {
-      const layer = canvasRef.current.layer;
-      const imageNode = layer.findOne(`#${imageNodeId}`);
-      
-      if (imageNode) {
-        const imageObj = new window.Image();
-        imageObj.onload = () => {
-          // Update the Konva Image object
-          imageNode.image(imageObj);
-          
-          // It's crucial to update the original source attribute for future crops
-          imageNode.setAttr('data-original-src', croppedImage);
-
-          // Update dimensions and reset offset to prevent "jumping"
-          imageNode.width(imageObj.width);
-          imageNode.height(imageObj.height);
-          imageNode.offsetX(imageObj.width / 2);
-          imageNode.offsetY(imageObj.height / 2);
-          
-          // Re-apply the drag boundary function with the new dimensions
-          imageNode.dragBoundFunc(getDragBoundFunc(imageNode));
-
-          // Redraw the layer to show the changes
-          layer.batchDraw();
-          forceRecord?.();
-
-          // Clean up localStorage to prevent this from running again
-          localStorage.removeItem('croppedImage');
-          localStorage.removeItem('imageNodeToCrop');
-        };
-        imageObj.src = croppedImage;
-      } else {
-        // If the node wasn't found (maybe it was deleted), clean up.
-        localStorage.removeItem('croppedImage');
-        localStorage.removeItem('imageNodeToCrop');
-      }
-    }
-  }, [isCanvasReady, isKonvaReady, canvasRef, getDragBoundFunc, forceRecord]);
-
-
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
   const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
     const layer = canvasRef.current?.layer;
@@ -1375,7 +1356,7 @@ useEffect(() => {
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
     setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
-    setEditingTextNode,
+    setEditingTextNode, isCropModalOpen, setCropModalOpen, nodeToCrop, setNodeToCrop,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
@@ -1383,7 +1364,7 @@ useEffect(() => {
     handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
-    handleRemoveBackgroundImage, handleCropImage,
+    handleRemoveBackgroundImage, handleCropImage, handleApplyCrop,
     undo, redo, canUndo, canRedo,
     handleGroup, handleUngroup, handleDelete, handleCopy, handlePaste, forceRecord,
     isSelectionLocked, isAnySelectedLocked, toggleLock,
@@ -1399,5 +1380,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    

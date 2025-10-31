@@ -30,6 +30,8 @@ const MaskDialog = dynamic(() => import('@/components/editor/MaskDialog'), { ssr
 const ClipartDialog = dynamic(() => import('@/components/editor/ClipartDialog'), { ssr: false });
 const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr: false });
 const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
+const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
+
 
 declare global {
   interface Window {
@@ -75,6 +77,10 @@ function EditorUI() {
     handleMoveNode,
     canvasSize,
     backgroundImage,
+    isCropModalOpen,
+    nodeToCrop,
+    setCropModalOpen,
+    handleApplyCrop,
   } = useCanvas();
 
   const isCircular = canvasSize.endsWith('-circle');
@@ -175,6 +181,13 @@ function EditorUI() {
           isOpen={isIconDialogOpen}
           onClose={() => setIconDialogOpen(false)}
           onAddIcon={handleAddIcon}
+        />
+
+        <CropImageModal
+          isOpen={isCropModalOpen}
+          imageNode={nodeToCrop}
+          onClose={() => setCropModalOpen(false)}
+          onApply={handleApplyCrop}
         />
       </div>
     </>
