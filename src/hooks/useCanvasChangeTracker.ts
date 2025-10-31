@@ -24,23 +24,12 @@ type Command =
 const deepcopy = <T,>(v: T): T =>
   typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
 
-const normalizeRectScale = (node: any, attrs: any) => {
-  // Optional normalization for Rect: bake scale into width/height to avoid compounding
-  if (node?.getClassName?.() === 'Rect') {
-    const sx = typeof attrs.scaleX === 'number' ? attrs.scaleX : 1;
-    const sy = typeof attrs.scaleY === 'number' ? attrs.scaleY : 1;
-    if (typeof attrs.width === 'number') attrs.width = Math.max(1, attrs.width * sx);
-    if (typeof attrs.height === 'number') attrs.height = Math.max(1, attrs.height * sy);
-    attrs.scaleX = 1;
-    attrs.scaleY = 1;
-  }
-  return attrs;
+const getPlainAttrs = (node: any) => {
+    // Use toObject() which provides a serializable representation of the node,
+    // avoiding issues with non-cloneable properties like HTMLImageElement.
+    return node?.toObject?.() ?? {};
 };
 
-const getPlainAttrs = (node: any) => {
-  const attrs = deepcopy(node?.getAttrs?.() ?? {});
-  return normalizeRectScale(node, attrs);
-};
 
 const invert = (cmd: Command): Command => {
   switch (cmd.type) {
@@ -101,7 +90,7 @@ export const useCanvasChangeTracker = (
         snapshot.set(node.id(), {
           id: node.id(),
           className: node.getClassName?.(),
-          attrs: deepcopy(node.getAttrs?.() ?? {}),
+          attrs: deepcopy(node.getAttrs?.() ?? {}), // keep for simple diffing
           json: node.toObject(), // full Konva JSON (safe to recreate)
         });
       });
@@ -123,8 +112,8 @@ export const useCanvasChangeTracker = (
         const newAttrs = JSON.stringify(newNode.attrs ?? {});
         if (oldAttrs !== newAttrs) {
           updated.push({
-            before: { id: oldNode.id, attrs: oldNode.attrs },
-            after: { id: newNode.id, attrs: newNode.attrs },
+            before: { id: oldNode.id, attrs: oldNode.json.attrs },
+            after: { id: newNode.id, attrs: newNode.json.attrs },
           });
         }
       }
@@ -215,7 +204,7 @@ export const useCanvasChangeTracker = (
       case 'UPDATE': {
         command.after?.forEach(({ id, attrs }) => {
           const node = layer.findOne(`#${id}`);
-          if (node) node.setAttrs(attrs);
+          if (node) node.setAttrs(attrs.attrs);
         });
         break;
       }
@@ -231,7 +220,7 @@ export const useCanvasChangeTracker = (
         });
         command.updatedAfter?.forEach(({ id, attrs }) => {
           const node = layer.findOne(`#${id}`);
-          if (node) node.setAttrs(attrs);
+          if (node) node.setAttrs(attrs.attrs);
         });
         break;
       }
