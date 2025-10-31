@@ -1277,36 +1277,47 @@ const handleBackgroundImageReset = useCallback(() => {
 }, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
 
 useEffect(() => {
-  // Only run if canvas + Konva are ready
-  if (!isKonvaReady || !isCanvasReady) return;
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === 'croppedImage' && event.newValue) {
+      const croppedImage = event.newValue;
+      const imageNodeId = localStorage.getItem('imageNodeToCrop');
 
-  const croppedImage = localStorage.getItem('croppedImage');
-  const imageNodeId = localStorage.getItem('imageNodeToCrop');
+      if (croppedImage && imageNodeId) {
+        const checkCanvas = () => {
+          if (!isKonvaReady || !isCanvasReady || !canvasRef.current?.layer) {
+            setTimeout(checkCanvas, 100);
+            return;
+          }
 
-  if (!croppedImage || !imageNodeId) return;
+          const layer = canvasRef.current.layer;
+          const imageNode = layer.findOne(`#${imageNodeId}`);
 
-  const layer = canvasRef.current?.layer;
-  if (!layer) return;
+          if (imageNode) {
+            const imageObj = new window.Image();
+            imageObj.onload = () => {
+              imageNode.image(imageObj);
+              imageNode.setAttr('data-original-src', croppedImage);
+              layer.batchDraw();
+              forceRecord?.();
 
-  const imageNode = layer.findOne(`#${imageNodeId}`);
-  if (!imageNode) return;
-
-  const imageObj = new window.Image();
-  imageObj.onload = () => {
-    imageNode.image(imageObj);
-    imageNode.setAttr('data-original-src', croppedImage);
-    layer.batchDraw();
-    forceRecord();
+              // Cleanup
+              localStorage.removeItem('croppedImage');
+              localStorage.removeItem('imageNodeToCrop');
+              localStorage.removeItem('imageToCrop');
+            };
+            imageObj.src = croppedImage;
+          }
+        };
+        checkCanvas();
+      }
+    }
   };
-  imageObj.src = croppedImage;
 
-  // cleanup only after applying
-  setTimeout(() => {
-    localStorage.removeItem('croppedImage');
-    localStorage.removeItem('imageNodeToCrop');
-    localStorage.removeItem('imageToCrop');
-  }, 500);
-}, [isKonvaReady, isCanvasReady, forceRecord, canvasRef]);
+  window.addEventListener('storage', handleStorageChange);
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
+}, [isKonvaReady, isCanvasReady, canvasRef, forceRecord]);
 
 
   type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };

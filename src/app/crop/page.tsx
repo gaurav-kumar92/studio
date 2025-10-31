@@ -55,6 +55,13 @@ export default function CropPage() {
     if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       localStorage.setItem('croppedImage', dataUrl);
+      // Dispatch a storage event to notify the other tab/page
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'croppedImage',
+          newValue: dataUrl,
+        })
+      );
       router.back();
     }
   };
