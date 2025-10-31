@@ -14,46 +14,40 @@ export default function CropPage() {
 
   useEffect(() => {
     const imageToCrop = localStorage.getItem('imageToCrop');
-    setImageUrl(imageToCrop);
-
-    if (imageToCrop && imgRef.current) {
-      // Ensure the image is loaded before initializing Cropper
-      imgRef.current.onload = () => {
-        if (imgRef.current) {
-          const cropperInstance = new Cropper(imgRef.current, {
-            aspectRatio: NaN, // free crop
-            viewMode: 1,
-            autoCropArea: 1,
-            background: false,
-            responsive: true,
-            crop: () => {
-              if (previewRef.current && cropperInstance) {
-                const previewCanvas = cropperInstance.getCroppedCanvas({
-                  width: 200,
-                  height: 200,
-                });
-                if(previewCanvas) {
-                    previewRef.current.src = previewCanvas.toDataURL('image/png');
-                }
-              }
-            },
-          });
-          setCropper(cropperInstance);
-        }
-      };
-      // Set src after onload is defined
-      imgRef.current.src = imageToCrop;
-
-    } else if (!imageToCrop) {
+    if (imageToCrop) {
+      setImageUrl(imageToCrop);
+    } else {
       router.push('/');
     }
-    
-    // Cleanup cropper instance on component unmount
-    return () => {
-        cropper?.destroy();
-    }
+  }, [router]);
 
-  }, [router, cropper]);
+  useEffect(() => {
+    if (imageUrl && imgRef.current) {
+      const cropperInstance = new Cropper(imgRef.current, {
+        aspectRatio: NaN, // free crop
+        viewMode: 1,
+        autoCropArea: 1,
+        background: false,
+        responsive: true,
+        crop: () => {
+          if (previewRef.current && cropperInstance) {
+            const previewCanvas = cropperInstance.getCroppedCanvas({
+              width: 200,
+              height: 200,
+            });
+            if(previewCanvas) {
+                previewRef.current.src = previewCanvas.toDataURL('image/png');
+            }
+          }
+        },
+      });
+      setCropper(cropperInstance);
+
+      return () => {
+        cropperInstance.destroy();
+      };
+    }
+  }, [imageUrl]);
 
   const handleDone = () => {
     if (!cropper) return;
@@ -89,6 +83,7 @@ export default function CropPage() {
           <div className="flex-1 bg-gray-200 p-2 rounded-md">
             <img
               ref={imgRef}
+              src={imageUrl}
               alt="Crop Target"
               className="max-w-full block"
               style={{ maxHeight: '60vh' }}
