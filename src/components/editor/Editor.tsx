@@ -3,21 +3,34 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import Canvas from '@/components/editor/Canvas';
-import ShapeDialog from '@/components/editor/ShapeDialog';
-import FrameDialog from '@/components/editor/FrameDialog';
-import MaskDialog from '@/components/editor/MaskDialog';
-import AddItemDialog from '@/components/editor/AddItemDialog';
-import LayersPanel from '@/components/editor/LayersPanel';
-import PropertiesToolbar from '@/components/editor/PropertiesToolbar';
+import dynamic from 'next/dynamic';
 import {
   CanvasProvider,
   useCanvas,
 } from '@/contexts/CanvasContext';
-import Toolbar from '@/components/editor/Toolbar';
-import ClipartDialog from '@/components/editor/ClipartDialog';
-import IconDialog from '@/components/editor/IconDialog';
-import OnCanvasTextEditor from '@/components/editor/OnCanvasTextEditor';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamically import components to code-split and improve initial load time
+const Canvas = dynamic(() => import('@/components/editor/Canvas'), { ssr: false });
+const Toolbar = dynamic(() => import('@/components/editor/Toolbar'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-24 w-24" />
+});
+const LayersPanel = dynamic(() => import('@/components/editor/LayersPanel'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-64 lg:w-80 lg:h-full" />
+});
+const PropertiesToolbar = dynamic(() => import('@/components/editor/PropertiesToolbar'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-12" />
+});
+const AddItemDialog = dynamic(() => import('@/components/editor/AddItemDialog'), { ssr: false });
+const ShapeDialog = dynamic(() => import('@/components/editor/ShapeDialog'), { ssr: false });
+const FrameDialog = dynamic(() => import('@/components/editor/FrameDialog'), { ssr: false });
+const MaskDialog = dynamic(() => import('@/components/editor/MaskDialog'), { ssr: false });
+const ClipartDialog = dynamic(() => import('@/components/editor/ClipartDialog'), { ssr: false });
+const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr: false });
+const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
 
 declare global {
   interface Window {
