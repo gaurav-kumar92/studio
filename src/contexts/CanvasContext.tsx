@@ -335,6 +335,48 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNodes([]);
   }, []);
 
+  const getDragBoundFunc = useCallback((node: any) => {
+    return (pos: { x: number; y: number }) => {
+        if (!canvasRef.current?.stage) return pos;
+        const stage = canvasRef.current.stage;
+        
+        const box = node.getClientRect();
+        
+        const scaleX = node.scaleX();
+        const scaleY = node.scaleY();
+
+        const offsetX = node.offsetX();
+        const offsetY = node.offsetY();
+        
+        const newAbsX = pos.x - (offsetX * scaleX);
+        const newAbsY = pos.y - (offsetY * scaleY);
+        
+        const minX = newAbsX;
+        const maxX = newAbsX + box.width;
+        const minY = newAbsY;
+        const maxY = newAbsY + box.height;
+
+        let newX = pos.x;
+        let newY = pos.y;
+
+        if (maxX > stage.width()) {
+            newX = stage.width() - box.width + (offsetX * scaleX);
+        }
+        if (minX < 0) {
+            newX = offsetX * scaleX;
+        }
+
+        if (maxY > stage.height()) {
+            newY = stage.height() - box.height + (offsetY * scaleY);
+        }
+        if (minY < 0) {
+            newY = offsetY * scaleY;
+        }
+
+        return { x: newX, y: newY };
+    };
+  }, []);
+
   const applyFill = useCallback(
     (node: any, config: any) => {
       if (isNodeLocked(node)) return;
@@ -422,13 +464,41 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     [isNodeLocked]
   );
   
-  const handleDoubleClick = useCallback((node: any) => {
+  const handleDoubleClick = (node: any) => {
     const handleNodeDoubleClick = (targetNode: any) => {
         // Implementation will be provided by useNodeHandlers
     };
     handleNodeDoubleClick(node);
+  };
+  const attachDoubleClick = useCallback((node: Node) => {
+    node.on('dblclick dbltap', () => {
+      if (node.getAttr('isLocked')) return;
+      let targetNode = node as any;
+      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('clipart')) {
+        targetNode = node.parent;
+      }
+      if (targetNode.hasName('group')) {
+        handleUngroup();
+      } else {
+        nodeHandlers.handleDoubleClick(targetNode);
+      }
+    });
   }, []);
 
+  const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
+  const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
+  const { handleAnimationChange } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
+  const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+  const { handleAddIcon } = useIconHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+
+  const handleDoubleClickRef = useRef(handleDoubleClick);
+  handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
+  
+  useEffect(() => {
+    (handleDoubleClick as any).dependencies = [nodeHandlers.handleDoubleClick];
+  }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
+
+  
   const handleGroup = useCallback(() => {
   if (
     selectedNodes.length < 2 ||
@@ -505,6 +575,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   setSelectedNodes,
   setMultiSelectMode,
   updateLayers,
+  attachDoubleClick
 ]);
 
 const handleUngroup = useCallback(() => {
@@ -554,42 +625,12 @@ const handleUngroup = useCallback(() => {
   runAsSingleHistoryStep,
 ]);
 
-
-  const attachDoubleClick = useCallback((node: Node) => {
-    node.on('dblclick dbltap', () => {
-      if (node.getAttr('isLocked')) return;
-      let targetNode = node as any;
-      if (node.parent?.hasName('circularText') || node.parent?.hasName('mask') || node.parent?.hasName('textGroup') || node.parent?.hasName('clipart')) {
-        targetNode = node.parent;
-      }
-      if (targetNode.hasName('group')) {
-        handleUngroup();
-      } else {
-        handleDoubleClick(targetNode);
-      }
-    });
-  }, [handleUngroup, handleDoubleClick]);
-
-  const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
-  const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
-  const { handleAnimationChange } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
-  const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
-  const { handleAddIcon } = useIconHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
-
-  const handleDoubleClickRef = useRef(handleDoubleClick);
-  handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
-  
-  useEffect(() => {
-    (handleDoubleClick as any).dependencies = [nodeHandlers.handleDoubleClick];
-  }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
-
-  
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   useSelection({ isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
-  const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, deselectNode: deselectNodes, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
+  const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
   const { handleAddShape, handleUpdateShape } = useShapeHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick, editingShapeNode, setEditingShapeNode, forceRecord });
   const { handleAddFrame, handleUpdateFrame } = useFrameHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick: attachDoubleClick });
 
@@ -610,7 +651,20 @@ const handleUngroup = useCallback(() => {
             const MAX_HEIGHT = stage.height() * 0.8;
             const scale = Math.min(MAX_WIDTH / img.width(), MAX_HEIGHT / img.height(), 1);
             const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            img.setAttrs({ id: uniqueId, x: (stage.width() - img.width() * scale) / 2, y: (stage.height() - img.height() * scale) / 2, scaleX: scale, scaleY: scale, name: 'image', draggable: true });
+            
+            img.setAttrs({ 
+                id: uniqueId, 
+                x: stage.width() / 2, 
+                y: stage.height() / 2, 
+                scaleX: scale, 
+                scaleY: scale, 
+                name: 'image', 
+                draggable: true,
+                dragBoundFunc: getDragBoundFunc(img),
+                offsetX: img.width() / 2,
+                offsetY: img.height() / 2,
+            });
+
             attachDoubleClick(img);
             layer.add(img);
             updateLayers();
@@ -626,7 +680,7 @@ const handleUngroup = useCallback(() => {
       imageFileInput.value = '';
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, forceRecord]);
+  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, forceRecord, getDragBoundFunc]);
 
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
