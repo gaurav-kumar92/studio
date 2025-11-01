@@ -347,36 +347,34 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const getDragBoundFunc = useCallback((node: any) => {
-    // Capture the bounding box ONCE when the drag bound function is created
-    const initialBox = node.getClientRect({ relativeTo: canvasRef.current?.stage });
-    const initialPos = { x: node.x(), y: node.y() };
-    
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-      
-      // Calculate where the bounding box would be if we moved to pos
-      const deltaX = pos.x - initialPos.x;
-      const deltaY = pos.y - initialPos.y;
-      
-      const newBoxX = initialBox.x + deltaX;
-      const newBoxY = initialBox.y + deltaY;
-      
+
+      // Use getClientRect to get the visual bounding box of the node
+      // at the proposed new position.
+      const originalPosition = node.position();
+      node.position(pos); // Temporarily move the node
+      const box = node.getClientRect({ relativeTo: stage });
+      node.position(originalPosition); // Move it back immediately
+
       let finalX = pos.x;
       let finalY = pos.y;
+
+      const correctionX = pos.x - box.x;
+      const correctionY = pos.y - box.y;
       
-      // Constrain to stage boundaries
-      if (newBoxX < 0) {
-        finalX = pos.x - newBoxX;
+      if (box.x < 0) {
+        finalX = correctionX;
       }
-      if (newBoxX + initialBox.width > stage.width()) {
-        finalX = pos.x - (newBoxX + initialBox.width - stage.width());
+      if (box.x + box.width > stage.width()) {
+        finalX = stage.width() - box.width + correctionX;
       }
-      if (newBoxY < 0) {
-        finalY = pos.y - newBoxY;
+      if (box.y < 0) {
+        finalY = correctionY;
       }
-      if (newBoxY + initialBox.height > stage.height()) {
-        finalY = pos.y - (newBoxY + initialBox.height - stage.height());
+      if (box.y + box.height > stage.height()) {
+        finalY = stage.height() - box.height + correctionY;
       }
   
       return { x: finalX, y: finalY };
