@@ -350,31 +350,34 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-
-      // Use getClientRect to get the visual bounding box of the node
-      // at the proposed new position.
-      const originalPosition = node.position();
-      node.position(pos); // Temporarily move the node
+      
+      // Get current bounding box (recalculated each time)
       const box = node.getClientRect({ relativeTo: stage });
-      node.position(originalPosition); // Move it back immediately
-
+      
+      // Calculate where the top-left of the bounding box would be
+      const currentOffset = {
+        x: box.x - node.x(),
+        y: box.y - node.y()
+      };
+      
+      const newBoxX = pos.x + currentOffset.x;
+      const newBoxY = pos.y + currentOffset.y;
+      
       let finalX = pos.x;
       let finalY = pos.y;
-
-      const correctionX = pos.x - box.x;
-      const correctionY = pos.y - box.y;
       
-      if (box.x < 0) {
-        finalX = correctionX;
+      // Constrain to stage boundaries
+      if (newBoxX < 0) {
+        finalX = pos.x - newBoxX;
       }
-      if (box.x + box.width > stage.width()) {
-        finalX = stage.width() - box.width + correctionX;
+      if (newBoxX + box.width > stage.width()) {
+        finalX = pos.x - (newBoxX + box.width - stage.width());
       }
-      if (box.y < 0) {
-        finalY = correctionY;
+      if (newBoxY < 0) {
+        finalY = pos.y - newBoxY;
       }
-      if (box.y + box.height > stage.height()) {
-        finalY = stage.height() - box.height + correctionY;
+      if (newBoxY + box.height > stage.height()) {
+        finalY = pos.y - (newBoxY + box.height - stage.height());
       }
   
       return { x: finalX, y: finalY };
