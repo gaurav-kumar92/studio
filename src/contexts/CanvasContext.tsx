@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import React, {
@@ -86,7 +87,7 @@ type CanvasContextType = {
   
   canvasScale: number;
   canvasPosition: { x: number; y: number };
-  setCanvasPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number }>>;
+  setCanvasPosition: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
   zoomIn: () => void;
   zoomOut: () => void;
   fitToScreen: () => void;
@@ -1386,3 +1387,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
