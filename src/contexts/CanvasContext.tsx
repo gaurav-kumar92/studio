@@ -350,39 +350,36 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
+
+      // Temporarily set the proposed position to get the accurate bounding box
+      const originalPosition = { x: node.x(), y: node.y() };
+      node.position(pos);
       
-      // Calculate the bounding box at the proposed position
-      const scaleX = node.scaleX();
-      const scaleY = node.scaleY();
-      const offsetX = node.offsetX() || 0;
-      const offsetY = node.offsetY() || 0;
-      const width = node.width();
-      const height = node.height();
-      
-      // Calculate actual bounds considering offset and scale
-      const left = pos.x - (offsetX * scaleX);
-      const top = pos.y - (offsetY * scaleY);
-      const right = left + (width * scaleX);
-      const bottom = top + (height * scaleY);
-      
-      let finalX = pos.x;
-      let finalY = pos.y;
-      
-      // Constrain to stage boundaries
-      if (left < 0) {
-        finalX = offsetX * scaleX;
+      const box = node.getClientRect({ relativeTo: stage });
+
+      // Revert position for calculation
+      node.position(originalPosition);
+
+      let dx = 0;
+      let dy = 0;
+
+      if (box.x < 0) {
+        dx = -box.x;
       }
-      if (right > stage.width()) {
-        finalX = stage.width() - (width * scaleX) + (offsetX * scaleX);
+      if (box.y < 0) {
+        dy = -box.y;
       }
-      if (top < 0) {
-        finalY = offsetY * scaleY;
+      if (box.x + box.width > stage.width()) {
+        dx = stage.width() - (box.x + box.width);
       }
-      if (bottom > stage.height()) {
-        finalY = stage.height() - (height * scaleY) + (offsetY * scaleY);
+      if (box.y + box.height > stage.height()) {
+        dy = stage.height() - (box.y + box.height);
       }
-  
-      return { x: finalX, y: finalY };
+
+      return {
+        x: pos.x + dx,
+        y: pos.y + dy,
+      };
     };
   }, [canvasRef]);
 
