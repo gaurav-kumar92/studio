@@ -348,45 +348,37 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const getDragBoundFunc = useCallback((node: any) => {
     return (pos: { x: number; y: number }) => {
-        if (!canvasRef.current?.stage) return pos;
-        const stage = canvasRef.current.stage;
-        
-        const box = node.getClientRect();
-        
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
+      if (!canvasRef.current?.stage) return pos;
+      const stage = canvasRef.current.stage;
+      const box = node.getClientRect({ relativeTo: stage });
 
-        const offsetX = node.offsetX();
-        const offsetY = node.offsetY();
-        
-        const newAbsX = pos.x - (offsetX * scaleX);
-        const newAbsY = pos.y - (offsetY * scaleY);
-        
-        const minX = newAbsX;
-        const maxX = newAbsX + box.width;
-        const minY = newAbsY;
-        const maxY = newAbsY + box.height;
+      const minX = 0;
+      const maxX = stage.width();
+      const minY = 0;
+      const maxY = stage.height();
 
-        let newX = pos.x;
-        let newY = pos.y;
+      const nodeTopLeft = { x: pos.x - (node.offsetX() * node.scaleX()), y: pos.y - (node.offsetY() * node.scaleY()) };
+      const nodeBottomRight = { x: nodeTopLeft.x + box.width, y: nodeTopLeft.y + box.height };
 
-        if (maxX > stage.width()) {
-            newX = stage.width() - box.width + (offsetX * scaleX);
-        }
-        if (minX < 0) {
-            newX = offsetX * scaleX;
-        }
+      let newX = pos.x;
+      let newY = pos.y;
 
-        if (maxY > stage.height()) {
-            newY = stage.height() - box.height + (offsetY * scaleY);
-        }
-        if (minY < 0) {
-            newY = offsetY * scaleY;
-        }
+      if (nodeTopLeft.x < minX) {
+        newX = minX + (node.offsetX() * node.scaleX());
+      }
+      if (nodeBottomRight.x > maxX) {
+        newX = maxX - box.width + (node.offsetX() * node.scaleX());
+      }
+      if (nodeTopLeft.y < minY) {
+        newY = minY + (node.offsetY() * node.scaleY());
+      }
+      if (nodeBottomRight.y > maxY) {
+        newY = maxY - box.height + (node.offsetY() * node.scaleY());
+      }
 
-        return { x: newX, y: newY };
+      return { x: newX, y: newY };
     };
-  }, []);
+}, []);
 
   const applyFill = useCallback(
     (node: any, config: any) => {
