@@ -350,35 +350,30 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-      const box = node.getClientRect({ relativeTo: stage });
-
-      const minX = 0;
-      const maxX = stage.width();
-      const minY = 0;
-      const maxY = stage.height();
-
-      const nodeTopLeft = { x: pos.x - (node.offsetX() * node.scaleX()), y: pos.y - (node.offsetY() * node.scaleY()) };
-      const nodeBottomRight = { x: nodeTopLeft.x + box.width, y: nodeTopLeft.y + box.height };
-
-      let newX = pos.x;
-      let newY = pos.y;
-
-      if (nodeTopLeft.x < minX) {
-        newX = minX + (node.offsetX() * node.scaleX());
+      const box = node.getClientRect();
+  
+      const newAbsX = pos.x - node.offsetX() * node.scaleX() + (box.x - node.x());
+      const newAbsY = pos.y - node.offsetY() * node.scaleY() + (box.y - node.y());
+  
+      let finalX = pos.x;
+      let finalY = pos.y;
+  
+      if (newAbsX < 0) {
+        finalX = pos.x - newAbsX;
       }
-      if (nodeBottomRight.x > maxX) {
-        newX = maxX - box.width + (node.offsetX() * node.scaleX());
+      if (newAbsX + box.width > stage.width()) {
+        finalX = pos.x - (newAbsX + box.width - stage.width());
       }
-      if (nodeTopLeft.y < minY) {
-        newY = minY + (node.offsetY() * node.scaleY());
+      if (newAbsY < 0) {
+        finalY = pos.y - newAbsY;
       }
-      if (nodeBottomRight.y > maxY) {
-        newY = maxY - box.height + (node.offsetY() * node.scaleY());
+      if (newAbsY + box.height > stage.height()) {
+        finalY = pos.y - (newAbsY + box.height - stage.height());
       }
-
-      return { x: newX, y: newY };
+  
+      return { x: finalX, y: finalY };
     };
-}, []);
+  }, [canvasRef]);
 
   const applyFill = useCallback(
     (node: any, config: any) => {
@@ -1375,3 +1370,5 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
+
+    
