@@ -350,25 +350,36 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-      const box = node.getClientRect();
-  
-      const newAbsX = pos.x - node.offsetX() * node.scaleX() + (box.x - node.x());
-      const newAbsY = pos.y - node.offsetY() * node.scaleY() + (box.y - node.y());
-  
+      
+      // Calculate the bounding box at the proposed position
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      const offsetX = node.offsetX() || 0;
+      const offsetY = node.offsetY() || 0;
+      const width = node.width();
+      const height = node.height();
+      
+      // Calculate actual bounds considering offset and scale
+      const left = pos.x - (offsetX * scaleX);
+      const top = pos.y - (offsetY * scaleY);
+      const right = left + (width * scaleX);
+      const bottom = top + (height * scaleY);
+      
       let finalX = pos.x;
       let finalY = pos.y;
-  
-      if (newAbsX < 0) {
-        finalX = pos.x - newAbsX;
+      
+      // Constrain to stage boundaries
+      if (left < 0) {
+        finalX = offsetX * scaleX;
       }
-      if (newAbsX + box.width > stage.width()) {
-        finalX = pos.x - (newAbsX + box.width - stage.width());
+      if (right > stage.width()) {
+        finalX = stage.width() - (width * scaleX) + (offsetX * scaleX);
       }
-      if (newAbsY < 0) {
-        finalY = pos.y - newAbsY;
+      if (top < 0) {
+        finalY = offsetY * scaleY;
       }
-      if (newAbsY + box.height > stage.height()) {
-        finalY = pos.y - (newAbsY + box.height - stage.height());
+      if (bottom > stage.height()) {
+        finalY = stage.height() - (height * scaleY) + (offsetY * scaleY);
       }
   
       return { x: finalX, y: finalY };
@@ -1370,5 +1381,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
