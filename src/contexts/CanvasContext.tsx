@@ -351,17 +351,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
       
-      // Get current bounding box (recalculated each time)
-      const box = node.getClientRect({ relativeTo: stage });
+      // Store the position at drag start
+      if (!node._dragStartPos) {
+        node._dragStartPos = { x: node.x(), y: node.y() };
+        node._dragStartBox = node.getClientRect({ relativeTo: stage });
+      }
       
-      // Calculate where the top-left of the bounding box would be
-      const currentOffset = {
-        x: box.x - node.x(),
-        y: box.y - node.y()
-      };
+      // Calculate delta from drag start
+      const deltaX = pos.x - node._dragStartPos.x;
+      const deltaY = pos.y - node._dragStartPos.y;
       
-      const newBoxX = pos.x + currentOffset.x;
-      const newBoxY = pos.y + currentOffset.y;
+      // Calculate new box position
+      const newBoxX = node._dragStartBox.x + deltaX;
+      const newBoxY = node._dragStartBox.y + deltaY;
       
       let finalX = pos.x;
       let finalY = pos.y;
@@ -370,14 +372,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (newBoxX < 0) {
         finalX = pos.x - newBoxX;
       }
-      if (newBoxX + box.width > stage.width()) {
-        finalX = pos.x - (newBoxX + box.width - stage.width());
+      if (newBoxX + node._dragStartBox.width > stage.width()) {
+        finalX = pos.x - (newBoxX + node._dragStartBox.width - stage.width());
       }
       if (newBoxY < 0) {
         finalY = pos.y - newBoxY;
       }
-      if (newBoxY + box.height > stage.height()) {
-        finalY = pos.y - (newBoxY + box.height - stage.height());
+      if (newBoxY + node._dragStartBox.height > stage.height()) {
+        finalY = pos.y - (newBoxY + node._dragStartBox.height - stage.height());
       }
   
       return { x: finalX, y: finalY };
@@ -671,6 +673,11 @@ const handleUngroup = useCallback(() => {
                 offsetX: img.width() / 2,
                 offsetY: img.height() / 2,
                 'data-original-src': e.target!.result
+            });
+
+            img.on('dragend', () => {
+              delete img._dragStartPos;
+              delete img._dragStartBox;
             });
 
             attachDoubleClick(img);
