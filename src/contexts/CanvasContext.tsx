@@ -336,7 +336,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       const isTransformer = className === 'Transformer' || node?.hasName?.('Transformer');
       const isBackground = node?.name?.() === 'background';
       const hasId = !!node?.id?.();
-      return hasId && !isTransformer && isBackground;
+      return hasId && !isTransformer && !isBackground;
     });
 
     setKonvaObjects(Array.from(children));
@@ -352,17 +352,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
       
-      // Store the position at drag start
+      // Store the position at drag start if it doesn't exist
       if (!node._dragStartPos) {
         node._dragStartPos = { x: node.x(), y: node.y() };
         node._dragStartBox = node.getClientRect({ relativeTo: stage });
       }
       
-      // Calculate delta from drag start
       const deltaX = pos.x - node._dragStartPos.x;
       const deltaY = pos.y - node._dragStartPos.y;
       
-      // Calculate new box position
       const newBoxX = node._dragStartBox.x + deltaX;
       const newBoxY = node._dragStartBox.y + deltaY;
       
