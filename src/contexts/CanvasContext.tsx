@@ -347,39 +347,39 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const getDragBoundFunc = useCallback((node: any) => {
+    // Capture the bounding box ONCE when the drag bound function is created
+    const initialBox = node.getClientRect({ relativeTo: canvasRef.current?.stage });
+    const initialPos = { x: node.x(), y: node.y() };
+    
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-
-      // Temporarily set the proposed position to get the accurate bounding box
-      const originalPosition = { x: node.x(), y: node.y() };
-      node.position(pos);
       
-      const box = node.getClientRect({ relativeTo: stage });
-
-      // Revert position for calculation
-      node.position(originalPosition);
-
-      let dx = 0;
-      let dy = 0;
-
-      if (box.x < 0) {
-        dx = -box.x;
+      // Calculate where the bounding box would be if we moved to pos
+      const deltaX = pos.x - initialPos.x;
+      const deltaY = pos.y - initialPos.y;
+      
+      const newBoxX = initialBox.x + deltaX;
+      const newBoxY = initialBox.y + deltaY;
+      
+      let finalX = pos.x;
+      let finalY = pos.y;
+      
+      // Constrain to stage boundaries
+      if (newBoxX < 0) {
+        finalX = pos.x - newBoxX;
       }
-      if (box.y < 0) {
-        dy = -box.y;
+      if (newBoxX + initialBox.width > stage.width()) {
+        finalX = pos.x - (newBoxX + initialBox.width - stage.width());
       }
-      if (box.x + box.width > stage.width()) {
-        dx = stage.width() - (box.x + box.width);
+      if (newBoxY < 0) {
+        finalY = pos.y - newBoxY;
       }
-      if (box.y + box.height > stage.height()) {
-        dy = stage.height() - (box.y + box.height);
+      if (newBoxY + initialBox.height > stage.height()) {
+        finalY = pos.y - (newBoxY + initialBox.height - stage.height());
       }
-
-      return {
-        x: pos.x + dx,
-        y: pos.y + dy,
-      };
+  
+      return { x: finalX, y: finalY };
     };
   }, [canvasRef]);
 
