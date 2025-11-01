@@ -1131,6 +1131,9 @@ const handleBackgroundImageReset = useCallback(() => {
       nodeToCrop.width(imageObj.width);
       nodeToCrop.height(imageObj.height);
       nodeToCrop.scale({ x: oldScaleX, y: oldScaleY });
+
+      // Re-apply the drag boundary function with new dimensions
+      nodeToCrop.dragBoundFunc(getDragBoundFunc(nodeToCrop));
   
       // Redraw the layer
       canvasRef.current?.layer?.batchDraw();
@@ -1140,7 +1143,7 @@ const handleBackgroundImageReset = useCallback(() => {
   
     setCropModalOpen(false);
     setNodeToCrop(null);
-  }, [nodeToCrop, canvasRef, forceRecord]);
+  }, [nodeToCrop, canvasRef, forceRecord, getDragBoundFunc]);
 
   useEffect(() => {
     if (isKonvaReady && canvasRef.current?.background) {
