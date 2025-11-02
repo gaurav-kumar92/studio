@@ -1,5 +1,4 @@
 
-      
 'use client';
 
 import React, {
@@ -1385,5 +1384,3 @@ export const useCanvas = (): CanvasContextType => {
   }
   return context;
 };
-
-    
