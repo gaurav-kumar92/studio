@@ -351,41 +351,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return (pos: { x: number; y: number }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
-      
+
       const box = node.getClientRect();
-      const scaleX = node.scaleX();
-      const scaleY = node.scaleY();
-      const offsetX = node.offsetX();
-      const offsetY = node.offsetY();
-  
-      const newAbsX = pos.x - (offsetX * scaleX);
-      const newAbsY = pos.y - (offsetY * scaleY);
-  
-      const minX = newAbsX;
-      const maxX = newAbsX + box.width;
-      const minY = newAbsY;
-      const maxY = newAbsY + box.height;
-  
-      let newX = pos.x;
-      let newY = pos.y;
-  
-      if (maxX > stage.width()) {
-        newX = stage.width() - box.width + (offsetX * scaleX);
-      }
-      if (minX < 0) {
-        newX = offsetX * scaleX;
-      }
-  
-      if (maxY > stage.height()) {
-        newY = stage.height() - box.height + (offsetY * scaleY);
-      }
-      if (minY < 0) {
-        newY = offsetY * scaleY;
-      }
-  
+      const newX = Math.max(box.width / 2, Math.min(pos.x, stage.width() - box.width / 2));
+      const newY = Math.max(box.height / 2, Math.min(pos.y, stage.height() - box.height / 2));
+
       return { x: newX, y: newY };
     };
   }, [canvasRef]);
+
 
   const applyFill = useCallback(
     (node: any, config: any) => {
@@ -676,7 +650,6 @@ const handleUngroup = useCallback(() => {
                 'data-original-src': e.target!.result
             });
 
-            // Add dragend listener to clear cached properties
             img.on('dragend', () => {
               delete img._dragStartPos;
               delete img._dragStartBox;
@@ -1123,26 +1096,16 @@ const handleBackgroundImageReset = useCallback(() => {
   
     const imageObj = new window.Image();
     imageObj.onload = () => {
-      // Update the Konva Image object
       nodeToCrop.image(imageObj);
-      
-      // Update the original source attribute for future crops
       nodeToCrop.setAttr('data-original-src', croppedDataUrl);
-  
-      // Update dimensions and reset offset to new center
-      const oldScaleX = nodeToCrop.scaleX();
-      const oldScaleY = nodeToCrop.scaleY();
       
       nodeToCrop.width(imageObj.width);
       nodeToCrop.height(imageObj.height);
       nodeToCrop.offsetX(imageObj.width / 2);
       nodeToCrop.offsetY(imageObj.height / 2);
-      nodeToCrop.scale({ x: oldScaleX, y: oldScaleY });
 
-      // Re-apply the drag boundary function with new dimensions
       nodeToCrop.dragBoundFunc(getDragBoundFunc(nodeToCrop));
   
-      // Redraw the layer
       canvasRef.current?.layer?.batchDraw();
       forceRecord?.();
     };
