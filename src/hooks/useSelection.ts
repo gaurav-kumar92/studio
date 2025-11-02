@@ -60,25 +60,17 @@ export const useSelection = ({
 
     const getSelectableRoot = (node: any): any | null => {
         if (!node || node === stage || node === layer) return null;
-      
-        if (
-          node.hasName('group') ||
-          node.hasName('textGroup') ||
-          node.hasName('circularText') ||
-          node.hasName('mask') ||
-          node.hasName('clipart')
-        ) {
+        
+        // If the node is a direct child of the layer and is selectable, return it.
+        if (node.parent === layer && (node.name() === 'shape' || node.name() === 'image' || node.name() === 'frame' || node.name() === 'icon' || node.hasName('group') || node.hasName('textGroup') || node.hasName('circularText') || node.hasName('mask') || node.hasName('clipart'))) {
           return node;
         }
-      
+
+        // If it has a parent that isn't the layer, recurse up.
         if (node.parent && node.parent !== layer) {
           return getSelectableRoot(node.parent);
         }
-      
-        if (node.name() === 'shape' || node.name() === 'image' || node.name() === 'frame' || node.name() === 'icon') {
-            return node;
-        }
-
+        
         return null;
     };
     
@@ -293,6 +285,7 @@ stage.on('history:applied', onHistoryApplied);
           borderStrokeWidth: 1.5,
           anchorFill: '#a855f7',
           anchorStroke: '#a855f7',
+
           resizeEnabled: true, // This enables pinch-to-scale on mobile
           anchorStrokeWidth: 1,
           enabledAnchors: [
