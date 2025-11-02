@@ -349,52 +349,42 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const getDragBoundFunc = useCallback((node: any) => {
     return (pos: { x: number; y: number }) => {
-        if (!canvasRef.current?.stage) return pos;
-        const stage = canvasRef.current.stage;
+      if (!canvasRef.current?.stage) return pos;
+      const stage = canvasRef.current.stage;
+      
+      // Calculate the node's bounding box at the new potential position
+      const nodeBox = node.getClientRect();
+      const absPos = node.getAbsolutePosition();
+      
+      // Calculate the difference between the node's position and its top-left corner
+      const offsetX = absPos.x - node.x();
+      const offsetY = absPos.y - node.y();
 
-        const box = node.getClientRect();
+      // Predict the new absolute top-left corner of the bounding box
+      const newAbsX = pos.x + offsetX;
+      const newAbsY = pos.y + offsetY;
 
-        const realWidth = node.width();
-        const realHeight = node.height();
+      let finalX = pos.x;
+      let finalY = pos.y;
 
-        toast({
-            title: "Drag Debug",
-            description: `Real: ${realWidth}x${realHeight} | Visual: ${box.width.toFixed(2)}x${box.height.toFixed(2)}`,
-            duration: 5000,
-        });
-
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-
-        const offsetX = node.offsetX();
-        const offsetY = node.offsetY();
-
-        const newAbsX = pos.x - (offsetX * scaleX);
-        const newAbsY = pos.y - (offsetY * scaleY);
-
-        const minX = newAbsX;
-        const maxX = newAbsX + box.width;
-        const minY = newAbsY;
-        const maxY = newAbsY + box.height;
-
-        let newX = pos.x;
-        let newY = pos.y;
-
-        if (maxX > stage.width()) {
-            newX = stage.width() - box.width + (offsetX * scaleX);
-        }
-        if (minX < 0) {
-            newX = offsetX * scaleX;
-        }
-
-        if (maxY > stage.height()) {
-            newY = stage.height() - box.height + (offsetY * scaleY);
-        }
-        if (minY < 0) {
-            newY = offsetY * scaleY;
-        }
-
-        return { x: newX, y: newY };
+      // Check left boundary
+      if (newAbsX < 0) {
+        finalX = pos.x - newAbsX;
+      }
+      // Check right boundary
+      if (newAbsX + nodeBox.width > stage.width()) {
+        finalX = pos.x - (newAbsX + nodeBox.width - stage.width());
+      }
+      // Check top boundary
+      if (newAbsY < 0) {
+        finalY = pos.y - newAbsY;
+      }
+      // Check bottom boundary
+      if (newAbsY + nodeBox.height > stage.height()) {
+        finalY = pos.y - (newAbsY + nodeBox.height - stage.height());
+      }
+  
+      return { x: finalX, y: finalY };
     };
   }, [canvasRef]);
 
@@ -1051,10 +1041,7 @@ const handleBackgroundImageReset = useCallback(() => {
         });
         filename = 'konva-design-print.png';
       } else if (format === 'jpg') {
-        dataURL = tempStage.toDataURL({ 
-          mimeType: 'image/jpeg', 
-          quality: quality
-        });
+        dataURL = tempStage.toDataURL({ _content: tempLayer.toCanvas().toDataURL('image/jpeg', quality) });
         filename = 'konva-design.jpg';
       } else {
         dataURL = tempStage.toDataURL({ 
