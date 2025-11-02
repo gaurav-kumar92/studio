@@ -23,6 +23,7 @@ import { useLockHandler } from '@/hooks/useLockHandler';
 import { useAnimationHandler } from '@/hooks/useAnimationHandler';
 import { Node } from 'konva/lib/Node';
 import { useRouter } from 'next/navigation';
+import { toast } from '@/hooks/use-toast';
 
 declare global {
   interface Window {
@@ -384,21 +385,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             newY = offsetY * scaleY;
         }
         
-        console.log({
-          pos,
-          box,
-          scaleX,
-          scaleY,
-          offsetX,
-          offsetY,
-          newAbsX,
-          newAbsY,
-          minX,
-          maxX,
-          minY,
-          maxY,
-          finalPos: { x: newX, y: newY }
-        });
+        const logData = {
+          pos: { x: pos.x.toFixed(2), y: pos.y.toFixed(2) },
+          box: { w: box.width.toFixed(2), h: box.height.toFixed(2) },
+          scale: { x: scaleX.toFixed(2), y: scaleY.toFixed(2) },
+          offset: { x: offsetX.toFixed(2), y: offsetY.toFixed(2) },
+          final: { x: newX.toFixed(2), y: newY.toFixed(2) }
+        };
+
+        toast({
+            title: "Drag Debug",
+            description: JSON.stringify(logData, null, 2),
+            duration: 1000,
+        })
 
         return { x: newX, y: newY };
     };
