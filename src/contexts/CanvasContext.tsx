@@ -349,14 +349,52 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const getDragBoundFunc = useCallback((node: any) => {
     return (pos: { x: number; y: number }) => {
-      if (!canvasRef.current?.stage) return pos;
-      const stage = canvasRef.current.stage;
+        if (!canvasRef.current?.stage) return pos;
+        const stage = canvasRef.current.stage;
 
-      const box = node.getClientRect();
-      const newX = Math.max(box.width / 2, Math.min(pos.x, stage.width() - box.width / 2));
-      const newY = Math.max(box.height / 2, Math.min(pos.y, stage.height() - box.height / 2));
+        const box = node.getClientRect();
 
-      return { x: newX, y: newY };
+        const realWidth = node.width();
+        const realHeight = node.height();
+
+        toast({
+            title: "Drag Debug",
+            description: `Real: ${realWidth}x${realHeight} | Visual: ${box.width.toFixed(2)}x${box.height.toFixed(2)}`,
+            duration: 5000,
+        });
+
+        const scaleX = node.scaleX();
+        const scaleY = node.scaleY();
+
+        const offsetX = node.offsetX();
+        const offsetY = node.offsetY();
+
+        const newAbsX = pos.x - (offsetX * scaleX);
+        const newAbsY = pos.y - (offsetY * scaleY);
+
+        const minX = newAbsX;
+        const maxX = newAbsX + box.width;
+        const minY = newAbsY;
+        const maxY = newAbsY + box.height;
+
+        let newX = pos.x;
+        let newY = pos.y;
+
+        if (maxX > stage.width()) {
+            newX = stage.width() - box.width + (offsetX * scaleX);
+        }
+        if (minX < 0) {
+            newX = offsetX * scaleX;
+        }
+
+        if (maxY > stage.height()) {
+            newY = stage.height() - box.height + (offsetY * scaleY);
+        }
+        if (minY < 0) {
+            newY = offsetY * scaleY;
+        }
+
+        return { x: newX, y: newY };
     };
   }, [canvasRef]);
 
