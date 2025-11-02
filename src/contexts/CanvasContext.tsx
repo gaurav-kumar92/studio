@@ -347,49 +347,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNodes([]);
   }, []);
 
-  const getDragBoundFunc = useCallback((node: any) => {
-    return (pos: { x: number; y: number }) => {
-        if (!canvasRef.current?.stage) return pos;
-        const stage = canvasRef.current.stage;
-
-        const box = node.getClientRect();
-
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-
-        const offsetX = node.offsetX();
-        const offsetY = node.offsetY();
-
-        const newAbsX = pos.x - (offsetX * scaleX);
-        const newAbsY = pos.y - (offsetY * scaleY);
-
-        const minX = newAbsX;
-        const maxX = newAbsX + box.width;
-        const minY = newAbsY;
-        const maxY = newAbsY + box.height;
-
-        let newX = pos.x;
-        let newY = pos.y;
-
-        if (maxX > stage.width()) {
-            newX = stage.width() - box.width + (offsetX * scaleX);
-        }
-        if (minX < 0) {
-            newX = offsetX * scaleX;
-        }
-
-        if (maxY > stage.height()) {
-            newY = stage.height() - box.height + (offsetY * scaleY);
-        }
-        if (minY < 0) {
-            newY = offsetY * scaleY;
-        }
-
-        return { x: newX, y: newY };
-    };
-  }, []);
-
-
   const applyFill = useCallback(
     (node: any, config: any) => {
       if (isNodeLocked(node)) return;
@@ -673,15 +630,14 @@ const handleUngroup = useCallback(() => {
                 scaleY: scale, 
                 name: 'image', 
                 draggable: true,
-                dragBoundFunc: getDragBoundFunc(img),
                 offsetX: img.width() / 2,
                 offsetY: img.height() / 2,
                 'data-original-src': e.target!.result
             });
 
             img.on('dragend', () => {
-              delete img._dragStartPos;
-              delete img._dragStartBox;
+              delete (img as any)._dragStartPos;
+              delete (img as any)._dragStartBox;
             });
 
             attachDoubleClick(img);
@@ -699,7 +655,7 @@ const handleUngroup = useCallback(() => {
       imageFileInput.value = '';
     };
     imageFileInput.click();
-  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, forceRecord, getDragBoundFunc]);
+  }, [updateLayers, setIsLoading, setSelectedNodes, attachDoubleClick, forceRecord]);
 
   const handleSelectItem = useCallback((itemType: string) => {
     setAddItemDialogOpen(false);
@@ -1130,7 +1086,6 @@ const handleBackgroundImageReset = useCallback(() => {
       nodeToCrop.offsetX(imageObj.width / 2);
       nodeToCrop.offsetY(imageObj.height / 2);
 
-      nodeToCrop.dragBoundFunc(getDragBoundFunc(nodeToCrop));
   
       canvasRef.current?.layer?.batchDraw();
       forceRecord?.();
@@ -1139,7 +1094,7 @@ const handleBackgroundImageReset = useCallback(() => {
   
     setCropModalOpen(false);
     setNodeToCrop(null);
-  }, [nodeToCrop, canvasRef, forceRecord, getDragBoundFunc]);
+  }, [nodeToCrop, canvasRef, forceRecord]);
 
   useEffect(() => {
     if (isKonvaReady && canvasRef.current?.background) {
