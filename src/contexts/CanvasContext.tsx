@@ -352,17 +352,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
       
-      // Store the position at drag start if not already stored
+      // On drag start, cache the initial state
       if (!node._dragStartPos) {
         node._dragStartPos = { x: node.x(), y: node.y() };
         node._dragStartBox = node.getClientRect({ relativeTo: stage });
       }
       
-      // Calculate delta from drag start
+      // Calculate delta from the cached start position
       const deltaX = pos.x - node._dragStartPos.x;
       const deltaY = pos.y - node._dragStartPos.y;
       
-      // Calculate new box position
+      // Calculate the new box position based on the delta
       const newBoxX = node._dragStartBox.x + deltaX;
       const newBoxY = node._dragStartBox.y + deltaY;
       
@@ -676,6 +676,7 @@ const handleUngroup = useCallback(() => {
                 'data-original-src': e.target!.result
             });
 
+            // Add dragend listener to clear cached properties
             img.on('dragend', () => {
               delete img._dragStartPos;
               delete img._dragStartBox;
