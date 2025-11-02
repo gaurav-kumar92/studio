@@ -352,38 +352,38 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (!canvasRef.current?.stage) return pos;
       const stage = canvasRef.current.stage;
       
-      // On drag start, cache the initial state
-      if (!node._dragStartPos) {
-        node._dragStartPos = { x: node.x(), y: node.y() };
-        node._dragStartBox = node.getClientRect({ relativeTo: stage });
+      const box = node.getClientRect();
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      const offsetX = node.offsetX();
+      const offsetY = node.offsetY();
+  
+      const newAbsX = pos.x - (offsetX * scaleX);
+      const newAbsY = pos.y - (offsetY * scaleY);
+  
+      const minX = newAbsX;
+      const maxX = newAbsX + box.width;
+      const minY = newAbsY;
+      const maxY = newAbsY + box.height;
+  
+      let newX = pos.x;
+      let newY = pos.y;
+  
+      if (maxX > stage.width()) {
+        newX = stage.width() - box.width + (offsetX * scaleX);
       }
-      
-      // Calculate delta from the cached start position
-      const deltaX = pos.x - node._dragStartPos.x;
-      const deltaY = pos.y - node._dragStartPos.y;
-      
-      // Calculate the new box position based on the delta
-      const newBoxX = node._dragStartBox.x + deltaX;
-      const newBoxY = node._dragStartBox.y + deltaY;
-      
-      let finalX = pos.x;
-      let finalY = pos.y;
-      
-      // Constrain to stage boundaries
-      if (newBoxX < 0) {
-        finalX = pos.x - newBoxX;
-      }
-      if (newBoxX + node._dragStartBox.width > stage.width()) {
-        finalX = pos.x - (newBoxX + node._dragStartBox.width - stage.width());
-      }
-      if (newBoxY < 0) {
-        finalY = pos.y - newBoxY;
-      }
-      if (newBoxY + node._dragStartBox.height > stage.height()) {
-        finalY = pos.y - (newBoxY + node._dragStartBox.height - stage.height());
+      if (minX < 0) {
+        newX = offsetX * scaleX;
       }
   
-      return { x: finalX, y: finalY };
+      if (maxY > stage.height()) {
+        newY = stage.height() - box.height + (offsetY * scaleY);
+      }
+      if (minY < 0) {
+        newY = offsetY * scaleY;
+      }
+  
+      return { x: newX, y: newY };
     };
   }, [canvasRef]);
 
@@ -1129,12 +1129,14 @@ const handleBackgroundImageReset = useCallback(() => {
       // Update the original source attribute for future crops
       nodeToCrop.setAttr('data-original-src', croppedDataUrl);
   
-      // Update dimensions and reset offset
+      // Update dimensions and reset offset to new center
       const oldScaleX = nodeToCrop.scaleX();
       const oldScaleY = nodeToCrop.scaleY();
       
       nodeToCrop.width(imageObj.width);
       nodeToCrop.height(imageObj.height);
+      nodeToCrop.offsetX(imageObj.width / 2);
+      nodeToCrop.offsetY(imageObj.height / 2);
       nodeToCrop.scale({ x: oldScaleX, y: oldScaleY });
 
       // Re-apply the drag boundary function with new dimensions
