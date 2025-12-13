@@ -24,6 +24,12 @@ import { useAnimationHandler } from '@/hooks/useAnimationHandler';
 import { Node } from 'konva/lib/Node';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import { useZoomPan } from "@/hooks/useZoomPan";
+import { useBackground } from "@/hooks/useBackground";
+import { useTransforms } from "@/hooks/useTransforms";
+
+
+
 
 declare global {
   interface Window {
@@ -163,11 +169,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isKonvaReady, setKonvaReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [canvasScale, setCanvasScale] = useState(1);
-  const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [lastTouch, setLastTouch] = useState<{ x: number; y: number } | null>(null);
-
+  
+ const [isPanning, setIsPanning] = useState(false);
+ const [lastTouch, setLastTouch] = useState<{ x: number; y: number } | null>(null);
+  const {
+    canvasScale,
+    canvasPosition,
+    setCanvasPosition,
+    zoomIn,
+    zoomOut,
+    fitToScreen,
+    handleZoomChange,
+    zoom
+  } = useZoomPan({ canvasRef, isCanvasReady });
+  
 
   const [isAddItemDialogOpen, setAddItemDialogOpen] = useState(false);
   const [isShapeDialogOpen, setShapeDialogOpen] = useState(false);
@@ -184,18 +199,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [clipboard, setClipboard] = useState<any[]>([]);
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
-  const [backgroundColor, setBackgroundColorState] = useState({
-    isGradient: false,
-    solidColor: '#ffffff',
-    gradientDirection: 'top-to-bottom',
-    colorStops: [
-      { id: 0, stop: 0, color: '#3b82f6' },
-      { id: 1, stop: 1, color: '#a855f7' },
-    ],
-  });
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [backgroundImageProps, setBackgroundImageProps] = useState<BackgroundImageProps>({ x: 0, y: 0, scale: 1 });
-
+  
+  
+ 
   const {
     undo: undoBase,
     redo: redoBase,
@@ -204,44 +210,32 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord,
     runAsSingleHistoryStep,
   } = useCanvasChangeTracker(canvasRef, isCanvasReady);
+  const {
+    backgroundColor,
+    setBackgroundColor,
+    backgroundImage,
+    setBackgroundImage,
+    backgroundImageProps,
+    handleSetBackgroundImage,
+    handleBackgroundImageZoom,
+    handleBackgroundImagePan,
+    handleBackgroundImageReset,
+    handleRemoveBackgroundImage
+  } = useBackground({
+    canvasRef,
+    forceRecord,
+    isKonvaReady
+  });
+  
+  
 
   const setCanvasSize = (size: string) => {
     setCanvasSizeState(size);
     forceRecord();
   };
-  const setBackgroundColor = (color: any) => {
-    setBackgroundColorState(color);
-    if (color.solidColor !== 'transparent' || color.isGradient) {
-        setBackgroundImage(null); // Clear image if a color is set
-    }
-    forceRecord();
-  };
+ 
 
-  const handleSetBackgroundImage = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setBackgroundImage(event.target?.result as string);
-          setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
-          setBackgroundColorState(prev => ({ ...prev, solidColor: 'transparent', isGradient: false }));
-          forceRecord();
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    input.click();
-  }, [forceRecord]);
   
-  const handleRemoveBackgroundImage = useCallback(() => {
-    setBackgroundImage(null);
-    setBackgroundColorState(prev => ({ ...prev, solidColor: '#ffffff' }));
-    forceRecord();
-  }, [forceRecord]);
 
 
   const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(
@@ -250,83 +244,31 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const isNodeLocked = useCallback((n: any) => !!n?.getAttr?.('isLocked'), []);
-  const getUnlocked = useCallback(
+ const getUnlocked = useCallback(
     (nodes: any[]) => nodes.filter((n) => !isNodeLocked(n)),
     [isNodeLocked]
   );
+  const {
+    applyFill,
+    applyStroke,
+    handleOpacityChange,
+    handleScaleChange,
+    handleRotationChange,
+    handleFlip,
+    handleAlign,
+    handleMoveNode,
+    handleColorUpdate
+  } = useTransforms({
+    canvasRef,
+    selectedNodes,
+    getUnlocked,
+    isNodeLocked,
+    forceRecord
+  });
+ 
+
   
-  const fitToScreen = useCallback(() => {
-    if (!canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
-    const container = document.getElementById('canvas-wrapper');
-    if (!container) return;
-
-    const padding = 30;
-    const containerWidth = container.clientWidth - padding;
-    const containerHeight = container.clientHeight - padding;
-    
-    const scale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
-    
-    setCanvasScale(scale);
-
-    const newX = (container.clientWidth - stage.width() * scale) / 2;
-    const newY = (container.clientHeight - stage.height() * scale) / 2;
-
-    setCanvasPosition({ x: newX, y: newY });
-  }, []);
-
-  const zoom = useCallback((direction: 'in' | 'out', pointerPos?: { x: number; y: number }) => {
-    if (!canvasRef.current?.stage) return;
-    const stage = canvasRef.current.stage;
-    const container = document.getElementById('canvas-wrapper');
-    if (!container) return;
-
-    const scaleBy = 1.1;
-    const oldScale = canvasScale;
-    
-    let newScale;
-    if (direction === 'in') {
-      newScale = oldScale * scaleBy;
-    } else {
-      const padding = 30;
-      const containerWidth = container.clientWidth - padding;
-      const containerHeight = container.clientHeight - padding;
-      const minScale = Math.min(containerWidth / stage.width(), containerHeight / stage.height());
-      
-      newScale = Math.max(oldScale / scaleBy, minScale);
-    }
-
-    const pointer = pointerPos || {
-      x: container.clientWidth / 2,
-      y: container.clientHeight / 2,
-    };
-
-    const mousePointTo = {
-      x: (pointer.x - canvasPosition.x) / oldScale,
-      y: (pointer.y - canvasPosition.y) / oldScale,
-    };
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-
-    setCanvasScale(newScale);
-    setCanvasPosition(newPos);
-  }, [canvasScale, canvasPosition]);
-
-  const zoomIn = useCallback(() => zoom('in'), [zoom]);
-  const zoomOut = useCallback(() => zoom('out'), [zoom]);
   
-  const handleZoomChange = useCallback((value: string) => {
-    if (value === 'auto') {
-        fitToScreen();
-    } else {
-        const newScale = parseFloat(value);
-        setCanvasScale(newScale);
-    }
-  }, [fitToScreen]);
-
   const updateLayers = useCallback(() => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
@@ -347,92 +289,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setSelectedNodes([]);
   }, []);
 
-  const applyFill = useCallback(
-    (node: any, config: any) => {
-      if (isNodeLocked(node)) return;
-      let targetNodes;
-
-      if (node.hasName('clipart')) {
-          targetNodes = node.find('.clipart-face');
-      } else if (node.hasName('textGroup') || node.hasName('circularText')) {
-          targetNodes = node.find('.mainChar, .text, Text');
-      } else {
-          targetNodes = [node];
-      }
-
-      targetNodes.forEach((n: any) => {
-        if (isNodeLocked(n) || typeof n.fill !== 'function') return;
-
-        n.fill(null);
-        n.fillLinearGradientColorStops([]);
-        n.fillRadialGradientColorStops([]);
-        if (config.isGradient) {
-          const { width, height } = n.getClientRect({ relativeTo: n.getParent() });
-          const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-          if (config.gradientDirection === 'radial') {
-            n.fillPriority('radial-gradient');
-            n.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
-            n.fillRadialGradientStartRadius(0);
-            n.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
-            n.fillRadialGradientEndRadius(Math.max(width, height) / 2);
-            n.fillRadialGradientColorStops(colorStopsFlat);
-          } else {
-            n.fillPriority('linear-gradient');
-            let start = { x: 0, y: 0 };
-            let end = { x: 0, y: 0 };
-            switch (config.gradientDirection) {
-              case 'top-to-bottom': end = { x: 0, y: height }; break;
-              case 'left-to-right': end = { x: width, y: 0 }; break;
-              case 'diagonal-tl-br': end = { x: width, y: height }; break;
-              case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-            }
-            n.fillLinearGradientStartPoint(start);
-            n.fillLinearGradientEndPoint(end);
-            n.fillLinearGradientColorStops(colorStopsFlat);
-          }
-        } else {
-          n.fillPriority('color');
-          n.fill(config.solidColor);
-        }
-      });
-    },
-    [isNodeLocked]
-  );
-
-  const applyStroke = useCallback(
-    (node: any, config: any) => {
-      if (isNodeLocked(node)) return;
-      if (config.isGradient) {
-        const { width, height } = node.getClientRect({ relativeTo: node.getParent() });
-        const colorStopsFlat = config.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-        let start = { x: 0, y: 0 };
-        let end = { x: 0, y: 0 };
-        switch (config.gradientDirection) {
-          case 'left-to-right': end = { x: width, y: 0 }; break;
-          case 'diagonal-tl-br': end = { x: width, y: height }; break;
-          case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-          case 'radial': case 'top-to-bottom': default: end = { x: 0, y: height }; break;
-        }
-        node.strokeLinearGradientStartPoint(start);
-        node.strokeLinearGradientEndPoint(end);
-        node.strokeLinearGradientColorStops(colorStopsFlat);
-        node.setAttr('data-is-gradient', true);
-        node.setAttr('data-gradient-direction', config.gradientDirection);
-        node.setAttr('data-color-stops', config.colorStops);
-      } else {
-        const solidColor = config.solidColor || node.getAttr('data-solid-color') || '#3b82f6';
-        node.strokeLinearGradientStartPoint({ x: 0, y: 0 });
-        node.strokeLinearGradientEndPoint({ x: 0, y: 0 });
-        node.strokeLinearGradientColorStops(null);
-        node.stroke(solidColor);
-        node.setAttr('data-is-gradient', false);
-        node.setAttr('data-solid-color', solidColor);
-      }
-      const layer = node.getLayer();
-      if (layer) layer.draw();
-    },
-    [isNodeLocked]
-  );
   
   const handleDoubleClick = (node: any) => {
     const handleNodeDoubleClick = (targetNode: any) => {
@@ -696,129 +552,7 @@ const handleUngroup = useCallback(() => {
     }
   }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
-  const handleMoveNode = useCallback((action: 'up' | 'down', nodeId: string) => {
-    if (!canvasRef.current?.layer) return;
-    const { layer } = canvasRef.current;
-    const node = layer.findOne(`#${nodeId}`);
-    if (!node || isNodeLocked(node)) return;
-    if (action === 'up') node.moveUp();
-    else if (action === 'down' && node.getZIndex() > 1) node.moveDown();
-    updateLayers();
-    layer.batchDraw();
-    forceRecord?.();
-  }, [updateLayers, forceRecord, isNodeLocked]);
-
-  const handleAlign = useCallback((position: string) => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0 || !canvasRef.current?.stage) return;
-  
-    const stage = canvasRef.current.stage;
-  
-    runAsSingleHistoryStep(() => {
-      nodes.forEach((node) => {
-        const box = node.getClientRect({ relativeTo: stage });
-        let newX = node.x();
-        let newY = node.y();
-    
-        switch (position) {
-          case 'top': newY -= box.y; break;
-          case 'left': newX -= box.x; break;
-          case 'center':
-            newX -= (box.x + box.width / 2) - stage.width() / 2;
-            newY -= (box.y + box.height / 2) - stage.height() / 2;
-            break;
-          case 'right': newX += stage.width() - (box.x + box.width); break;
-          case 'bottom': newY += stage.height() - (box.y + box.height); break;
-        }
-        node.position({ x: newX, y: newY });
-      });
-    
-      canvasRef.current?.layer?.draw?.();
-    });
-  }, [selectedNodes, getUnlocked, canvasRef, runAsSingleHistoryStep]);
-
-  const handleOpacityChange = useCallback((opacity: number) => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    nodes.forEach((node) => node.opacity(opacity));
-    canvasRef.current?.layer?.draw?.();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked]);
-
-  const handleScaleChange = useCallback((scalePercent: number) => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0 || !canvasRef.current?.stage) return;
-
-    const canvasWidth = canvasRef.current.stage.width();
-
-    nodes.forEach(node => {
-      // Get the unscaled width of the node
-      const clientRect = node.getClientRect({ skipTransform: true });
-      const unscaledWidth = clientRect.width;
-
-      if (unscaledWidth > 0) {
-        const targetScale = (canvasWidth / unscaledWidth) * scalePercent;
-        node.scale({ x: targetScale, y: targetScale });
-      }
-    });
-
-    canvasRef.current?.layer?.draw?.();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked, canvasRef]);
-
-  const handleRotationChange = useCallback((rotation: number) => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    nodes.forEach((node) => node.rotation(rotation));
-    canvasRef.current?.layer?.draw?.();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked]);
-
-  const handleFlip = useCallback((direction: 'horizontal' | 'vertical') => {
-    const layer = canvasRef.current?.layer;
-    if (!layer) return;
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    nodes.forEach((node) => {
-      const box = node.getClientRect();
-      if (direction === 'horizontal') node.scaleX(node.scaleX() * -1);
-      else node.scaleY(node.scaleY() * -1);
-      const newBox = node.getClientRect();
-      const deltaX = (box.x + box.width / 2) - (newBox.x + newBox.width / 2);
-      const deltaY = (box.y + box.height / 2) - (newBox.y + newBox.height / 2);
-      node.x(node.x() + deltaX);
-      node.y(node.y() + deltaY);
-    });
-    layer.batchDraw();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, getUnlocked]);
-
-  const handleColorUpdate = useCallback((config: any) => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    nodes.forEach((node) => {
-      if (node.hasName('group')) {
-        node.find('*').forEach((child: any) => {
-          if (isNodeLocked(child)) return;
-          const childUsesStroke = (child.name() === 'shape' && (child.getAttr('data-type') === 'line' || child.getAttr('data-type') === 'arrow' || child.getAttr('data-type') === 'curve')) || child.name() === 'frame';
-          child.setAttrs({ 'data-is-gradient': config.isGradient, 'data-solid-color': config.solidColor, 'data-color-stops': config.colorStops, 'data-gradient-direction': config.gradientDirection });
-          if (childUsesStroke) applyStroke(child, config);
-          else applyFill(child, config);
-        });
-      } else {
-        const nodeType = node.name();
-        const shapeType = node.getAttr('data-type');
-        const usesStroke = (nodeType === 'shape' && (shapeType === 'line' || shapeType === 'arrow' || shapeType === 'curve')) || nodeType === 'frame';
-        node.setAttrs({ 'data-is-gradient': config.isGradient, 'data-solid-color': config.solidColor, 'data-color-stops': config.colorStops, 'data-gradient-direction': config.gradientDirection });
-        if (usesStroke) applyStroke(node, config);
-        else applyFill(node, config);
-      }
-    });
-    canvasRef.current?.layer.draw();
-    forceRecord?.();
-  }, [selectedNodes, applyFill, applyStroke, canvasRef, forceRecord, getUnlocked, isNodeLocked]);
-  
-  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
+ const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
     if (!clipartNode || isNodeLocked(clipartNode)) return;
 
@@ -894,34 +628,7 @@ const handleUngroup = useCallback(() => {
     forceRecord?.();
   }, [selectedNodes, forceRecord, isNodeLocked]);
 
-  const handleBackgroundImageZoom = useCallback((direction: 'in' | 'out') => {
-    if (!backgroundImage) return;
-    const scaleBy = 1.1;
-    const newScale = direction === 'in' ? backgroundImageProps.scale * scaleBy : backgroundImageProps.scale / scaleBy;
-    setBackgroundImageProps(prev => ({...prev, scale: newScale}));
-    forceRecord?.();
-}, [backgroundImage, backgroundImageProps, forceRecord]);
 
-const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (!backgroundImage) return;
-    const panAmount = 10;
-    let newX = backgroundImageProps.x;
-    let newY = backgroundImageProps.y;
-    switch (direction) {
-        case 'up': newY += panAmount; break;
-        case 'down': newY -= panAmount; break;
-        case 'left': newX += panAmount; break;
-        case 'right': newX -= panAmount; break;
-    }
-    setBackgroundImageProps(prev => ({...prev, x: newX, y: newY}));
-    forceRecord?.();
-}, [backgroundImage, backgroundImageProps, forceRecord]);
-
-const handleBackgroundImageReset = useCallback(() => {
-    if (!backgroundImage) return;
-    setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
-    forceRecord?.();
-}, [backgroundImage, forceRecord]);
 
   const handleDelete = useCallback(() => {
     const nodes = getUnlocked(selectedNodes);
