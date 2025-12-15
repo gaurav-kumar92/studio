@@ -28,6 +28,7 @@ import { useZoomPan } from "@/hooks/useZoomPan";
 import { useBackground } from "@/hooks/useBackground";
 import { useTransforms } from "@/hooks/useTransforms";
 import { useClipboard } from '@/hooks/useClipboard';
+import { useGrouping } from '@/hooks/useGrouping';
 
 
 
@@ -330,6 +331,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     runAsSingleHistoryStep,
     forceRecord,
   });
+  const {
+    handleGroup,
+    handleUngroup,
+  } = useGrouping({
+    canvasRef,
+    selectedNodes,
+    setSelectedNodes,
+    setMultiSelectMode,
+    updateLayers,
+    attachDoubleClick,
+    runAsSingleHistoryStep,
+  });
+  
 
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
   const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
@@ -345,132 +359,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   
-  const handleGroup = useCallback(() => {
-  if (
-    selectedNodes.length < 2 ||
-    selectedNodes.some((node) => node.getAttr('isLocked')) ||
-    !canvasRef.current?.layer
-  )
-    return;
-
-  runAsSingleHistoryStep(() => {
-    const layer = canvasRef.current!.layer;
-
-    // Find the bounding box that contains all selected nodes
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
-
-    selectedNodes.forEach((node) => {
-      const box = node.getClientRect({ relativeTo: layer });
-      minX = Math.min(minX, box.x);
-      minY = Math.min(minY, box.y);
-      maxX = Math.max(maxX, box.x + box.width);
-      maxY = Math.max(maxY, box.y + box.height);
-    });
-
-    // Create group at the top-left of the bounding box
-    const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const group = new window.Konva.Group({
-      id: uniqueId,
-      name: 'group',
-      draggable: true,
-      x: minX,
-      y: minY,
-    });
-    group.listening(true);
-    layer.add(group);
-    attachDoubleClick(group);  
-
-    // Move children to group with positions relative to group's origin
-    selectedNodes.forEach((node) => {
-      const box = node.getClientRect({ relativeTo: layer });
-      const currentX = node.x();
-      const currentY = node.y();
-      
-      // Calculate offset from node's current position to its visual position
-      const offsetX = box.x - currentX;
-      const offsetY = box.y - currentY;
-      
-      node.moveTo(group);
-      
-      // Set position relative to group, accounting for any offset
-      node.position({
-        x: box.x - minX - offsetX,
-        y: box.y - minY - offsetY,
-      });
-      node.draggable(false);
-      
-    });
-    // IMPORTANT: Set offset to center after children are added
-    const groupBox = group.getClientRect({ skipTransform: true });
-    group.offsetX(groupBox.width / 2);
-    group.offsetY(groupBox.height / 2);
-    group.x(minX + groupBox.width / 2);
-    group.y(minY + groupBox.height / 2);
-
-    layer.batchDraw();
-
-    setSelectedNodes([group]);
-    setMultiSelectMode(false);
-    updateLayers();
-  });
-}, [
-  selectedNodes,
-  canvasRef,
-  runAsSingleHistoryStep,
-  setSelectedNodes,
-  setMultiSelectMode,
-  updateLayers,
-  attachDoubleClick
-]);
-
-const handleUngroup = useCallback(() => {
-  const group = selectedNodes[0];
-  if (
-    selectedNodes.length !== 1 ||
-    !(group.hasName('group') || group.hasName('clipart')) ||
-    group.getAttr('isLocked')
-  )
-    return;
-
-  runAsSingleHistoryStep(() => {
-    const layer = canvasRef.current?.layer ?? group.getLayer();
-    const children = group.getChildren().slice();
-    const nodesToSelect: Node[] = [];
-
-    children.forEach((child: Node) => {
-      // Store the absolute position BEFORE moving
-      const absPos = child.getAbsolutePosition();
-      
-      // Move to layer
-      child.moveTo(layer);
-      
-      // Restore the absolute position AFTER moving
-      child.setAbsolutePosition(absPos);
-      child.draggable(true);
-      child.listening(true);
-      
-      nodesToSelect.push(child);
-    });
-
-    group.destroy();
-    
-    // Force layer update BEFORE batchDraw
-    updateLayers();
-    layer.batchDraw();
-
-    setMultiSelectMode(true);
-    setSelectedNodes(nodesToSelect);
-  });
-}, [
-  selectedNodes,
-  canvasRef,
-  setMultiSelectMode,
-  setSelectedNodes,
-  updateLayers,
-  runAsSingleHistoryStep,
-]);
-
+ 
   useEffect(() => {
     (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
   }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
