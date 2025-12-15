@@ -27,6 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { useZoomPan } from "@/hooks/useZoomPan";
 import { useBackground } from "@/hooks/useBackground";
 import { useTransforms } from "@/hooks/useTransforms";
+import { useClipboard } from '@/hooks/useClipboard';
 
 
 
@@ -196,7 +197,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isIconDialogOpen, setIconDialogOpen] = useState(false);
   const [isCropModalOpen, setCropModalOpen] = useState(false);
   const [nodeToCrop, setNodeToCrop] = useState<any>(null);
-  const [clipboard, setClipboard] = useState<any[]>([]);
+ 
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
   
@@ -228,6 +229,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   });
   
   
+  
 
   const setCanvasSize = (size: string) => {
     setCanvasSizeState(size);
@@ -235,7 +237,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   };
  
 
-  
+ 
+
 
 
   const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(
@@ -310,6 +313,23 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     });
   }, []);
+
+  const {
+    clipboard,
+    handleCopy,
+    handlePaste,
+    handleDelete,
+  } = useClipboard({
+    canvasRef,
+    selectedNodes,
+    setSelectedNodes,
+    getUnlocked,
+    deselectNodes,
+    updateLayers,
+    attachDoubleClick,
+    runAsSingleHistoryStep,
+    forceRecord,
+  });
 
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
   const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
@@ -630,16 +650,6 @@ const handleUngroup = useCallback(() => {
 
 
 
-  const handleDelete = useCallback(() => {
-    const nodes = getUnlocked(selectedNodes);
-    if (nodes.length === 0) return;
-    forceRecord?.();
-    nodes.forEach((node) => node.destroy());
-    deselectNodes();
-    updateLayers();
-    forceRecord?.();
-  }, [selectedNodes, deselectNodes, updateLayers, forceRecord, getUnlocked]);
-
   const handleSave = useCallback((format: 'png' | 'jpg' | 'svg' | 'pdf' = 'png', quality: number = 1) => {
     if (!canvasRef.current?.stage || !canvasRef.current?.layer || !canvasRef.current?.background) return;
     const stage = canvasRef.current.stage;
@@ -732,45 +742,8 @@ const handleUngroup = useCallback(() => {
     }, 100);
   }, [deselectNodes]);
 
-  const handleCopy = useCallback(() => {
-    const unlockedNodes = getUnlocked(selectedNodes);
-    if (unlockedNodes.length === 0) return;
-    const copied = unlockedNodes.map((node: any) => node.clone());
-    setClipboard(copied);
-  }, [selectedNodes, getUnlocked]);
 
-  const handlePaste = useCallback(() => {
-    if (clipboard.length === 0 || !canvasRef.current?.layer) return;
-  
-    runAsSingleHistoryStep(() => {
-      const layer = canvasRef.current!.layer;
-      const newSelection: Node[] = [];
-  
-      clipboard.forEach((nodeToPaste: any) => {
-        const clone = nodeToPaste.clone();
-        
-        // Ensure the clone gets a new, unique ID
-        const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}-${newSelection.length}`;
-        clone.setAttrs({
-          id: uniqueId,
-          x: clone.x() + 20,
-          y: clone.y() + 20,
-        });
-  
-        // Re-attach interaction handlers
-        attachDoubleClick(clone);
-  
-        layer.add(clone);
-        newSelection.push(clone);
-      });
-  
-      // Update UI
-      layer.batchDraw();
-      setSelectedNodes(newSelection);
-      updateLayers();
-    });
-  }, [clipboard, canvasRef, attachDoubleClick, setSelectedNodes, updateLayers, runAsSingleHistoryStep]);
-
+ 
   const handleCropImage = useCallback(() => {
     if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('image')) {
       return;
