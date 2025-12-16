@@ -29,6 +29,11 @@ import { useBackground } from "@/hooks/useBackground";
 import { useTransforms } from "@/hooks/useTransforms";
 import { useClipboard } from '@/hooks/useClipboard';
 import { useGrouping } from '@/hooks/useGrouping';
+import { useExport } from '@/hooks/useExport';
+import { useMaskImageControls } from '@/hooks/useMaskImageControls';
+import { useCrop } from '@/hooks/useCrop';
+
+
 
 
 
@@ -196,8 +201,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
   const [isClipartDialogOpen, setClipartDialogOpen] = useState(false);
   const [isIconDialogOpen, setIconDialogOpen] = useState(false);
-  const [isCropModalOpen, setCropModalOpen] = useState(false);
-  const [nodeToCrop, setNodeToCrop] = useState<any>(null);
+
  
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
@@ -231,12 +235,26 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   
   
   
+  
 
   const setCanvasSize = (size: string) => {
     setCanvasSizeState(size);
     forceRecord();
   };
+  const {
+    isCropModalOpen,
+    setCropModalOpen,
+    nodeToCrop,
+    setNodeToCrop,
+    handleCropImage,
+    handleApplyCrop,
+  } = useCrop({
+    canvasRef,
+    selectedNodes,
+    forceRecord,
+  });
  
+
 
  
 
@@ -270,7 +288,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord
   });
  
-
+  const {
+    handleMaskImageZoom,
+    handleMaskImageReset,
+    handleMaskImagePan,
+  } = useMaskImageControls({
+    canvasRef,
+    selectedNodes,
+    isNodeLocked,
+    forceRecord,
+  });
+  
   
   
   const updateLayers = useCallback(() => {
@@ -292,6 +320,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const deselectNodes = useCallback(() => {
     setSelectedNodes([]);
   }, []);
+  const { handleSave } = useExport({
+    canvasRef,
+    deselectNodes,
+  });
+  
 
   
   const handleDoubleClick = (node: any) => {
@@ -481,189 +514,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         forceRecord?.();
     }
 }, [selectedNodes, isNodeLocked, forceRecord, canvasRef]);
-
-
-  const handleMaskImageZoom = useCallback((direction: 'in' | 'out') => {
-    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
-    const selectedNode = selectedNodes[0];
-    if (isNodeLocked(selectedNode)) return;
-    const image = selectedNode.findOne('.mask-image');
-    if (!image) return;
-    const scaleBy = 1.1;
-    const oldScale = image.scaleX();
-    const newScale = direction === 'in' ? oldScale * scaleBy : oldScale / scaleBy;
-    image.scale({ x: newScale, y: newScale });
-    canvasRef.current?.layer.batchDraw();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, isNodeLocked]);
-
-  const handleMaskImageReset = useCallback(() => {
-    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
-    const selectedNode = selectedNodes[0];
-    if (isNodeLocked(selectedNode)) return;
-    const image = selectedNode.findOne('.mask-image');
-    if (!image) return;
-    const maskWidth = selectedNode.width();
-    const maskHeight = selectedNode.height();
-    const imgWidth = image.getAttr('data-original-width');
-    const imgHeight = image.getAttr('data-original-height');
-    if (!imgWidth || !imgHeight) return;
-    const scale = Math.max(maskWidth / imgWidth, maskHeight / imgHeight);
-    image.position({ x: 0, y: 0 });
-    image.scale({ x: scale, y: scale });
-    canvasRef.current?.layer.batchDraw();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, isNodeLocked]);
-
-  const handleMaskImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('mask')) return;
-    const selectedNode = selectedNodes[0];
-    if (isNodeLocked(selectedNode)) return;
-    const image = selectedNode.findOne('.mask-image');
-    if (!image) return;
-    const panAmount = 10;
-    const currentPos = image.position();
-    let newPos = { ...currentPos };
-    switch (direction) {
-      case 'up': newPos.y -= panAmount; break;
-      case 'down': newPos.y += panAmount; break;
-      case 'left': newPos.x += panAmount; break;
-      case 'right': newPos.x -= panAmount; break;
-    }
-    const boundFunc = image.getAttr('dragBoundFunc');
-    if (boundFunc) newPos = boundFunc.call(image, newPos);
-    image.position(newPos);
-    canvasRef.current?.layer.batchDraw();
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, isNodeLocked]);
-
-
-
-  const handleSave = useCallback((format: 'png' | 'jpg' | 'svg' | 'pdf' = 'png', quality: number = 1) => {
-    if (!canvasRef.current?.stage || !canvasRef.current?.layer || !canvasRef.current?.background) return;
-    const stage = canvasRef.current.stage;
-    const layer = canvasRef.current.layer;
-    const background = canvasRef.current.background;
-    
-    // Deselect all nodes
-    deselectNodes();
-    
-    // Hide all transformers
-    const transformers = layer.find('Transformer');
-    transformers.forEach((tr: any) => tr.visible(false));
-    
-    // Wait for the layer to redraw before capturing
-    layer.batchDraw();
-    
-    // Use setTimeout to ensure the draw is complete
-    setTimeout(() => {
-      // Get canvas dimensions
-      const canvasWidth = background.width();
-      const canvasHeight = background.height();
-      
-      // Create a temporary stage with exact canvas dimensions
-      const tempStage = new window.Konva.Stage({
-        container: document.createElement('div'),
-        width: canvasWidth,
-        height: canvasHeight,
-      });
-      
-      const tempLayer = new window.Konva.Layer();
-      tempStage.add(tempLayer);
-      
-      // Clone the background
-      const bgClone = background.clone();
-      bgClone.position({ x: 0, y: 0 });
-      tempLayer.add(bgClone);
-      
-      // Clone all visible objects (excluding transformers)
-      layer.getChildren().forEach((child: any) => {
-        if (child === background) return; // Already added
-        if (child.getClassName?.() === 'Transformer') return;
-        if (child.hasName?.('Transformer')) return;
-        if (child.name?.() === 'background') return;
-        if (child.name?.() === 'selection-rect') return;
-        
-        const clone = child.clone();
-        tempLayer.add(clone);
-      });
-      
-      tempLayer.batchDraw();
-      
-      let dataURL: string;
-      let filename: string;
-      
-      if (format === 'svg') {
-        dataURL = tempStage.toDataURL({ mimeType: 'image/svg+xml' });
-        filename = 'konva-design.svg';
-      } else if (format === 'pdf') {
-        dataURL = tempStage.toDataURL({ 
-          mimeType: 'image/png', 
-          quality: 1,
-          pixelRatio: 3
-        });
-        filename = 'konva-design-print.png';
-      } else if (format === 'jpg') {
-        dataURL = tempStage.toDataURL({ _content: tempLayer.toCanvas().toDataURL('image/jpeg', quality) });
-        filename = 'konva-design.jpg';
-      } else {
-        dataURL = tempStage.toDataURL({ 
-          mimeType: 'image/png', 
-          quality: quality,
-          pixelRatio: quality === 1 ? 2 : 1
-        });
-        filename = 'konva-design.png';
-      }
-      
-      // Clean up temp stage
-      tempStage.destroy();
-      
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataURL;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Restore transformers visibility
-      transformers.forEach((tr: any) => tr.visible(true));
-      layer.batchDraw();
-    }, 100);
-  }, [deselectNodes]);
-
-
- 
-  const handleCropImage = useCallback(() => {
-    if (selectedNodes.length !== 1 || !selectedNodes[0].hasName('image')) {
-      return;
-    }
-    const imageNode = selectedNodes[0];
-    setNodeToCrop(imageNode);
-    setCropModalOpen(true);
-  }, [selectedNodes]);
-  
-  const handleApplyCrop = useCallback((croppedDataUrl: string) => {
-    if (!nodeToCrop) return;
-  
-    const imageObj = new window.Image();
-    imageObj.onload = () => {
-      nodeToCrop.image(imageObj);
-      nodeToCrop.setAttr('data-original-src', croppedDataUrl);
-      
-      nodeToCrop.width(imageObj.width);
-      nodeToCrop.height(imageObj.height);
-      nodeToCrop.offsetX(imageObj.width / 2);
-      nodeToCrop.offsetY(imageObj.height / 2);
-
-  
-      canvasRef.current?.layer?.batchDraw();
-      forceRecord?.();
-    };
-    imageObj.src = croppedDataUrl;
-  
-    setCropModalOpen(false);
-    setNodeToCrop(null);
-  }, [nodeToCrop, canvasRef, forceRecord]);
 
   useEffect(() => {
     if (isKonvaReady && canvasRef.current?.background) {
