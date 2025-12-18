@@ -23,6 +23,7 @@ const BackgroundColorPicker: React.FC<BackgroundColorPickerProps> = ({
         case 'data-solid-color': return value.solidColor;
         case 'data-color-stops': return value.colorStops;
         case 'data-gradient-direction': return value.gradientDirection;
+        case 'data-is-transparent': return value.isTransparent;
         default: return undefined;
       }
     },
@@ -31,7 +32,9 @@ const BackgroundColorPicker: React.FC<BackgroundColorPickerProps> = ({
     fill: () => value.solidColor,
   };
 
-  const currentColor = value.isGradient 
+  const currentColor = value.isTransparent
+    ? 'transparent'
+    : value.isGradient 
     ? 'linear-gradient(to right, #3b82f6, #a855f7)'
     : value.solidColor;
 
@@ -39,7 +42,13 @@ const BackgroundColorPicker: React.FC<BackgroundColorPickerProps> = ({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0 border">
-          <div className="h-5 w-5 rounded" style={{ background: currentColor }}></div>
+          <div 
+            className="h-5 w-5 rounded" 
+            style={{
+              background: currentColor,
+              border: value.isTransparent ? '1px dashed #000' : 'none'
+            }}
+          ></div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto">

@@ -216,26 +216,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord,
     runAsSingleHistoryStep,
   } = useCanvasChangeTracker(canvasRef, isCanvasReady);
-  const {
-    backgroundColor,
-    setBackgroundColor,
-    backgroundImage,
-    setBackgroundImage,
-    backgroundImageProps,
-    handleSetBackgroundImage,
-    handleBackgroundImageZoom,
-    handleBackgroundImagePan,
-    handleBackgroundImageReset,
-    handleRemoveBackgroundImage
-  } = useBackground({
-    canvasRef,
-    forceRecord,
-    isKonvaReady
-  });
-  
-  
-  
-  
 
   const setCanvasSize = (size: string) => {
     setCanvasSizeState(size);
@@ -254,7 +234,22 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord,
   });
  
-
+  const {
+    backgroundColor,
+    setBackgroundColor,
+    backgroundImage,
+    setBackgroundImage,
+    backgroundImageProps,
+    handleSetBackgroundImage,
+    handleBackgroundImageZoom,
+    handleBackgroundImagePan,
+    handleBackgroundImageReset,
+    handleRemoveBackgroundImage
+  } = useBackground({
+    canvasRef,
+    forceRecord,
+    isKonvaReady
+  });
 
  
 

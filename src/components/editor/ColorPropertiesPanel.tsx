@@ -21,6 +21,7 @@ let nextId = 0;
 
 const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNode, onColorChange, isStroke = false }) => {
     const [isGradient, setIsGradient] = useState(false);
+    const [isTransparent, setIsTransparent] = useState(false);
     const [solidColor, setSolidColor] = useState('#3b82f6');
     const [gradientDirection, setGradientDirection] = useState('top-to-bottom');
     const [colorStops, setColorStops] = useState<ColorStop[]>([
@@ -31,7 +32,6 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
     const isInitializing = useRef(false);
 
     const handleUpdate = useCallback(() => {
-        // Don't update during initialization
         if (isInitializing.current) return;
         
         onColorChange({
@@ -39,17 +39,19 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
             solidColor,
             colorStops,
             gradientDirection,
+            isTransparent,
         });
-    }, [isGradient, solidColor, colorStops, gradientDirection, onColorChange]);
+    }, [isGradient, solidColor, colorStops, gradientDirection, isTransparent, onColorChange]);
 
     useEffect(() => {
         if (selectedNode) {
-            // Set flag to prevent handleUpdate from firing during initialization
             isInitializing.current = true;
             
+            let nodeIsTransparent = selectedNode.getAttr('data-is-transparent') || false;
+            setIsTransparent(nodeIsTransparent);
+
             let nodeIsGradient = selectedNode.getAttr('data-is-gradient') || false;
             
-            // For text groups, check the child text element for gradient data
             if (!nodeIsGradient && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
                 const textChild = selectedNode.findOne('Text, .mainChar');
                 if (textChild) {
@@ -60,11 +62,9 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
             setIsGradient(nodeIsGradient);
     
             if (nodeIsGradient) {
-                // Get gradient data from either parent or child
                 let stops = selectedNode.getAttr('data-color-stops');
                 let direction = selectedNode.getAttr('data-gradient-direction');
                 
-                // Check child if parent doesn't have gradient data
                 if ((!stops || stops.length === 0) && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
                     const textChild = selectedNode.findOne('Text, .mainChar');
                     if (textChild) {
@@ -76,7 +76,6 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 if (stops && stops.length > 0) {
                     setColorStops(stops.map((s: any, i: number) => ({...s, id: s.id || i})));
                 } else {
-                    // Fallback to old color1/color2 format
                     let color1 = selectedNode.getAttr('data-color1');
                     let color2 = selectedNode.getAttr('data-color2');
                     
@@ -95,7 +94,6 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 }
                 setGradientDirection(direction || 'top-to-bottom');
             } else {
-                // Only get solid color if NOT a gradient
                 let nodeColor = selectedNode.getAttr('data-solid-color');
                 
                 if (!nodeColor && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'))) {
@@ -117,7 +115,6 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 setSolidColor(nodeColor || '#3b82f6');
             }
             
-            // Allow updates after initialization is complete
             setTimeout(() => {
                 isInitializing.current = false;
             }, 0);
@@ -126,7 +123,7 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
 
     useEffect(() => {
         handleUpdate();
-    }, [isGradient, solidColor, colorStops, gradientDirection, handleUpdate]);
+    }, [isGradient, solidColor, colorStops, gradientDirection, isTransparent, handleUpdate]);
     
     const label = isStroke ? 'Stroke' : 'Fill';
 
@@ -160,67 +157,83 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 <div className="flex items-center">
                     <input 
                         type="checkbox" 
-                        id="universal-gradient-checkbox" 
-                        checked={isGradient} 
-                        onChange={(e) => setIsGradient(e.target.checked)}
+                        id="universal-transparent-checkbox" 
+                        checked={isTransparent} 
+                        onChange={(e) => setIsTransparent(e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <label htmlFor="universal-gradient-checkbox" className="ml-2 block text-sm text-gray-900">Gradient {label}</label>
+                    <label htmlFor="universal-transparent-checkbox" className="ml-2 block text-sm text-gray-900">Transparent</label>
                 </div>
             </div>
 
-            {isGradient ? (
-                <div id="universal-gradient-controls" className="flex flex-col gap-4">
-                    {colorStops.map((stop, index) => (
-                        <div key={stop.id} className="flex flex-col gap-2 p-2 border rounded-md">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-medium text-gray-600">Color Stop {index + 1}</label>
-                                 <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                        <div className="color-preview-circle w-6 h-6" style={{backgroundColor: stop.color}}></div>
-                                        <input type="color" value={stop.color} onChange={(e) => handleColorStopChange(stop.id, 'color', e.target.value)} className="color-picker-input-hidden" />
+            {!isTransparent && (
+                <>
+                    <div className="mb-4">
+                        <div className="flex items-center">
+                            <input 
+                                type="checkbox" 
+                                id="universal-gradient-checkbox" 
+                                checked={isGradient} 
+                                onChange={(e) => setIsGradient(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label htmlFor="universal-gradient-checkbox" className="ml-2 block text-sm text-gray-900">Gradient {label}</label>
+                        </div>
+                    </div>
+
+                    {isGradient ? (
+                        <div id="universal-gradient-controls" className="flex flex-col gap-4">
+                            {colorStops.map((stop, index) => (
+                                <div key={stop.id} className="flex flex-col gap-2 p-2 border rounded-md">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-medium text-gray-600">Color Stop {index + 1}</label>
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative">
+                                                <div className="color-preview-circle w-6 h-6" style={{backgroundColor: stop.color}}></div>
+                                                <input type="color" value={stop.color} onChange={(e) => handleColorStopChange(stop.id, 'color', e.target.value)} className="color-picker-input-hidden" />
+                                            </div>
+                                            {colorStops.length > 2 && (
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveColorStop(stop.id)}>
+                                                    <XCircle className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-                                    {colorStops.length > 2 && (
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveColorStop(stop.id)}>
-                                            <XCircle className="h-4 w-4 text-red-500" />
-                                        </Button>
-                                    )}
+                                    <div>
+                                        <Slider
+                                            value={[stop.stop]}
+                                            onValueChange={(val) => handleColorStopChange(stop.id, 'stop', val[0])}
+                                            max={1}
+                                            step={0.01}
+                                        />
+                                        <div className="text-xs text-center mt-1">{stop.stop.toFixed(2)}</div>
+                                    </div>
                                 </div>
-                            </div>
-                             <div>
-                                <Slider
-                                    value={[stop.stop]}
-                                    onValueChange={(val) => handleColorStopChange(stop.id, 'stop', val[0])}
-                                    max={1}
-                                    step={0.01}
-                                />
-                                 <div className="text-xs text-center mt-1">{stop.stop.toFixed(2)}</div>
+                            ))}
+                            <Button variant="outline" size="sm" onClick={handleAddColorStop} className="w-full">
+                                <PlusCircle className="h-4 w-4 mr-2" /> Add Color
+                            </Button>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
+                                <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="top-to-bottom">Top to Bottom</option>
+                                    <option value="left-to-right">Left to Right</option>
+                                    <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
+                                    <option value="diagonal-tr-bl">Diagonal (TR to BL)</option>
+                                    {!isStroke && <option value="radial">Radial</option>}
+                                </select>
                             </div>
                         </div>
-                    ))}
-                     <Button variant="outline" size="sm" onClick={handleAddColorStop} className="w-full">
-                        <PlusCircle className="h-4 w-4 mr-2" /> Add Color
-                    </Button>
-                    <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
-                        <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                            <option value="top-to-bottom">Top to Bottom</option>
-                            <option value="left-to-right">Left to Right</option>
-                            <option value="diagonal-tl-br">Diagonal (TL to BR)</option>
-                            <option value="diagonal-tr-bl">Diagonal (TR to BL)</option>
-                            {/* This option will now only show if isStroke is false */}
-                            {!isStroke && <option value="radial">Radial</option>}
-                        </select>
-                    </div>
-                </div>
-            ) : (
-                 <div className="color-picker-container-inline justify-between">
-                    <label className="block text-sm font-medium text-gray-700">Solid {label}</label>
-                     <div className="relative">
-                        <div className="color-preview-circle" style={{backgroundColor: solidColor}}></div>
-                        <input type="color" value={solidColor} onChange={(e) => setSolidColor(e.target.value)} className="color-picker-input-hidden" />
-                    </div>
-                </div>
+                    ) : (
+                        <div className="color-picker-container-inline justify-between">
+                            <label className="block text-sm font-medium text-gray-700">Solid {label}</label>
+                            <div className="relative">
+                                <div className="color-preview-circle" style={{backgroundColor: solidColor}}></div>
+                                <input type="color" value={solidColor} onChange={(e) => setSolidColor(e.target.value)} className="color-picker-input-hidden" />
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

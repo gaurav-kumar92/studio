@@ -1,18 +1,18 @@
-'use clinet';
-//file used for background function like change colour, add image.
-import { useState, useCallback, useEffect } from "react";
 
-export function useBackground({ canvasRef, forceRecord, isKonvaReady }) {
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Konva from 'konva';
+import { useHistory } from './useHistory';
 
-    // --- STATE (Same as CanvasContext) ---
-  const [backgroundColor, setBackgroundColorState] = useState({
+export const useBackground = (canvasRef: React.RefObject<Konva.Stage>,  forceRecord?: () => void)  => {
+  const [backgroundColorState, setBackgroundColorState] = useState({
     isGradient: false,
-    solidColor: '#ffffff',
-    gradientDirection: 'top-to-bottom',
+    isTransparent: false,
+    solidColor: '#E0E0E0',
     colorStops: [
-      { id: 0, stop: 0, color: '#3b82f6' },
-      { id: 1, stop: 1, color: '#a855f7' },
+      { stop: 0, color: '#3b82f6' },
+      { stop: 1, color: '#a855f7' },
     ],
+    gradientDirection: 'top-to-bottom',
   });
 
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
@@ -21,133 +21,132 @@ export function useBackground({ canvasRef, forceRecord, isKonvaReady }) {
     y: 0,
     scale: 1,
   });
-// --- SETTERS (Moved exactly from CanvasContext) ---
-const setBackgroundColor = (color: any) => {
-    setBackgroundColorState(color);
-    if (color.solidColor !== 'transparent' || color.isGradient) {
-      setBackgroundImage(null);
+
+  const setBackgroundColor = (color: any) => {
+    const newColorState = { ...backgroundColorState, ...color };
+
+    if (newColorState.isTransparent) {
+        newColorState.solidColor = 'transparent';
+        newColorState.isGradient = false;
     }
-    forceRecord();
+
+    setBackgroundColorState(newColorState);
+    setBackgroundImage(null);
+    forceRecord?.();
   };
+
   const handleSetBackgroundImage = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setBackgroundImage(event.target?.result as string);
-          setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
-          setBackgroundColorState(prev => ({
-            ...prev,
-            solidColor: 'transparent',
-            isGradient: false
-          }));
-          forceRecord();
-        };
-        reader.readAsDataURL(file);
-      }
+    input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setBackgroundImage(reader.result as string);
+                setBackgroundColorState(prev => ({ ...prev, solidColor: 'transparent', isGradient: false, isTransparent: true }));
+                forceRecord?.();
+            };
+            reader.readAsDataURL(file);
+        }
     };
     input.click();
-}, [forceRecord]);
-
-const handleRemoveBackgroundImage = useCallback(() => {
-    setBackgroundImage(null);
-    setBackgroundColorState(prev => ({ ...prev, solidColor: '#ffffff' }));
-    forceRecord();
   }, [forceRecord]);
-   // --- BACKGROUND IMAGE CONTROLS (Moved exactly as-is) ---
-   const handleBackgroundImageZoom = useCallback((direction: 'in' | 'out') => {
-    if (!backgroundImage) return;
-    const scaleBy = 1.1;
-    const newScale = direction === 'in'
-      ? backgroundImageProps.scale * scaleBy
-      : backgroundImageProps.scale / scaleBy;
 
-    setBackgroundImageProps(prev => ({ ...prev, scale: newScale }));
+  const handleBackgroundImageZoom = (zoom: number) => {
+    setBackgroundImageProps(prev => ({ ...prev, scale: prev.scale * zoom }));
+  };
+
+  const handleBackgroundImagePan = (pan: { x: number; y: number }) => {
+    setBackgroundImageProps(prev => ({ ...prev, x: prev.x + pan.x, y: prev.y + pan.y }));
+  };
+
+  const handleBackgroundImageReset = () => {
+    setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
+  };
+
+  const handleRemoveBackgroundImage = () => {
+    setBackgroundImage(null);
+    setBackgroundColorState(prev => ({ ...prev, solidColor: '#E0E0E0', isGradient: false, isTransparent: false }));
     forceRecord?.();
-  }, [backgroundImage, backgroundImageProps, forceRecord]);
+  };
 
+  const drawBackground = useCallback(() => {
+    if (!canvasRef.current) return;
 
-  const handleBackgroundImagePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (!backgroundImage) return;
-    const panAmount = 10;
-
-    let newX = backgroundImageProps.x;
-    let newY = backgroundImageProps.y;
-
-    switch (direction) {
-      case 'up': newY += panAmount; break;
-      case 'down': newY -= panAmount; break;
-      case 'left': newX += panAmount; break;
-      case 'right': newX -= panAmount; break;
+    let layer = canvasRef.current.findOne('#background-layer') as Konva.Layer;
+    if (!layer) {
+        layer = new Konva.Layer({ id: 'background-layer' });
+        canvasRef.current.add(layer);
     }
 
-    setBackgroundImageProps(prev => ({ ...prev, x: newX, y: newY }));
-    forceRecord?.();
-  }, [backgroundImage, backgroundImageProps, forceRecord]);
+    let backgroundRect = layer.findOne('#background-rect') as Konva.Rect;
+    if (!backgroundRect) {
+        backgroundRect = new Konva.Rect({ id: 'background-rect', x: 0, y: 0 });
+        layer.add(backgroundRect);
+    }
 
-  const handleBackgroundImageReset = useCallback(() => {
-    if (!backgroundImage) return;
-    setBackgroundImageProps({ x: 0, y: 0, scale: 1 });
-    forceRecord?.();
-  }, [backgroundImage, forceRecord]);
+    const stage = canvasRef.current.getStage();
+    const width = stage.width();
+    const height = stage.height();
+    backgroundRect.width(width);
+    backgroundRect.height(height);
 
-  // --- BACKGROUND RENDER USE EFFECT (EXACT COPY) ---
-  useEffect(() => {
-    if (isKonvaReady && canvasRef.current?.background) {
-      const backgroundRect = canvasRef.current.background;
-      const layer = canvasRef.current.layer;
-
-      backgroundRect.fill(null);
-      backgroundRect.fillLinearGradientColorStops(null);
-      backgroundRect.fillRadialGradientColorStops(null);
-      backgroundRect.fillPatternImage(null);
-
-      if (backgroundImage) {
-        // Image is handled in Canvas.tsx
-      } else if (backgroundColor.isGradient) {
+    if (backgroundColorState.isTransparent && !backgroundImage) {
+        backgroundRect.fill('transparent');
+    } else if (backgroundImage) {
+        // Image is handled in Canvas.tsx to be below the Konva stage
+    } else if (backgroundColorState.isGradient) {
         const { width, height } = backgroundRect.getClientRect();
-        const colorStopsFlat = backgroundColor.colorStops.flatMap(
+        const colorStopsFlat = backgroundColorState.colorStops.flatMap(
           (cs: any) => [cs.stop, cs.color]
         );
 
-        if (backgroundColor.gradientDirection === 'radial') {
-          backgroundRect.fillPriority('radial-gradient');
-          backgroundRect.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
-          backgroundRect.fillRadialGradientStartRadius(0);
-          backgroundRect.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
-          backgroundRect.fillRadialGradientEndRadius(Math.max(width, height) / 2);
-          backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
-        } else {
-          backgroundRect.fillPriority('linear-gradient');
-          let start = { x: 0, y: 0 };
-          let end = { x: 0, y: 0 };
+        let gradientProps: any = {
+            start: { x: 0, y: 0 },
+            end: { x: 0, y: height },
+            colorStops: colorStopsFlat,
+        };
 
-          switch (backgroundColor.gradientDirection) {
-            case 'top-to-bottom': end = { x: 0, y: height }; break;
-            case 'left-to-right': end = { x: width, y: 0 }; break;
-            case 'diagonal-tl-br': end = { x: width, y: height }; break;
-            case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
-          }
-
-          backgroundRect.fillLinearGradientStartPoint(start);
-          backgroundRect.fillLinearGradientEndPoint(end);
-          backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
+        switch (backgroundColorState.gradientDirection) {
+            case 'left-to-right':
+                gradientProps.end = { x: width, y: 0 };
+                break;
+            case 'diagonal-tl-br':
+                gradientProps.end = { x: width, y: height };
+                break;
+            case 'diagonal-tr-bl':
+                gradientProps.start = { x: width, y: 0 };
+                gradientProps.end = { x: 0, y: height };
+                break;
+            case 'radial':
+                backgroundRect.fillRadialGradient({
+                    start: { x: width / 2, y: height / 2 },
+                    end: { x: width / 2, y: height / 2 },
+                    startRadius: 0,
+                    endRadius: width / 2,
+                    colorStops: colorStopsFlat,
+                });
+                layer.batchDraw();
+                return;
         }
-      } else {
-        backgroundRect.fillPriority('color');
-        backgroundRect.fill(backgroundColor.solidColor);
-      }
 
-      if (layer) layer.draw();
+        backgroundRect.fillLinearGradient(gradientProps.start, gradientProps.end, gradientProps.colorStops);
+    } else {
+        backgroundRect.fill(backgroundColorState.solidColor);
     }
-  }, [backgroundColor, isKonvaReady, backgroundImage]);
+
+    layer.batchDraw();
+}, [canvasRef, backgroundColorState, backgroundImage]);
+
+
+  useEffect(() => {
+    drawBackground();
+  }, [drawBackground, backgroundColorState, backgroundImage, backgroundImageProps]);
+
   return {
-    backgroundColor,
+    backgroundColor: backgroundColorState,
     setBackgroundColor,
     backgroundImage,
     setBackgroundImage,
