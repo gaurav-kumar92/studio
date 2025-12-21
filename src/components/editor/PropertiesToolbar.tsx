@@ -99,81 +99,98 @@ const PropertiesToolbar = () => {
   const canCrop = selectedNodes.length === 1 && selectedNodes[0].hasName('image');
 
   return (
-    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-row items-center justify-center gap-2">
-      <div className="flex items-center justify-center gap-1">
-        <ZoomControls />
-        <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
-        <BackgroundColorPicker
-          value={backgroundColor}
-          onChange={setBackgroundColor}
-        />
-        <BackgroundImagePicker />
-        {backgroundImage && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" title="Edit Background Image">
-                <Menu size={16} />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent>
-              <BackgroundImagePanel
-                onZoom={handleBackgroundImageZoom}
-                onPan={handleBackgroundImagePan}
-                onReset={handleBackgroundImageReset}
-                onRemove={handleRemoveBackgroundImage}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
-        <Separator orientation='vertical' className='h-6 mx-2' />
+    <div className="toolbar mt-4 w-full h-auto py-2 flex flex-col md:flex-row items-center gap-2">
 
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!hasSelection}><Scaling size={16} /></Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48">
+<div className="w-full overflow-x-auto md:overflow-visible">
+  <div className="flex md:justify-center">
+    <div className="flex items-center gap-1 whitespace-nowrap min-w-max md:min-w-fit">
+            <ZoomControls />
+            <CanvasSizeSelector value={canvasSize} onChange={setCanvasSize} />
+            <BackgroundColorPicker
+              value={backgroundColor}
+              onChange={setBackgroundColor}
+            />
+            <BackgroundImagePicker />
+            {backgroundImage && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" title="Edit Background Image">
+                    <Menu size={16} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <BackgroundImagePanel
+                    onZoom={handleBackgroundImageZoom}
+                    onPan={handleBackgroundImagePan}
+                    onReset={handleBackgroundImageReset}
+                    onRemove={handleRemoveBackgroundImage}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+            <Separator orientation="vertical" className="h-6 mx-2" />
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={!hasSelection}>
+                  <Scaling size={16} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48">
                 <div className="flex flex-col gap-2">
-                    <Label htmlFor="scale-slider" className="text-xs">Scale ({Math.round(scale * 100)}%)</Label>
-                    <Slider
-                        id="scale-slider"
-                        min={0.01}
-                        max={2}
-                        step={0.01}
-                        value={[scale]}
-                        onValueChange={(val) => handleScaleSliderChange(val[0])}
-                        disabled={!hasSelection}
-                    />
+                  <Label className="text-xs">
+                    Scale ({Math.round(scale * 100)}%)
+                  </Label>
+                  <Slider
+                    min={0.01}
+                    max={2}
+                    step={0.01}
+                    value={[scale]}
+                    onValueChange={(val) => handleScaleSliderChange(val[0])}
+                    disabled={!hasSelection}
+                  />
                 </div>
-            </PopoverContent>
-        </Popover>
+              </PopoverContent>
+            </Popover>
 
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!hasSelection}><RotateCw size={16} /></Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={!hasSelection}>
+                  <RotateCw size={16} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48">
                 <div className="flex flex-col gap-2">
-                    <Label htmlFor="rotation-slider" className="text-xs">Rotation ({Math.round(rotation)}°)</Label>
-                    <Slider
-                        id="rotation-slider"
-                        min={0}
-                        max={360}
-                        step={1}
-                        value={[rotation]}
-                        onValueChange={(val) => handleRotationSliderChange(val[0])}
-                        disabled={!hasSelection}
-                    />
+                  <Label className="text-xs">
+                    Rotation ({Math.round(rotation)}°)
+                  </Label>
+                  <Slider
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={[rotation]}
+                    onValueChange={(val) => handleRotationSliderChange(val[0])}
+                    disabled={!hasSelection}
+                  />
                 </div>
-            </PopoverContent>
-        </Popover>
-        
-        <Button variant="ghost" size="icon" disabled={!canCrop} onClick={handleCropImage}>
-            <Crop size={16} />
-        </Button>
+              </PopoverContent>
+            </Popover>
 
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!canCrop}
+              onClick={handleCropImage}
+            >
+              <Crop size={16} />
+            </Button>
+          </div>
+        </div>
       </div>
+
       
-      <div className="w-full max-w-full overflow-x-auto properties-scrollbar flex-grow whitespace-nowrap">
+      <div className="w-full overflow-x-auto properties-scrollbar">
+      <div className="flex justify-start md:justify-center whitespace-nowrap">
          <ObjectPropertiesPanel
           selectedNodes={selectedNodes}
           onAlign={handleAlign}
@@ -190,6 +207,7 @@ const PropertiesToolbar = () => {
           onGroup={handleGroup}
           onUngroup={handleUngroup}
         />
+        </div>
       </div>
     </div>
   );
