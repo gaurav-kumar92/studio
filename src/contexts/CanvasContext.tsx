@@ -112,7 +112,7 @@ type CanvasContextType = {
   // Functions
   updateLayers: () => void;
   deselectNodes: () => void;
-  handleSave: (format?: 'png' | 'jpg' | 'svg' | 'pdf') => void;
+  handleSave: (format?: 'png' | 'jpg' | 'svg' | 'pdf'| 'gif') => void;
   handleMoveNode: (action: 'up' | 'down', nodeId: string) => void;
   handleAlign: (position: string) => void;
   handleOpacityChange: (opacity: number) => void;
@@ -315,9 +315,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const deselectNodes = useCallback(() => {
     setSelectedNodes([]);
   }, []);
+  const { handleAnimationChange, timelineState } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
   const { handleSave } = useExport({
     canvasRef,
     deselectNodes,
+    timelineState,
   });
   
 
@@ -375,7 +377,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const { addImageToMask, handleAddMask, handleUpdateMask } = useMaskHandler({ canvasRef, updateLayers, setSelectedNodes, setIsLoading, attachDoubleClick: attachDoubleClick, editingMaskNode, setEditingMaskNode });
   const nodeHandlers = useNodeHandlers({ setEditingTextNode, setEditingShapeNode, setShapeDialogOpen, setEditingFrameNode, setFrameDialogOpen, addImageToMask, setIsLoading });
-  const { handleAnimationChange } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
+  
   const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddIcon } = useIconHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
@@ -523,29 +525,65 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (backgroundImage) {
           // background image is handled by Canvas.tsx
       } else if (backgroundColor.isGradient) {
-        const { width, height } = backgroundRect.getClientRect();
+        //const { width, height } = backgroundRect.getClientRect();
+        const width = backgroundRect.width();
+        const height = backgroundRect.height();
         const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
         if (backgroundColor.gradientDirection === 'radial') {
+          const rectWidth = backgroundRect.width();
+          const rectHeight = backgroundRect.height();
+        
+          const centerX = rectWidth / 2;
+          const centerY = rectHeight / 2;
+        
           backgroundRect.fillPriority('radial-gradient');
-          backgroundRect.fillRadialGradientStartPoint({ x: width / 2, y: height / 2 });
+        
+          backgroundRect.fillRadialGradientStartPoint({
+            x: centerX,
+            y: centerY,
+          });
           backgroundRect.fillRadialGradientStartRadius(0);
-          backgroundRect.fillRadialGradientEndPoint({ x: width / 2, y: height / 2 });
-          backgroundRect.fillRadialGradientEndRadius(Math.max(width, height) / 2);
+        
+          backgroundRect.fillRadialGradientEndPoint({
+            x: centerX,
+            y: centerY,
+          });
+        
+          backgroundRect.fillRadialGradientEndRadius(
+            Math.sqrt(rectWidth * rectWidth + rectHeight * rectHeight) / 2
+          );
+        
           backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
         } else {
           backgroundRect.fillPriority('linear-gradient');
+        
           let start = { x: 0, y: 0 };
           let end = { x: 0, y: 0 };
+        
+          const rectWidth = backgroundRect.width();
+          const rectHeight = backgroundRect.height();
+        
           switch (backgroundColor.gradientDirection) {
-            case 'top-to-bottom': end = { x: 0, y: height }; break;
-            case 'left-to-right': end = { x: width, y: 0 }; break;
-            case 'diagonal-tl-br': end = { x: width, y: height }; break;
-            case 'diagonal-tr-bl': start = { x: width, y: 0 }; end = { x: 0, y: height }; break;
+            case 'top-to-bottom':
+              end = { x: 0, y: rectHeight };
+              break;
+            case 'left-to-right':
+              end = { x: rectWidth, y: 0 };
+              break;
+            case 'diagonal-tl-br':
+              end = { x: rectWidth, y: rectHeight };
+              break;
+            case 'diagonal-tr-bl':
+              start = { x: rectWidth, y: 0 };
+              end = { x: 0, y: rectHeight };
+              break;
           }
+        
           backgroundRect.fillLinearGradientStartPoint(start);
           backgroundRect.fillLinearGradientEndPoint(end);
           backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
         }
+        
       } else {
         backgroundRect.fillPriority('color');
         backgroundRect.fill(backgroundColor.solidColor);

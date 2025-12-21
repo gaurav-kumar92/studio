@@ -15,6 +15,11 @@ export const useAnimationHandler = ({
   forceRecord,
 }: UseAnimationHandlerProps) => {
   const activeTweens = useRef<any[]>([]);
+  const animatedNodesRef = useRef<any[]>([]);
+  const animationMetaRef = useRef<Map<any, { type: string; duration: number }>>(
+    new Map()
+  );
+
 
     const playAnimationForNodes = useCallback((nodes: any[]) => {
     if (!canvasRef.current?.layer) return;
@@ -111,19 +116,25 @@ export const useAnimationHandler = ({
     }, [canvasRef]);
 
 
-  const handleAnimationChange = useCallback((config: any) => {
-    if (selectedNodes.length === 0) return;
-
-    selectedNodes.forEach(node => {
-      node.setAttr('data-animation-type', config.type);
-      node.setAttr('data-animation-duration', config.duration);
-    });
-
-    playAnimationForNodes(selectedNodes);
-
-    forceRecord?.();
-  }, [selectedNodes, forceRecord, playAnimationForNodes]);
-  
+    const handleAnimationChange = useCallback((config: any) => {
+      if (selectedNodes.length === 0) return;
+    
+      selectedNodes.forEach(node => {
+        node.setAttr('data-animation-type', config.type);
+        node.setAttr('data-animation-duration', config.duration);
+    
+        animationMetaRef.current.set(node, {
+          type: config.type,
+          duration: config.duration,
+        });
+      });
+    
+      animatedNodesRef.current = [...selectedNodes];
+    
+      playAnimationForNodes(selectedNodes);
+      forceRecord?.();
+    }, [selectedNodes, forceRecord, playAnimationForNodes]);
+    
   const resetNodeState = (node: any) => {
     const originalState = node.getAttr('data-original-state');
     if (originalState) {
@@ -135,8 +146,30 @@ export const useAnimationHandler = ({
         // Do not reset rotation to 0, use its current rotation
     }
   }
+  const timelineState = {
+    getDuration: () => {
+      const durations = Array.from(animationMetaRef.current.values()).map(
+        meta => (meta.duration || 1) * 1000
+      );
+      return durations.length > 0 ? Math.max(...durations) : 1000;
+    },
+  
+    seek: (timeMs: number) => {
+      // existing seek logic
+    },
+  
+    bindStage: (_stage: any) => {},
+  };
+  
+  return {
+    handleAnimationChange,
+    timelineState,
+  };
+  
+  
 
   return {
     handleAnimationChange,
+    timelineState,
   };
 };

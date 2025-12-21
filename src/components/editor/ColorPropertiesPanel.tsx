@@ -6,7 +6,7 @@ import { PlusCircle, XCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 
 type ColorStop = {
-    id: number;
+    id: string;
     stop: number;
     color: string;
 };
@@ -24,10 +24,18 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
     const [isTransparent, setIsTransparent] = useState(false);
     const [solidColor, setSolidColor] = useState('#3b82f6');
     const [gradientDirection, setGradientDirection] = useState('top-to-bottom');
-    const [colorStops, setColorStops] = useState<ColorStop[]>([
-        { id: nextId++, stop: 0, color: '#3b82f6' },
-        { id: nextId++, stop: 1, color: '#a855f7' },
-    ]);
+    const [colorStops, setColorStops] = useState([
+        {
+          id: crypto.randomUUID(),
+          stop: 0,
+          color: '#ffffff',
+        },
+        {
+          id: crypto.randomUUID(),
+          stop: 1,
+          color: '#000000',
+        },
+      ]);
     
     const isInitializing = useRef(false);
 
@@ -88,8 +96,8 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                     }
                     
                     setColorStops([
-                        { id: nextId++, stop: 0, color: color1 || '#3b82f6' },
-                        { id: nextId++, stop: 1, color: color2 || '#a855f7' },
+                        { id: crypto.randomUUID(), stop: 0, color: color1 || '#3b82f6' },
+                        { id: crypto.randomUUID(), stop: 1, color: color2 || '#a855f7' },
                     ]);
                 }
                 setGradientDirection(direction || 'top-to-bottom');
@@ -130,17 +138,17 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
     const handleAddColorStop = () => {
         const newStop = (colorStops[colorStops.length - 1]?.stop || 0 + 1) / 2;
         const newColor = colorStops[colorStops.length - 1]?.color || '#ffffff';
-        const newStops = [...colorStops, { id: nextId++, stop: newStop, color: newColor }];
+        const newStops = [...colorStops, { id: crypto.randomUUID(), stop: newStop, color: newColor }];
         newStops.sort((a, b) => a.stop - b.stop);
         setColorStops(newStops);
     };
 
-    const handleRemoveColorStop = (id: number) => {
+    const handleRemoveColorStop = (id: string) => {
         if (colorStops.length <= 2) return;
         setColorStops(colorStops.filter(stop => stop.id !== id));
     };
 
-    const handleColorStopChange = (id: number, field: 'color' | 'stop', value: string | number) => {
+    const handleColorStopChange = (id: string, field: 'color' | 'stop', value: string | number) => {
         const newStops = colorStops.map(stop => 
             stop.id === id ? { ...stop, [field]: value } : stop
         );

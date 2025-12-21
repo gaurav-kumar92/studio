@@ -71,7 +71,9 @@ const Toolbar = () => {
               <DropdownMenuItem onClick={() => handleSave('png')}>Save as PNG</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSave('jpg')}>Save as JPG</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSave('svg')}>Save as SVG</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSave('gif')}>Save as GIF</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSave('pdf')}>Save as PDF (for Print)</DropdownMenuItem>
+              
             </DropdownMenuContent>
           </DropdownMenu>
     
