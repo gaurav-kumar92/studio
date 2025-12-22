@@ -18,6 +18,7 @@ import { useClipartHandler } from '@/hooks/useClipartHandler';
 import { useIconHandler } from '@/hooks/useIconHandler';
 import { useCurrencyHandler } from '@/hooks/useCurrencyHandler';
 import { useArrowHandler } from '@/hooks/useArrowHandler';
+import { useWeatherHandler } from '@/hooks/useWeatherHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
@@ -83,6 +84,8 @@ type CanvasContextType = {
   setCurrencyDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isArrowDialogOpen: boolean;
   setArrowDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isWeatherDialogOpen: boolean;
+  setWeatherDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingShapeNode: any;
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
@@ -139,6 +142,7 @@ type CanvasContextType = {
   handleAddIcon: (icon: { path: string }) => void;
   handleAddCurrency: (currency: string) => void;
   handleAddArrow: (arrow: string) => void;
+  handleAddWeather: (weather: string) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
@@ -211,6 +215,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isIconDialogOpen, setIconDialogOpen] = useState(false);
   const [isCurrencyDialogOpen, setCurrencyDialogOpen] = useState(false);
   const [isArrowDialogOpen, setArrowDialogOpen] = useState(false);
+  const [isWeatherDialogOpen, setWeatherDialogOpen] = useState(false);
 
  
 
@@ -392,6 +397,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { handleAddIcon } = useIconHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddCurrency } = useCurrencyHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddArrow } = useArrowHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+  const { handleAddWeather } = useWeatherHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
   const handleDoubleClickRef = useRef(handleDoubleClick);
   handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
@@ -501,9 +507,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'icon': setIconDialogOpen(true); break;
       case 'currency': setCurrencyDialogOpen(true); break;
       case 'arrow': setArrowDialogOpen(true); break;
+      case 'weather': setWeatherDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setWeatherDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
@@ -774,14 +781,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
-    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, editingShapeNode, 
+    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, isWeatherDialogOpen, setWeatherDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode, isCropModalOpen, setCropModalOpen, nodeToCrop, setNodeToCrop,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
-    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, addImageToMask, handleMaskImageZoom,
+    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, handleAddWeather, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
     handleRemoveBackgroundImage, handleCropImage, handleApplyCrop,

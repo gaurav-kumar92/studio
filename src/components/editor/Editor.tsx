@@ -33,6 +33,7 @@ const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTex
 const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
 const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'), { ssr: false });
 const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { ssr: false });
+const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -64,6 +65,8 @@ function EditorUI() {
     setCurrencyDialogOpen,
     isArrowDialogOpen,
     setArrowDialogOpen,
+    isWeatherDialogOpen,
+    setWeatherDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -80,6 +83,7 @@ function EditorUI() {
     handleAddIcon,
     handleAddCurrency,
     handleAddArrow,
+    handleAddWeather,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -205,6 +209,15 @@ function EditorUI() {
           onSelectArrow={(arrow) => {
             handleAddArrow(arrow);
             setArrowDialogOpen(false);
+          }}
+        />
+        
+        <WeatherDialog
+          isOpen={isWeatherDialogOpen}
+          onClose={() => setWeatherDialogOpen(false)}
+          onSelectWeather={(weather) => {
+            handleAddWeather(weather);
+            setWeatherDialogOpen(false);
           }}
         />
 
