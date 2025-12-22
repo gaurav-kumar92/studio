@@ -3,7 +3,7 @@
 
 import { useCallback } from 'react';
 
-type UseGenderHandlerProps = {
+type UseSymbolHandlerProps = {
     canvasRef: React.RefObject<{ stage: any; layer: any; }>;
     updateLayers: () => void;
     setSelectedNodes: (nodes: any[]) => void;
@@ -11,15 +11,15 @@ type UseGenderHandlerProps = {
     forceRecord?: () => void;
 };
 
-export const useGenderHandler = ({
+export const useSymbolHandler = ({
     canvasRef,
     updateLayers,
     setSelectedNodes,
     attachDoubleClick,
     forceRecord,
-}: UseGenderHandlerProps) => {
+}: UseSymbolHandlerProps) => {
 
-    const handleAddGender = useCallback((symbol: string) => {
+    const handleAddSymbol = useCallback((symbol: string) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
 
         const { stage, layer } = canvasRef.current;
@@ -62,5 +62,5 @@ export const useGenderHandler = ({
 
     }, [canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord]);
 
-    return { handleAddGender };
+    return { handleAddSymbol };
 };

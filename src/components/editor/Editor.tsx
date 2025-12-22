@@ -31,17 +31,6 @@ const ClipartDialog = dynamic(() => import('@/components/editor/ClipartDialog'),
 const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr: false });
 const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
 const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
-const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'), { ssr: false });
-const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { ssr: false });
-const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'), { ssr: false });
-const AstrologyDialog = dynamic(() => import('@/components/editor/AstrologyDialog'), { ssr: false });
-const MusicDialog = dynamic(() => import('@/components/editor/MusicDialog'), { ssr: false });
-const DicesAndTilesDialog = dynamic(() => import('@/components/editor/DicesAndTilesDialog'), { ssr: false });
-const ChessDialog = dynamic(() => import('@/components/editor/ChessDialog'), { ssr: false });
-const CardDialog = dynamic(() => import('@/components/editor/CardDialog'), { ssr: false });
-const RecycleDialog = dynamic(() => import('@/components/editor/RecycleDialog'), { ssr: false });
-const ReligionDialog = dynamic(() => import('@/components/editor/ReligionDialog'), { ssr: false });
-const GenderDialog = dynamic(() => import('@/components/editor/GenderDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -69,28 +58,6 @@ function EditorUI() {
     setClipartDialogOpen,
     isIconDialogOpen,
     setIconDialogOpen,
-    isCurrencyDialogOpen,
-    setCurrencyDialogOpen,
-    isArrowDialogOpen,
-    setArrowDialogOpen,
-    isWeatherDialogOpen,
-    setWeatherDialogOpen,
-    isAstrologyDialogOpen,
-    setAstrologyDialogOpen,
-    isMusicDialogOpen,
-    setMusicDialogOpen,
-    isDicesAndTilesDialogOpen,
-    setDicesAndTilesDialogOpen,
-    isChessDialogOpen,
-    setChessDialogOpen,
-    isCardDialogOpen,
-    setCardDialogOpen,
-    isRecycleDialogOpen,
-    setRecycleDialogOpen,
-    isReligionDialogOpen,
-    setReligionDialogOpen,
-    isGenderDialogOpen,
-    setGenderDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -105,17 +72,6 @@ function EditorUI() {
     handleUpdateMask,
     handleAddClipart,
     handleAddIcon,
-    handleAddCurrency,
-    handleAddArrow,
-    handleAddWeather,
-    handleAddAstrology,
-    handleAddMusic,
-    handleAddDicesAndTiles,
-    handleAddChess,
-    handleAddCard,
-    handleAddRecycle,
-    handleAddReligion,
-    handleAddGender,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -224,105 +180,6 @@ function EditorUI() {
           isOpen={isIconDialogOpen}
           onClose={() => setIconDialogOpen(false)}
           onAddIcon={handleAddIcon}
-        />
-
-        <CurrencyDialog
-          isOpen={isCurrencyDialogOpen}
-          onClose={() => setCurrencyDialogOpen(false)}
-          onSelectCurrency={(currency) => {
-            handleAddCurrency(currency);
-            setCurrencyDialogOpen(false);
-          }}
-        />
-
-        <ArrowDialog
-          isOpen={isArrowDialogOpen}
-          onClose={() => setArrowDialogOpen(false)}
-          onSelectArrow={(arrow) => {
-            handleAddArrow(arrow);
-            setArrowDialogOpen(false);
-          }}
-        />
-        
-        <WeatherDialog
-          isOpen={isWeatherDialogOpen}
-          onClose={() => setWeatherDialogOpen(false)}
-          onSelectWeather={(weather) => {
-            handleAddWeather(weather);
-            setWeatherDialogOpen(false);
-          }}
-        />
-
-        <AstrologyDialog
-          isOpen={isAstrologyDialogOpen}
-          onClose={() => setAstrologyDialogOpen(false)}
-          onSelectAstrology={(astrology) => {
-            handleAddAstrology(astrology);
-            setAstrologyDialogOpen(false);
-          }}
-        />
-
-        <MusicDialog
-          isOpen={isMusicDialogOpen}
-          onClose={() => setMusicDialogOpen(false)}
-          onSelectMusic={(music) => {
-            handleAddMusic(music);
-            setMusicDialogOpen(false);
-          }}
-        />
-
-        <DicesAndTilesDialog
-          isOpen={isDicesAndTilesDialogOpen}
-          onClose={() => setDicesAndTilesDialogOpen(false)}
-          onSelectDicesAndTiles={(symbol) => {
-            handleAddDicesAndTiles(symbol);
-            setDicesAndTilesDialogOpen(false);
-          }}
-        />
-
-        <ChessDialog
-            isOpen={isChessDialogOpen}
-            onClose={() => setChessDialogOpen(false)}
-            onSelectChess={(symbol) => {
-                handleAddChess(symbol);
-                setChessDialogOpen(false);
-            }}
-        />
-
-        <CardDialog
-            isOpen={isCardDialogOpen}
-            onClose={() => setCardDialogOpen(false)}
-            onSelectCard={(symbol) => {
-                handleAddCard(symbol);
-                setCardDialogOpen(false);
-            }}
-        />
-
-        <RecycleDialog
-            isOpen={isRecycleDialogOpen}
-            onClose={() => setRecycleDialogOpen(false)}
-            onSelectRecycle={(symbol) => {
-                handleAddRecycle(symbol);
-                setRecycleDialogOpen(false);
-            }}
-        />
-
-        <ReligionDialog
-            isOpen={isReligionDialogOpen}
-            onClose={() => setReligionDialogOpen(false)}
-            onSelectReligion={(symbol) => {
-                handleAddReligion(symbol);
-                setReligionDialogOpen(false);
-            }}
-        />
-
-        <GenderDialog
-            isOpen={isGenderDialogOpen}
-            onClose={() => setGenderDialogOpen(false)}
-            onSelectGender={(symbol) => {
-                handleAddGender(symbol);
-                setGenderDialogOpen(false);
-            }}
         />
 
         <CropImageModal
