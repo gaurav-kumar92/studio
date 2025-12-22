@@ -26,26 +26,37 @@ export const useWeatherHandler = ({
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         const textNode = new window.Konva.Text({
-            id: uniqueId,
             text: weather,
-            x: stage.width() / 2,
-            y: stage.height() / 2,
             fontSize: 100,
             fontFamily: 'Inter',
             fill: '#000000',
-            draggable: true,
             name: 'text',
         });
 
-        const textWidth = textNode.width();
-        const textHeight = textNode.height();
-        textNode.offsetX(textWidth / 2);
-        textNode.offsetY(textHeight / 2);
+        const textGroup = new window.Konva.Group({
+            id: uniqueId,
+            x: stage.width() / 2,
+            y: stage.height() / 2,
+            draggable: true,
+            name: 'textGroup',
+            'data-text': weather,
+            'data-font-size': 100,
+            'data-font-family': 'Inter',
+            'data-is-gradient': false,
+            'data-solid-color': '#000000',
+        });
 
-        attachDoubleClick(textNode);
-        layer.add(textNode);
+        textGroup.add(textNode);
+
+        const textWidth = textGroup.width();
+        const textHeight = textGroup.height();
+        textGroup.offsetX(textWidth / 2);
+        textGroup.offsetY(textHeight / 2);
+
+        attachDoubleClick(textGroup);
+        layer.add(textGroup);
         updateLayers();
-        setSelectedNodes([textNode]);
+        setSelectedNodes([textGroup]);
         layer.draw();
         forceRecord?.();
 

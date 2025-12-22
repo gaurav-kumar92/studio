@@ -70,7 +70,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   
   const isText = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'));
   const isClipart = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('clipart');
-  const canHaveColor = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('icon'));
+  const canHaveColor = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('text') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('icon'));
   const isLineOrCurve = hasSelection && selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
   const isMask = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
@@ -81,7 +81,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     if (typeof selectedNode.fill === 'function') {
       return selectedNode.fill();
     }
-    const textChild = selectedNode.findOne?.('Text, .mainChar');
+    const textChild = selectedNode.findOne?.('Text, .mainChar, .text');
     if (textChild && typeof textChild.fill === 'function') {
       return textChild.fill();
     }
@@ -234,5 +234,3 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 };
 
 export default ObjectPropertiesPanel;
-
-    
