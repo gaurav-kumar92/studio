@@ -32,6 +32,7 @@ const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr
 const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
 const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
 const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'), { ssr: false });
+const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -61,6 +62,8 @@ function EditorUI() {
     setIconDialogOpen,
     isCurrencyDialogOpen,
     setCurrencyDialogOpen,
+    isArrowDialogOpen,
+    setArrowDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -76,6 +79,7 @@ function EditorUI() {
     handleAddClipart,
     handleAddIcon,
     handleAddCurrency,
+    handleAddArrow,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -192,6 +196,15 @@ function EditorUI() {
           onSelectCurrency={(currency) => {
             handleAddCurrency(currency);
             setCurrencyDialogOpen(false);
+          }}
+        />
+
+        <ArrowDialog
+          isOpen={isArrowDialogOpen}
+          onClose={() => setArrowDialogOpen(false)}
+          onSelectArrow={(arrow) => {
+            handleAddArrow(arrow);
+            setArrowDialogOpen(false);
           }}
         />
 
