@@ -25,6 +25,8 @@ import { useDicesAndTilesHandler } from '@/hooks/useDicesAndTilesHandler';
 import { useChessHandler } from '@/hooks/useChessHandler';
 import { useCardHandler } from '@/hooks/useCardHandler';
 import { useRecycleHandler } from '@/hooks/useRecycleHandler';
+import { useReligionHandler } from '@/hooks/useReligionHandler';
+import { useGenderHandler } from '@/hooks/useGenderHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
@@ -104,6 +106,10 @@ type CanvasContextType = {
   setCardDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isRecycleDialogOpen: boolean;
   setRecycleDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isReligionDialogOpen: boolean;
+  setReligionDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isGenderDialogOpen: boolean;
+  setGenderDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingShapeNode: any;
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
@@ -167,6 +173,8 @@ type CanvasContextType = {
   handleAddChess: (symbol: string) => void;
   handleAddCard: (symbol: string) => void;
   handleAddRecycle: (symbol: string) => void;
+  handleAddReligion: (symbol: string) => void;
+  handleAddGender: (symbol: string) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
@@ -246,6 +254,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isChessDialogOpen, setChessDialogOpen] = useState(false);
   const [isCardDialogOpen, setCardDialogOpen] = useState(false);
   const [isRecycleDialogOpen, setRecycleDialogOpen] = useState(false);
+  const [isReligionDialogOpen, setReligionDialogOpen] = useState(false);
+  const [isGenderDialogOpen, setGenderDialogOpen] = useState(false);
  
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
@@ -433,6 +443,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { handleAddChess } = useChessHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddCard } = useCardHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddRecycle } = useRecycleHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+  const { handleAddReligion } = useReligionHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+  const { handleAddGender } = useGenderHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
   const handleDoubleClickRef = useRef(handleDoubleClick);
   handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
@@ -549,9 +561,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'chess': setChessDialogOpen(true); break;
       case 'cards': setCardDialogOpen(true); break;
       case 'recycle': setRecycleDialogOpen(true); break;
+      case 'religion': setReligionDialogOpen(true); break;
+      case 'gender': setGenderDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setWeatherDialogOpen, setAstrologyDialogOpen, setMusicDialogOpen, setDicesAndTilesDialogOpen, setChessDialogOpen, setCardDialogOpen, setRecycleDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setWeatherDialogOpen, setAstrologyDialogOpen, setMusicDialogOpen, setDicesAndTilesDialogOpen, setChessDialogOpen, setCardDialogOpen, setRecycleDialogOpen, setReligionDialogOpen, setGenderDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
@@ -822,14 +836,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
-    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, isWeatherDialogOpen, setWeatherDialogOpen, isAstrologyDialogOpen, setAstrologyDialogOpen, isMusicDialogOpen, setMusicDialogOpen, isDicesAndTilesDialogOpen, setDicesAndTilesDialogOpen, isChessDialogOpen, setChessDialogOpen, isCardDialogOpen, setCardDialogOpen, isRecycleDialogOpen, setRecycleDialogOpen, editingShapeNode, 
+    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, isWeatherDialogOpen, setWeatherDialogOpen, isAstrologyDialogOpen, setAstrologyDialogOpen, isMusicDialogOpen, setMusicDialogOpen, isDicesAndTilesDialogOpen, setDicesAndTilesDialogOpen, isChessDialogOpen, setChessDialogOpen, isCardDialogOpen, setCardDialogOpen, isRecycleDialogOpen, setRecycleDialogOpen, isReligionDialogOpen, setReligionDialogOpen, isGenderDialogOpen, setGenderDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode, isCropModalOpen, setCropModalOpen, nodeToCrop, setNodeToCrop,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
-    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, handleAddWeather, handleAddAstrology, handleAddMusic, handleAddDicesAndTiles, handleAddChess, handleAddCard, handleAddRecycle, addImageToMask, handleMaskImageZoom,
+    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, handleAddWeather, handleAddAstrology, handleAddMusic, handleAddDicesAndTiles, handleAddChess, handleAddCard, handleAddRecycle, handleAddReligion, handleAddGender, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
     handleRemoveBackgroundImage, handleCropImage, handleApplyCrop,

@@ -40,6 +40,8 @@ const DicesAndTilesDialog = dynamic(() => import('@/components/editor/DicesAndTi
 const ChessDialog = dynamic(() => import('@/components/editor/ChessDialog'), { ssr: false });
 const CardDialog = dynamic(() => import('@/components/editor/CardDialog'), { ssr: false });
 const RecycleDialog = dynamic(() => import('@/components/editor/RecycleDialog'), { ssr: false });
+const ReligionDialog = dynamic(() => import('@/components/editor/ReligionDialog'), { ssr: false });
+const GenderDialog = dynamic(() => import('@/components/editor/GenderDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -85,6 +87,10 @@ function EditorUI() {
     setCardDialogOpen,
     isRecycleDialogOpen,
     setRecycleDialogOpen,
+    isReligionDialogOpen,
+    setReligionDialogOpen,
+    isGenderDialogOpen,
+    setGenderDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -108,6 +114,8 @@ function EditorUI() {
     handleAddChess,
     handleAddCard,
     handleAddRecycle,
+    handleAddReligion,
+    handleAddGender,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -296,6 +304,24 @@ function EditorUI() {
             onSelectRecycle={(symbol) => {
                 handleAddRecycle(symbol);
                 setRecycleDialogOpen(false);
+            }}
+        />
+
+        <ReligionDialog
+            isOpen={isReligionDialogOpen}
+            onClose={() => setReligionDialogOpen(false)}
+            onSelectReligion={(symbol) => {
+                handleAddReligion(symbol);
+                setReligionDialogOpen(false);
+            }}
+        />
+
+        <GenderDialog
+            isOpen={isGenderDialogOpen}
+            onClose={() => setGenderDialogOpen(false)}
+            onSelectGender={(symbol) => {
+                handleAddGender(symbol);
+                setGenderDialogOpen(false);
             }}
         />
 
