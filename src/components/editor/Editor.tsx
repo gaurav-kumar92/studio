@@ -37,6 +37,9 @@ const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'),
 const AstrologyDialog = dynamic(() => import('@/components/editor/AstrologyDialog'), { ssr: false });
 const MusicDialog = dynamic(() => import('@/components/editor/MusicDialog'), { ssr: false });
 const DicesAndTilesDialog = dynamic(() => import('@/components/editor/DicesAndTilesDialog'), { ssr: false });
+const ChessDialog = dynamic(() => import('@/components/editor/ChessDialog'), { ssr: false });
+const CardDialog = dynamic(() => import('@/components/editor/CardDialog'), { ssr: false });
+const RecycleDialog = dynamic(() => import('@/components/editor/RecycleDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -76,6 +79,12 @@ function EditorUI() {
     setMusicDialogOpen,
     isDicesAndTilesDialogOpen,
     setDicesAndTilesDialogOpen,
+    isChessDialogOpen,
+    setChessDialogOpen,
+    isCardDialogOpen,
+    setCardDialogOpen,
+    isRecycleDialogOpen,
+    setRecycleDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -96,6 +105,9 @@ function EditorUI() {
     handleAddAstrology,
     handleAddMusic,
     handleAddDicesAndTiles,
+    handleAddChess,
+    handleAddCard,
+    handleAddRecycle,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -258,6 +270,33 @@ function EditorUI() {
             handleAddDicesAndTiles(symbol);
             setDicesAndTilesDialogOpen(false);
           }}
+        />
+
+        <ChessDialog
+            isOpen={isChessDialogOpen}
+            onClose={() => setChessDialogOpen(false)}
+            onSelectChess={(symbol) => {
+                handleAddChess(symbol);
+                setChessDialogOpen(false);
+            }}
+        />
+
+        <CardDialog
+            isOpen={isCardDialogOpen}
+            onClose={() => setCardDialogOpen(false)}
+            onSelectCard={(symbol) => {
+                handleAddCard(symbol);
+                setCardDialogOpen(false);
+            }}
+        />
+
+        <RecycleDialog
+            isOpen={isRecycleDialogOpen}
+            onClose={() => setRecycleDialogOpen(false)}
+            onSelectRecycle={(symbol) => {
+                handleAddRecycle(symbol);
+                setRecycleDialogOpen(false);
+            }}
         />
 
         <CropImageModal

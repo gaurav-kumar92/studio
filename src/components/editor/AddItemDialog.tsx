@@ -76,6 +76,18 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="9" cy="9" r="1"></circle><circle cx="15" cy="9" r="1"></circle><circle cx="9" cy="15" r="1"></circle><circle cx="15" cy="15" r="1"></circle></svg>
                         <span>Dices &amp; Tiles</span>
                     </button>
+                    <button className="add-item-card" data-item-type="chess" onClick={() => handleItemClick('chess')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 2a10 10 0 1 1-3.53 18.65M12 2a10 10 0 0 0-3.53 18.65M12 2a10 10 0 0 1 3.53 18.65M12 2a10 10 0 0 0 3.53 18.65M12 2L12 22M2 12h20"/></svg>
+                        <span>Chess</span>
+                    </button>
+                    <button className="add-item-card" data-item-type="cards" onClick={() => handleItemClick('cards')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>
+                        <span>Cards</span>
+                    </button>
+                    <button className="add-item-card" data-item-type="recycle" onClick={() => handleItemClick('recycle')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><path d="M12 2v4M16 4l-2 2-2-2M12 22v-4M8 20l2-2 2 2M2 12h4M4 8l2 2-2 2M22 12h-4M20 16l-2-2 2-2"/></svg>
+                        <span>Recycle</span>
+                    </button>
                     <button className="add-item-card" data-item-type="qr" disabled>
                         <svg className="w-10 h-10 mx-auto mb-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h.01"/><path d="M21 12h.01"/><path d="M12 21h-1a2 2 0 0 1-2-2v-1"/></svg>
                         <span>QR Code</span>
