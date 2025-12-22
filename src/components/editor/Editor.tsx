@@ -35,6 +35,7 @@ const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'
 const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { ssr: false });
 const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'), { ssr: false });
 const AstrologyDialog = dynamic(() => import('@/components/editor/AstrologyDialog'), { ssr: false });
+const MusicDialog = dynamic(() => import('@/components/editor/MusicDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -70,6 +71,8 @@ function EditorUI() {
     setWeatherDialogOpen,
     isAstrologyDialogOpen,
     setAstrologyDialogOpen,
+    isMusicDialogOpen,
+    setMusicDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -88,6 +91,7 @@ function EditorUI() {
     handleAddArrow,
     handleAddWeather,
     handleAddAstrology,
+    handleAddMusic,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -231,6 +235,15 @@ function EditorUI() {
           onSelectAstrology={(astrology) => {
             handleAddAstrology(astrology);
             setAstrologyDialogOpen(false);
+          }}
+        />
+
+        <MusicDialog
+          isOpen={isMusicDialogOpen}
+          onClose={() => setMusicDialogOpen(false)}
+          onSelectMusic={(music) => {
+            handleAddMusic(music);
+            setMusicDialogOpen(false);
           }}
         />
 
