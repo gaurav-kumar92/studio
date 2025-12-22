@@ -36,6 +36,7 @@ const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { s
 const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'), { ssr: false });
 const AstrologyDialog = dynamic(() => import('@/components/editor/AstrologyDialog'), { ssr: false });
 const MusicDialog = dynamic(() => import('@/components/editor/MusicDialog'), { ssr: false });
+const DicesAndTilesDialog = dynamic(() => import('@/components/editor/DicesAndTilesDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -73,6 +74,8 @@ function EditorUI() {
     setAstrologyDialogOpen,
     isMusicDialogOpen,
     setMusicDialogOpen,
+    isDicesAndTilesDialogOpen,
+    setDicesAndTilesDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -92,6 +95,7 @@ function EditorUI() {
     handleAddWeather,
     handleAddAstrology,
     handleAddMusic,
+    handleAddDicesAndTiles,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -244,6 +248,15 @@ function EditorUI() {
           onSelectMusic={(music) => {
             handleAddMusic(music);
             setMusicDialogOpen(false);
+          }}
+        />
+
+        <DicesAndTilesDialog
+          isOpen={isDicesAndTilesDialogOpen}
+          onClose={() => setDicesAndTilesDialogOpen(false)}
+          onSelectDicesAndTiles={(symbol) => {
+            handleAddDicesAndTiles(symbol);
+            setDicesAndTilesDialogOpen(false);
           }}
         />
 
