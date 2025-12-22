@@ -149,7 +149,7 @@ type CanvasContextType = {
   handleAddCurrency: (currency: string) => void;
   handleAddArrow: (arrow: string) => void;
   handleAddWeather: (weather: string) => void;
-  handleAddAstrology: (astrology: string) => void;
+  handleAddAstrology: (astrology: { parts: { [key: string]: string; }; defaultColors: { [key: string]: string; }; }) => void;
   handleAddMusic: (music: string) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
@@ -548,7 +548,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 }, [selectedNodes, isNodeLocked, forceRecord, canvasRef]);
 
   useEffect(() => {
-    if (isKonvaReady && canvasRef.current?.background) {
+    if (isKonvaReady && isCanvasReady && canvasRef.current?.background) {
       const backgroundRect = canvasRef.current.background;
       const layer = canvasRef.current.layer;
 

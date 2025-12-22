@@ -19,44 +19,47 @@ export const useAstrologyHandler = ({
     forceRecord,
 }: UseAstrologyHandlerProps) => {
 
-    const handleAddAstrology = useCallback((astrology: string) => {
+    const handleAddAstrology = useCallback((astrology: { parts: { [key: string]: string }, defaultColors: { [key: string]: string } }) => {
         if (!canvasRef.current?.stage || !canvasRef.current?.layer) return;
 
         const { stage, layer } = canvasRef.current;
         const uniqueId = `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-        const textNode = new window.Konva.Text({
-            text: astrology,
-            fontSize: 100,
-            fontFamily: 'Inter',
-            fill: '#000000',
-            name: 'text',
-        });
-        
-        const textGroup = new window.Konva.Group({
+        const group = new window.Konva.Group({
             id: uniqueId,
             x: stage.width() / 2,
             y: stage.height() / 2,
             draggable: true,
-            name: 'textGroup',
-            'data-text': astrology,
-            'data-font-size': 100,
-            'data-font-family': 'Inter',
-            'data-is-gradient': false,
-            'data-solid-color': '#000000',
+            name: 'clipart', // Use clipart name to get multi-color editing
         });
 
-        textGroup.add(textNode);
-        
-        const textWidth = textGroup.width();
-        const textHeight = textGroup.height();
-        textGroup.offsetX(textWidth / 2);
-        textGroup.offsetY(textHeight / 2);
+        Object.entries(astrology.parts).forEach(([partName, pathData]) => {
+            const part = new window.Konva.Path({
+                data: pathData,
+                fill: astrology.defaultColors?.[partName] || 'black',
+                name: `clipart-${partName}`, // Use clipart convention
+            });
+            group.add(part);
+        });
 
-        attachDoubleClick(textGroup);
-        layer.add(textGroup);
+        const bounds = group.getClientRect({ skipTransform: true });
+        
+        const scale = Math.min(150 / bounds.width, 150 / bounds.height);
+        group.scale({ x: scale, y: scale });
+
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+
+        group.offsetX(centerX);
+        group.offsetY(centerY);
+
+        group.x(stage.width() / 2);
+        group.y(stage.height() / 2);
+
+        attachDoubleClick(group);
+        layer.add(group);
         updateLayers();
-        setSelectedNodes([textGroup]);
+        setSelectedNodes([group]);
         layer.draw();
         forceRecord?.();
 
