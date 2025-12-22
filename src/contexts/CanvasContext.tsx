@@ -19,6 +19,7 @@ import { useIconHandler } from '@/hooks/useIconHandler';
 import { useCurrencyHandler } from '@/hooks/useCurrencyHandler';
 import { useArrowHandler } from '@/hooks/useArrowHandler';
 import { useWeatherHandler } from '@/hooks/useWeatherHandler';
+import { useAstrologyHandler } from '@/hooks/useAstrologyHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
 import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
@@ -86,6 +87,8 @@ type CanvasContextType = {
   setArrowDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isWeatherDialogOpen: boolean;
   setWeatherDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isAstrologyDialogOpen: boolean;
+  setAstrologyDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingShapeNode: any;
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
@@ -143,6 +146,7 @@ type CanvasContextType = {
   handleAddCurrency: (currency: string) => void;
   handleAddArrow: (arrow: string) => void;
   handleAddWeather: (weather: string) => void;
+  handleAddAstrology: (astrology: string) => void;
   addImageToMask: (maskGroup: any) => void;
   handleMaskImageZoom: (direction: 'in' | 'out') => void;
   handleMaskImageReset: () => void;
@@ -216,6 +220,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isCurrencyDialogOpen, setCurrencyDialogOpen] = useState(false);
   const [isArrowDialogOpen, setArrowDialogOpen] = useState(false);
   const [isWeatherDialogOpen, setWeatherDialogOpen] = useState(false);
+  const [isAstrologyDialogOpen, setAstrologyDialogOpen] = useState(false);
 
  
 
@@ -398,6 +403,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { handleAddCurrency } = useCurrencyHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddArrow } = useArrowHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddWeather } = useWeatherHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
+  const { handleAddAstrology } = useAstrologyHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
 
   const handleDoubleClickRef = useRef(handleDoubleClick);
   handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
@@ -508,9 +514,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'currency': setCurrencyDialogOpen(true); break;
       case 'arrow': setArrowDialogOpen(true); break;
       case 'weather': setWeatherDialogOpen(true); break;
+      case 'astrology': setAstrologyDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setWeatherDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setCurrencyDialogOpen, setArrowDialogOpen, setWeatherDialogOpen, setAstrologyDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
@@ -781,14 +788,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
-    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, isWeatherDialogOpen, setWeatherDialogOpen, editingShapeNode, 
+    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isCurrencyDialogOpen, setCurrencyDialogOpen, isArrowDialogOpen, setArrowDialogOpen, isWeatherDialogOpen, setWeatherDialogOpen, isAstrologyDialogOpen, setAstrologyDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode, isCropModalOpen, setCropModalOpen, nodeToCrop, setNodeToCrop,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
     canvasScale, canvasPosition, setCanvasPosition, zoomIn, zoomOut, fitToScreen, handleZoomChange,
     updateLayers, deselectNodes, handleSave, handleMoveNode, handleAlign, handleOpacityChange, handleScaleChange, handleRotationChange, handleFlip,
     handleColorUpdate, handleSelectItem, addImageFromComputer, handleAddShape, handleUpdateShape, handleAddOrUpdateText,
-    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, handleAddWeather, addImageToMask, handleMaskImageZoom,
+    handleAddFrame, handleUpdateFrame, handleAddMask, handleUpdateMask, handleAddClipart, handleAddIcon, handleAddCurrency, handleAddArrow, handleAddWeather, handleAddAstrology, addImageToMask, handleMaskImageZoom,
     handleMaskImageReset, handleMaskImagePan, handleAnimationChange,
     handleClipartPartColorChange, handleSetBackgroundImage, handleBackgroundImageZoom, handleBackgroundImagePan, handleBackgroundImageReset,
     handleRemoveBackgroundImage, handleCropImage, handleApplyCrop,

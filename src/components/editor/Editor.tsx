@@ -34,6 +34,7 @@ const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'
 const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'), { ssr: false });
 const ArrowDialog = dynamic(() => import('@/components/editor/ArrowDialog'), { ssr: false });
 const WeatherDialog = dynamic(() => import('@/components/editor/WeatherDialog'), { ssr: false });
+const AstrologyDialog = dynamic(() => import('@/components/editor/AstrologyDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -67,6 +68,8 @@ function EditorUI() {
     setArrowDialogOpen,
     isWeatherDialogOpen,
     setWeatherDialogOpen,
+    isAstrologyDialogOpen,
+    setAstrologyDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -84,6 +87,7 @@ function EditorUI() {
     handleAddCurrency,
     handleAddArrow,
     handleAddWeather,
+    handleAddAstrology,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -218,6 +222,15 @@ function EditorUI() {
           onSelectWeather={(weather) => {
             handleAddWeather(weather);
             setWeatherDialogOpen(false);
+          }}
+        />
+
+        <AstrologyDialog
+          isOpen={isAstrologyDialogOpen}
+          onClose={() => setAstrologyDialogOpen(false)}
+          onSelectAstrology={(astrology) => {
+            handleAddAstrology(astrology);
+            setAstrologyDialogOpen(false);
           }}
         />
 
