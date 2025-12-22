@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, FC } from 'react';
@@ -76,11 +75,6 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
         }
     };
     
-    const handleAlphabetSelection = (letter: string) => {
-        onAddMask({ type: 'alphabet', letter, borderColor, borderThickness });
-        handleClose();
-    };
-    
     if (!isOpen) {
         return null;
     }
@@ -143,13 +137,6 @@ const MaskDialog: FC<MaskDialogProps> = ({ isOpen, onClose, onAddMask, onUpdateM
                                 <button className="shape-btn" data-mask-shape="heart" title="Heart Mask" onClick={() => handleShapeSelection('heart')}>
                                     <svg viewBox="0 0 24 24" stroke="currentColor" fill="currentColor"><path d="M12 5.67L10.94 4.61c-2.57-2.57-6.72-2.57-9.29 0s-2.57 6.72 0 9.29L12 21.23l10.35-10.35c2.57-2.57 2.57-6.72 0-9.29s-6.72-2.57-9.29 0L12 5.67z"/></svg>
                                 </button>
-                            </div>
-                            <div id="alphabet-masks-container" className="shape-button-container mt-4">
-                                {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
-                                    <button key={letter} className="shape-btn" data-alphabet-mask={letter} title={`Mask: ${letter}`} onClick={() => handleAlphabetSelection(letter)}>
-                                        <span style={{fontSize: '1.5rem', fontWeight: 'bold'}}>{letter}</span>
-                                    </button>
-                                ))}
                             </div>
                         </>
                     )}

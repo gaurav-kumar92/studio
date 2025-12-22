@@ -31,7 +31,7 @@ const ClipartDialog = dynamic(() => import('@/components/editor/ClipartDialog'),
 const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr: false });
 const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
 const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
-
+const CurrencyDialog = dynamic(() => import('@/components/editor/CurrencyDialog'), { ssr: false });
 
 declare global {
   interface Window {
@@ -59,6 +59,8 @@ function EditorUI() {
     setClipartDialogOpen,
     isIconDialogOpen,
     setIconDialogOpen,
+    isCurrencyDialogOpen,
+    setCurrencyDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -73,6 +75,7 @@ function EditorUI() {
     handleUpdateMask,
     handleAddClipart,
     handleAddIcon,
+    handleAddCurrency,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -181,6 +184,15 @@ function EditorUI() {
           isOpen={isIconDialogOpen}
           onClose={() => setIconDialogOpen(false)}
           onAddIcon={handleAddIcon}
+        />
+
+        <CurrencyDialog
+          isOpen={isCurrencyDialogOpen}
+          onClose={() => setCurrencyDialogOpen(false)}
+          onSelectCurrency={(currency) => {
+            handleAddCurrency(currency);
+            setCurrencyDialogOpen(false);
+          }}
         />
 
         <CropImageModal
