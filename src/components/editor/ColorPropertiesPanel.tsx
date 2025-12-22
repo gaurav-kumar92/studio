@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, XCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -14,12 +15,13 @@ type ColorStop = {
 type ColorPropertiesPanelProps = {
     selectedNode: any;
     onColorChange: (config: any) => void;
+    onClipartPartColorChange: (partName: string, color: string) => void;
     isStroke?: boolean;
 };
 
 let nextId = 0;
 
-const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNode, onColorChange, isStroke = false }) => {
+const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNode, onColorChange, onClipartPartColorChange, isStroke = false }) => {
     const [isGradient, setIsGradient] = useState(false);
     const [isTransparent, setIsTransparent] = useState(false);
     const [solidColor, setSolidColor] = useState('#3b82f6');
@@ -39,8 +41,52 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
     
     const isInitializing = useRef(false);
 
+    const isClipart = useMemo(() => selectedNode?.hasName('clipart'), [selectedNode]);
+
+    const clipartParts = useMemo(() => {
+        if (!isClipart) return [];
+
+        const partNodes = selectedNode.find((node: any) => node.name().startsWith('clipart-'));
+        const partData = new Map<string, { color: string; nodes: any[] }>();
+
+        partNodes.forEach((node: any) => {
+            let partName = node.name().replace('clipart-', '');
+            
+            if (partName.toLowerCase().includes('eye')) {
+                partName = 'eyes';
+            }
+
+            if (!partData.has(partName)) {
+                partData.set(partName, { color: node.fill(), nodes: [] });
+            }
+            partData.get(partName)!.nodes.push(node);
+        });
+
+        return Array.from(partData.entries()).map(([name, data]) => ({
+            name,
+            initialColor: data.color,
+        }));
+    }, [selectedNode, isClipart]);
+
+    const [partColors, setPartColors] = useState<{ [key: string]: string }>({});
+
+    useEffect(() => {
+        if (isClipart) {
+            const initialColors = clipartParts.reduce((acc, part) => {
+                acc[part.name] = part.initialColor;
+                return acc;
+            }, {} as { [key: string]: string });
+            setPartColors(initialColors);
+        }
+    }, [isClipart, clipartParts]);
+
+    const handlePartColorChange = (partName: string, color: string) => {
+        setPartColors(prev => ({ ...prev, [partName]: color }));
+        onClipartPartColorChange(partName, color);
+    };
+
     const handleUpdate = useCallback(() => {
-        if (isInitializing.current) return;
+        if (isInitializing.current || isClipart) return;
         
         onColorChange({
             isGradient,
@@ -49,10 +95,10 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
             gradientDirection,
             isTransparent,
         });
-    }, [isGradient, solidColor, colorStops, gradientDirection, isTransparent, onColorChange]);
+    }, [isGradient, solidColor, colorStops, gradientDirection, isTransparent, onColorChange, isClipart]);
 
     useEffect(() => {
-        if (selectedNode) {
+        if (selectedNode && !isClipart) {
             isInitializing.current = true;
             
             let nodeIsTransparent = selectedNode.getAttr('data-is-transparent') || false;
@@ -127,7 +173,7 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
                 isInitializing.current = false;
             }, 0);
         }
-    }, [selectedNode]);
+    }, [selectedNode, isClipart]);
 
     useEffect(() => {
         handleUpdate();
@@ -158,6 +204,33 @@ const ColorPropertiesPanel: React.FC<ColorPropertiesPanelProps> = ({ selectedNod
         setColorStops(newStops);
     };
 
+    if (isClipart) {
+        // Simple title case for labels
+        const formatPartName = (name: string) => {
+            return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+
+        return (
+            <div className="flex flex-col gap-4 p-2">
+                <h4 className="text-sm font-medium text-center mb-2">Clipart Colors</h4>
+                {clipartParts.length === 0 && <div className="p-2 text-center text-sm text-gray-500">No editable parts.</div>}
+                {clipartParts.map(part => (
+                    <div key={part.name} className="color-picker-container-inline justify-between">
+                        <label className="block text-sm font-medium text-gray-700">{formatPartName(part.name)}</label>
+                        <div className="relative">
+                            <div className="color-preview-circle" style={{ backgroundColor: partColors[part.name] || '#000000' }}></div>
+                            <input 
+                                type="color" 
+                                value={partColors[part.name] || '#000000'} 
+                                onChange={(e) => handlePartColorChange(part.name, e.target.value)} 
+                                className="color-picker-input-hidden" 
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="border-t border-b border-gray-200 py-4 my-4">

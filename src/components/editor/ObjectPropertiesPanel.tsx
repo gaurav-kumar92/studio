@@ -3,12 +3,11 @@
 
 import React, { useEffect, useState } from 'react';
 import ColorPropertiesPanel from './ColorPropertiesPanel';
-import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette, Type } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Group, Ungroup, ListPlus, Sparkles, Palette, Type, Paintbrush } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import AnimationPanel from './AnimationPanel';
-import ClipartPropertiesPanel from './ClipartPropertiesPanel';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
 import TextPropertiesPanel from './TextPropertiesPanel';
@@ -70,7 +69,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
   
   const isText = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('textGroup') || selectedNode.hasName('circularText'));
   const isClipart = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('clipart');
-  const canHaveColor = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('text') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('icon'));
+  const canHaveColor = hasSelection && selectedNodes.length === 1 && (selectedNode.hasName('shape') || selectedNode.hasName('textGroup') || selectedNode.hasName('circularText')|| selectedNode.hasName('frame') || selectedNode.hasName('icon') || isClipart);
   const isLineOrCurve = hasSelection && selectedNodes.length === 1 && (selectedNode.getAttr('data-type') === 'line' || selectedNode.getAttr('data-type') === 'curve' || selectedNode.getAttr('data-type') === 'arrow'|| selectedNode.hasName('frame'));
   const isMask = hasSelection && selectedNodes.length === 1 && selectedNode.hasName('mask');
   const maskHasImage = isMask && selectedNode.findOne('.mask-image');
@@ -78,6 +77,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
 
   const getFillColor = () => {
     if (!selectedNode) return '#cccccc';
+    if (isClipart) return '#cccccc'; // Use a generic icon for multipart
     if (typeof selectedNode.fill === 'function') {
       return selectedNode.fill();
     }
@@ -88,7 +88,7 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
     return null;
   };
 
-  const currentColor = canHaveColor && (selectedNode.getAttr('data-is-gradient') 
+  const currentColor = canHaveColor && !isClipart && (selectedNode.getAttr('data-is-gradient') 
     ? 'linear-gradient(to right, #3b82f6, #a855f7)'
     : selectedNode.getAttr('data-solid-color') || (isLineOrCurve ? selectedNode.stroke() : getFillColor()) || '#000000');
 
@@ -121,13 +121,18 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0 border" disabled={!canHaveColor}>
-            <div className="h-5 w-5 rounded" style={{ background: canHaveColor ? currentColor : '#cccccc' }}></div>
+            {isClipart ? (
+              <Paintbrush className="h-5 w-5" />
+            ) : (
+              <div className="h-5 w-5 rounded" style={{ background: canHaveColor ? currentColor : '#cccccc' }}></div>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto">
            <ColorPropertiesPanel 
               selectedNode={selectedNode}
               onColorChange={onColorChange}
+              onClipartPartColorChange={onClipartPartColorChange}
               isStroke={isLineOrCurve}
           />
         </PopoverContent>
@@ -149,17 +154,6 @@ const ObjectPropertiesPanel: React.FC<ObjectPropertiesPanelProps> = ({
             </PopoverContent>
           </Popover>
       )}
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8" disabled={!isClipart}>
-            <Palette className="h-4 w-4 mr-2" /> Colors
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent>
-          <ClipartPropertiesPanel />
-        </PopoverContent>
-      </Popover>
 
       <Separator orientation="vertical" />
       
