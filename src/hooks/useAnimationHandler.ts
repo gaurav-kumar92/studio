@@ -53,34 +53,73 @@ export const useAnimationHandler = ({
         
         // This is the fix for the jumping bug.
         // We get the bounding box *after* any offsets have been applied.
-        const box = node.getClientRect({ skipTransform: false });
+        // ✅ FIX: Center animation origin WITHOUT visual jump
+// ✅ TRUE CENTER FIX — uses parent coordinate space
+
+
+// preserve visual position in parent space
+const absTransform = node.getAbsoluteTransform().copy();
+const parentTransform = node.getParent()?.getAbsoluteTransform().copy();
+parentTransform?.invert();
+
+// current visual position in parent space
+const pos = absTransform.point({ x: 0, y: 0 });
+const parentPos = parentTransform
+  ? parentTransform.point(pos)
+  : pos;
+
+// restore visual position (NO JUMP)
+node.position({
+  x: parentPos.x,
+  y: parentPos.y,
+});
+ //1️⃣ Capture ORIGINAL state (before any mutation)
+const originalState = {
+  x: node.x(),
+  y: node.y(),
+  opacity: node.opacity(),
+  scaleX: node.scaleX(),
+  scaleY: node.scaleY(),
+  rotation: node.rotation(),
+  offsetX: node.offsetX(),
+  offsetY: node.offsetY(),
+};
+
+node.setAttr('data-original-state', originalState);
+node.addName('animating');
+
+// 2️⃣ Compute visual bounds in LOCAL space
+const rect = node.getClientRect({ skipTransform: true });
+
+// 3️⃣ Compute new center offset
+const newOffsetX = rect.width / 2;
+const newOffsetY = rect.height / 2;
+
+// 4️⃣ Compute delta from current offset
+const dx = newOffsetX - originalState.offsetX;
+const dy = newOffsetY - originalState.offsetY;
+
+// 5️⃣ Apply offset
+node.offsetX(newOffsetX);
+node.offsetY(newOffsetY);
+
+// 6️⃣ COMPENSATE POSITION (THIS WAS MISSING 🔥)
+node.x(originalState.x + dx * originalState.scaleX);
+node.y(originalState.y + dy * originalState.scaleY);
+
         
-        // Store the true original state before any animation modification.
-        const originalState = {
-            x: node.x(),
-            y: node.y(),
-            opacity: node.opacity(),
-            scaleX: node.scaleX(),
-            scaleY: node.scaleY(),
-            rotation: node.rotation(),
-            width: box.width / node.scaleX(), // Un-scaled width
-            height: box.height / node.scaleY(), // Un-scaled height
-            offsetX: node.offsetX(),
-            offsetY: node.offsetY(),
-        };
+
+// 5. Start animation
+const duration = node.getAttr('data-animation-duration') || 1;
         
         node.setAttr('data-original-state', originalState);
         node.addName('animating');
 
         // Centralize origin for rotational and scaling animations
         // but keep original position.
-        const absPos = node.getAbsolutePosition();
-        node.offsetX(originalState.width / 2);
-        node.offsetY(originalState.height / 2);
-        node.x(absPos.x + originalState.width/2 * originalState.scaleX);
-        node.y(absPos.y + originalState.height/2 * originalState.scaleY);
+       
 
-        const duration = node.getAttr('data-animation-duration') || 1;
+       
         let tween: any;
 
         switch (animationType) {
