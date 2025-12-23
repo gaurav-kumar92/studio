@@ -14,7 +14,7 @@ export const useAnimationHandler = ({
   selectedNodes,
   forceRecord,
 }: UseAnimationHandlerProps) => {
-  const activeTweens = useRef<any[]>([]);
+  const activeTweens = useRef<Map<any, any>>(new Map());
   const animatedNodesRef = useRef<any[]>([]);
   const animationMetaRef = useRef<Map<any, { type: string; duration: number }>>(
     new Map()
@@ -23,7 +23,12 @@ export const useAnimationHandler = ({
   const resetNodeState = (node: any) => {
     const originalState = node.getAttr('data-original-state');
     if (originalState) {
-        node.setAttrs(originalState);
+      node.opacity(originalState.opacity);
+     // node.scaleX(originalState.scaleX);
+     // node.scaleY(originalState.scaleY);
+      node.rotation(originalState.rotation);
+     // node.offsetX(originalState.offsetX);
+     // node.offsetY(originalState.offsetY);
     } else {
         node.opacity(1);
     }
@@ -35,17 +40,23 @@ export const useAnimationHandler = ({
   const playAnimationForNodes = useCallback((nodes: any[]) => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
-
-    activeTweens.current.forEach(tween => tween.destroy());
-    activeTweens.current = [];
     
-    // Reset all nodes first
-    layer.find('.animating').forEach(resetNodeState);
-    layer.find('.animating').forEach((n:any) => n.removeName('animating'));
+
+    
 
 
     nodes.forEach((node: any) => {
-        const animationType = node.getAttr('data-animation-type');
+        
+      // 🔴 STOP existing animation for THIS node only
+      const existingTween = activeTweens.current.get(node);
+      if (existingTween) {
+        existingTween.pause();
+        existingTween.reset();
+        activeTweens.current.delete(node); // ✅ correct Konva API
+        
+      }
+      const animationType = node.getAttr('data-animation-type');
+
         if (!animationType || animationType === 'none') {
             resetNodeState(node);
             return;
@@ -227,7 +238,7 @@ const duration = node.getAttr('data-animation-duration') || 1;
       
       if (tween) {
         tween.play();
-        activeTweens.current.push(tween);
+        activeTweens.current.set(node, tween);
       }
     });
   }, [canvasRef]);
