@@ -27,7 +27,8 @@ export const useAnimationHandler = ({
     } else {
         node.opacity(1);
     }
-    node.clearCache();
+    node.clearCache(); // Important for filter-based animations like blur
+    node.clipWidth(undefined); // Clear clipping
     node.getLayer()?.batchDraw();
   };
 
@@ -37,7 +38,11 @@ export const useAnimationHandler = ({
 
     activeTweens.current.forEach(tween => tween.destroy());
     activeTweens.current = [];
-    nodes.forEach(resetNodeState);
+    
+    // Reset all nodes first
+    layer.find('.animating').forEach(resetNodeState);
+    layer.find('.animating').forEach((n:any) => n.removeName('animating'));
+
 
     nodes.forEach((node: any) => {
         const animationType = node.getAttr('data-animation-type');
@@ -45,8 +50,12 @@ export const useAnimationHandler = ({
             resetNodeState(node);
             return;
         }
-
-        const box = node.getClientRect({ skipTransform: true });
+        
+        // This is the fix for the jumping bug.
+        // We get the bounding box *after* any offsets have been applied.
+        const box = node.getClientRect({ skipTransform: false });
+        
+        // Store the true original state before any animation modification.
         const originalState = {
             x: node.x(),
             y: node.y(),
@@ -54,20 +63,22 @@ export const useAnimationHandler = ({
             scaleX: node.scaleX(),
             scaleY: node.scaleY(),
             rotation: node.rotation(),
-            width: box.width,
-            height: box.height,
+            width: box.width / node.scaleX(), // Un-scaled width
+            height: box.height / node.scaleY(), // Un-scaled height
             offsetX: node.offsetX(),
             offsetY: node.offsetY(),
         };
+        
         node.setAttr('data-original-state', originalState);
         node.addName('animating');
 
-        // Centralize origin for most animations
-        node.offsetX(box.width / 2);
-        node.offsetY(box.height / 2);
-        node.x(box.x + box.width / 2);
-        node.y(box.y + box.height / 2);
-
+        // Centralize origin for rotational and scaling animations
+        // but keep original position.
+        const absPos = node.getAbsolutePosition();
+        node.offsetX(originalState.width / 2);
+        node.offsetY(originalState.height / 2);
+        node.x(absPos.x + originalState.width/2 * originalState.scaleX);
+        node.y(absPos.y + originalState.height/2 * originalState.scaleY);
 
         const duration = node.getAttr('data-animation-duration') || 1;
         let tween: any;
@@ -84,11 +95,11 @@ export const useAnimationHandler = ({
                 tween = new window.Konva.Tween({ node, duration: 0.1, rotation: originalState.rotation + 5, easing: window.Konva.Easings.EaseInOut, yoyo: true, onFinish: () => node.rotation(originalState.rotation) });
                 break;
             case 'wipe-in':
-                node.clip({ x: -box.width / 2, y: -box.height/2, width: 0, height: box.height });
-                tween = new window.Konva.Tween({ node, duration, clipWidth: box.width });
+                node.clip({ x: 0, y: 0, width: 0, height: originalState.height });
+                tween = new window.Konva.Tween({ node, duration, clipWidth: originalState.width });
                 break;
             case 'wipe-out':
-                node.clip({ x: -box.width / 2, y: -box.height/2, width: box.width, height: box.height });
+                node.clip({ x: 0, y: 0, width: originalState.width, height: originalState.height });
                 tween = new window.Konva.Tween({ node, duration, clipWidth: 0 });
                 break;
             case 'pan':
@@ -223,5 +234,3 @@ export const useAnimationHandler = ({
     timelineState,
   };
 };
-
-    

@@ -21,8 +21,15 @@ type Command =
   | BatchCommand;
 
 // ----------------------- utils
-const deepcopy = <T,>(v: T): T =>
-  typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
+const deepcopy = <T,>(v: T): T => {
+    // structuredClone is fast but fails on complex objects with functions (like Konva nodes).
+    // A deep JSON stringify/parse is a safe fallback for plain objects.
+    try {
+        return structuredClone(v);
+    } catch (e) {
+        return JSON.parse(JSON.stringify(v));
+    }
+};
 
 const getPlainAttrs = (node: any) => {
     // Use toObject() which provides a serializable representation of the node,
@@ -111,8 +118,8 @@ export const useCanvasChangeTracker = (
         const newAttrs = JSON.stringify(newNode.json.attrs ?? {});
         if (oldAttrs !== newAttrs) {
           updated.push({
-            before: { id: oldNode.id, attrs: oldNode.json.attrs },
-            after: { id: newNode.id, attrs: newNode.json.attrs },
+            before: { id: oldNode.id, attrs: oldNode.json },
+            after: { id: newNode.id, attrs: newNode.json },
           });
         }
       }
@@ -203,7 +210,7 @@ export const useCanvasChangeTracker = (
       case 'UPDATE': {
         command.after?.forEach(({ id, attrs }) => {
           const node = layer.findOne(`#${id}`);
-          if (node) node.setAttrs(attrs.attrs);
+          if (node) node.setAttrs(attrs);
         });
         break;
       }
@@ -219,7 +226,7 @@ export const useCanvasChangeTracker = (
         });
         command.updatedAfter?.forEach(({ id, attrs }) => {
           const node = layer.findOne(`#${id}`);
-          if (node) node.setAttrs(attrs.attrs);
+          if (node) node.setAttrs(attrs);
         });
         break;
       }
