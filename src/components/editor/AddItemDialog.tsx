@@ -21,7 +21,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
         const lowerCaseQuery = searchQuery.toLowerCase();
         return allSymbols.filter(symbol => 
             symbol.name.toLowerCase().includes(lowerCaseQuery)
-        ).slice(0, 50); // Limit results for performance
+        );
     }, [searchQuery]);
 
     if (!isOpen) {
