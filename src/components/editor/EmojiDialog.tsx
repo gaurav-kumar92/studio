@@ -1,10 +1,11 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { emojiCategories } from '@/lib/emoji-symbols';
+import { ScrollArea } from '../ui/scroll-area';
 
 type EmojiDialogProps = {
     isOpen: boolean;
@@ -28,7 +29,7 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
             <div className="dialog flex flex-col" style={{ maxHeight: '85vh', width: '90vw', maxWidth: '700px' }}>
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">Select an Emoji</h3>
                 
-                <Tabs defaultValue={emojiCategories[0].name} className="flex flex-col flex-grow w-full">
+                <Tabs defaultValue={emojiCategories[0].name} className="flex flex-col flex-grow w-full overflow-hidden">
                     <TabsList className="flex-shrink-0 w-full justify-start overflow-x-auto">
                         {emojiCategories.map((category) => (
                             <TabsTrigger key={category.name} value={category.name} className="text-2xl px-3">
@@ -37,7 +38,7 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
                         ))}
                     </TabsList>
 
-                    <div className="overflow-y-auto flex-grow mt-4 pr-2">
+                    <ScrollArea className="flex-grow mt-4">
                         {emojiCategories.map((category) => (
                             <TabsContent key={category.name} value={category.name}>
                                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
@@ -54,7 +55,7 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
                                 </div>
                             </TabsContent>
                         ))}
-                    </div>
+                    </ScrollArea>
                 </Tabs>
 
                 <div className="dialog-actions flex justify-end gap-2 mt-4 flex-shrink-0">
@@ -68,3 +69,5 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
 };
 
 export default EmojiDialog;
+
+    

@@ -19,12 +19,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
     const filteredSymbols = useMemo(() => {
         if (!searchQuery.trim()) return [];
         const lowerCaseQuery = searchQuery.toLowerCase();
-        // Limit results for performance if query is short
-        const limit = lowerCaseQuery.length < 3 ? 50 : Infinity;
-        const results = allSymbols.filter(symbol => 
+        
+        return allSymbols.filter(symbol => 
             symbol.name.toLowerCase().includes(lowerCaseQuery)
         );
-        return results.slice(0, limit);
     }, [searchQuery]);
 
     if (!isOpen) {
@@ -123,3 +121,5 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
 };
 
 export default AddItemDialog;
+
+    

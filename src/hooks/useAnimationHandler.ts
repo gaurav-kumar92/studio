@@ -20,100 +20,167 @@ export const useAnimationHandler = ({
     new Map()
   );
 
+  const resetNodeState = (node: any) => {
+    const originalState = node.getAttr('data-original-state');
+    if (originalState) {
+        node.setAttrs(originalState);
+    } else {
+        node.opacity(1);
+    }
+    node.clearCache();
+    node.getLayer()?.batchDraw();
+  };
 
-    const playAnimationForNodes = useCallback((nodes: any[]) => {
+  const playAnimationForNodes = useCallback((nodes: any[]) => {
     if (!canvasRef.current?.layer) return;
     const layer = canvasRef.current.layer;
 
-    // Stop any tweens for the nodes that are about to be animated
-    activeTweens.current = activeTweens.current.filter(tween => {
-      const isNodeInSelection = nodes.some(n => n === tween.node);
-      if (isNodeInSelection) {
-        tween.destroy();
-        return false; // remove from active tweens
-      }
-      return true; // keep in active tweens
-    });
+    activeTweens.current.forEach(tween => tween.destroy());
+    activeTweens.current = [];
     nodes.forEach(resetNodeState);
 
-
     nodes.forEach((node: any) => {
-      const animationType = node.getAttr('data-animation-type');
-      if (!animationType || animationType === 'none') {
-        resetNodeState(node);
-        return;
-      }
+        const animationType = node.getAttr('data-animation-type');
+        if (!animationType || animationType === 'none') {
+            resetNodeState(node);
+            return;
+        }
 
-      // Save original state before animating
-      node.setAttr('data-original-state', {
-          opacity: node.opacity(),
-          scaleX: node.scaleX(),
-          scaleY: node.scaleY(),
-          rotation: node.rotation(),
-      });
-      node.addName('animating');
+        const box = node.getClientRect({ skipTransform: true });
+        const originalState = {
+            x: node.x(),
+            y: node.y(),
+            opacity: node.opacity(),
+            scaleX: node.scaleX(),
+            scaleY: node.scaleY(),
+            rotation: node.rotation(),
+            width: box.width,
+            height: box.height,
+            offsetX: node.offsetX(),
+            offsetY: node.offsetY(),
+        };
+        node.setAttr('data-original-state', originalState);
+        node.addName('animating');
+
+        // Centralize origin for most animations
+        node.offsetX(box.width / 2);
+        node.offsetY(box.height / 2);
+        node.x(box.x + box.width / 2);
+        node.y(box.y + box.height / 2);
 
 
-      const duration = node.getAttr('data-animation-duration') || 1;
-      let tween: any;
+        const duration = node.getAttr('data-animation-duration') || 1;
+        let tween: any;
 
-      switch (animationType) {
-        case 'fade':
-          node.opacity(0);
-          tween = new window.Konva.Tween({
-            node: node,
-            duration: duration,
-            opacity: 1,
-          });
-          break;
-        case 'pulse':
-          tween = new window.Konva.Tween({
-            node: node,
-            duration: duration,
-            scaleX: node.scaleX() * 1.2,
-            scaleY: node.scaleY() * 1.2,
-            easing: window.Konva.Easings.EaseInOut,
-            yoyo: true,
-            onFinish: () => {
-                node.scaleX(node.getAttr('data-original-state').scaleX);
-                node.scaleY(node.getAttr('data-original-state').scaleY);
-            }
-          });
-          break;
-        case 'shake':
-          const originalRotation = node.rotation();
-          tween = new window.Konva.Tween({
-            node: node,
-            duration: duration / 5, 
-            rotation: originalRotation + 10,
-            easing: window.Konva.Easings.EaseInOut,
-            yoyo: true,
-            onFinish: () => {
-                const shakeCount = node.getAttr('shakeCount') || 0;
-                if(shakeCount < 4) {
-                    node.setAttr('shakeCount', shakeCount + 1);
-                    const newRotation = shakeCount % 2 === 0 ? originalRotation - 10 : originalRotation + 10;
-                    tween.node.rotation(newRotation);
-                    tween.reset();
-                    tween.play();
-                } else {
-                    node.rotation(originalRotation);
-                    node.setAttr('shakeCount', 0);
-                }
-            }
-          });
-           node.setAttr('shakeCount', 0);
-          break;
-        default:
-          return;
-      }
+        switch (animationType) {
+            case 'fade':
+                node.opacity(0);
+                tween = new window.Konva.Tween({ node, duration, opacity: 1 });
+                break;
+            case 'pulse':
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX * 1.2, scaleY: originalState.scaleY * 1.2, easing: window.Konva.Easings.EaseInOut, yoyo: true });
+                break;
+            case 'shake':
+                tween = new window.Konva.Tween({ node, duration: 0.1, rotation: originalState.rotation + 5, easing: window.Konva.Easings.EaseInOut, yoyo: true, onFinish: () => node.rotation(originalState.rotation) });
+                break;
+            case 'wipe-in':
+                node.clip({ x: -box.width / 2, y: -box.height/2, width: 0, height: box.height });
+                tween = new window.Konva.Tween({ node, duration, clipWidth: box.width });
+                break;
+            case 'wipe-out':
+                node.clip({ x: -box.width / 2, y: -box.height/2, width: box.width, height: box.height });
+                tween = new window.Konva.Tween({ node, duration, clipWidth: 0 });
+                break;
+            case 'pan':
+                node.x(originalState.x - 100);
+                tween = new window.Konva.Tween({ node, duration, x: originalState.x, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'rise':
+                node.y(originalState.y + 100);
+                node.opacity(0);
+                tween = new window.Konva.Tween({ node, duration, y: originalState.y, opacity: 1, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'pop':
+                node.scale({ x: 0, y: 0 });
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX, scaleY: originalState.scaleY, easing: window.Konva.Easings.ElasticEaseOut });
+                break;
+            case 'blur':
+                node.cache();
+                node.filters([window.Konva.Filters.Blur]);
+                node.blurRadius(20);
+                tween = new window.Konva.Tween({ node, duration, blurRadius: 0, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'breathe':
+                tween = new window.Konva.Tween({ node, duration: duration * 2, scaleX: originalState.scaleX * 1.05, scaleY: originalState.scaleY * 1.05, easing: window.Konva.Easings.EaseInOut, yoyo: true });
+                break;
+            case 'tumble':
+                tween = new window.Konva.Tween({ node, duration, rotation: 360, scaleX: 0.1, scaleY: 0.1, easing: window.Konva.Easings.EaseIn });
+                break;
+            case 'drift':
+                node.x(originalState.x - 50);
+                node.y(originalState.y + 50);
+                tween = new window.Konva.Tween({ node, duration, x: originalState.x, y: originalState.y, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'flash':
+                node.opacity(0);
+                tween = new window.Konva.Tween({ node, duration: 0.2, opacity: 1, easing: window.Konva.Easings.EaseInOut, yoyo: true });
+                break;
+            case 'stomp':
+                node.y(originalState.y - 200);
+                node.opacity(0);
+                tween = new window.Konva.Tween({ node, duration: duration * 0.5, y: originalState.y, opacity: 1, easing: window.Konva.Easings.BounceEaseOut });
+                break;
+            case 'rotate':
+                node.rotation(0);
+                tween = new window.Konva.Tween({ node, duration, rotation: 360 });
+                break;
+            case 'flicker':
+                tween = new window.Konva.Tween({ node, duration: 0.1, opacity: 0.5, easing: window.Konva.Easings.EaseInOut, yoyo: true });
+                break;
+            case 'wiggle':
+                tween = new window.Konva.Tween({ node, duration: 0.2, rotation: originalState.rotation + 2, easing: window.Konva.Easings.EaseInOut, yoyo: true });
+                break;
+            case 'stretch':
+                node.scaleY(0.1);
+                tween = new window.Konva.Tween({ node, duration, scaleY: originalState.scaleY, easing: window.Konva.Easings.ElasticEaseOut });
+                break;
+            case 'zoom-in':
+                node.scale({ x: 0, y: 0 });
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX, scaleY: originalState.scaleY, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'zoom-out':
+                node.scale({ x: originalState.scaleX * 2, y: originalState.scaleY * 2 });
+                node.opacity(0);
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX, scaleY: originalState.scaleY, opacity: 1, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'swirl':
+                node.scale({ x: 0, y: 0 });
+                node.rotation(360);
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX, scaleY: originalState.scaleY, rotation: originalState.rotation, easing: window.Konva.Easings.EaseOut });
+                break;
+            case 'flip':
+                node.scaleX(0);
+                tween = new window.Konva.Tween({ node, duration, scaleX: originalState.scaleX, easing: window.Konva.Easings.ElasticEaseOut });
+                break;
+            case 'drop':
+                node.y(originalState.y - 200);
+                tween = new window.Konva.Tween({ node, duration, y: originalState.y, easing: window.Konva.Easings.BounceEaseOut });
+                break;
+            case 'bounce':
+                node.y(originalState.y - 100);
+                tween = new window.Konva.Tween({ node, duration: duration * 1.5, y: originalState.y, easing: window.Konva.Easings.BounceEaseOut });
+                break;
+            default:
+                resetNodeState(node);
+                return;
+        }
       
       if (tween) {
         tween.play();
         activeTweens.current.push(tween);
       }
     });
-    }, [canvasRef]);
+  }, [canvasRef]);
 
 
     const handleAnimationChange = useCallback((config: any) => {
@@ -135,17 +202,7 @@ export const useAnimationHandler = ({
       forceRecord?.();
     }, [selectedNodes, forceRecord, playAnimationForNodes]);
     
-  const resetNodeState = (node: any) => {
-    const originalState = node.getAttr('data-original-state');
-    if (originalState) {
-        node.setAttrs(originalState);
-    } else {
-        // Fallback if no state saved
-        node.opacity(1);
-        node.scale({x: node.scaleX(), y: node.scaleY()});
-        // Do not reset rotation to 0, use its current rotation
-    }
-  }
+  
   const timelineState = {
     getDuration: () => {
       const durations = Array.from(animationMetaRef.current.values()).map(
@@ -165,11 +222,6 @@ export const useAnimationHandler = ({
     handleAnimationChange,
     timelineState,
   };
-  
-  
-
-  return {
-    handleAnimationChange,
-    timelineState,
-  };
 };
+
+    

@@ -52,6 +52,27 @@ const AnimationPanel: React.FC<AnimationPanelProps> = ({ selectedNode, onAnimati
             <SelectItem value="fade">Fade In</SelectItem>
             <SelectItem value="pulse">Pulse</SelectItem>
             <SelectItem value="shake">Shake</SelectItem>
+            <SelectItem value="wipe-in">Wipe In</SelectItem>
+            <SelectItem value="wipe-out">Wipe Out</SelectItem>
+            <SelectItem value="pan">Pan</SelectItem>
+            <SelectItem value="rise">Rise</SelectItem>
+            <SelectItem value="pop">Pop</SelectItem>
+            <SelectItem value="blur">Blur</SelectItem>
+            <SelectItem value="breathe">Breathe</SelectItem>
+            <SelectItem value="tumble">Tumble</SelectItem>
+            <SelectItem value="drift">Drift</SelectItem>
+            <SelectItem value="flash">Flash</SelectItem>
+            <SelectItem value="stomp">Stomp</SelectItem>
+            <SelectItem value="rotate">Rotate</SelectItem>
+            <SelectItem value="flicker">Flicker</SelectItem>
+            <SelectItem value="wiggle">Wiggle</SelectItem>
+            <SelectItem value="stretch">Stretch</SelectItem>
+            <SelectItem value="zoom-in">Zoom In</SelectItem>
+            <SelectItem value="zoom-out">Zoom Out</SelectItem>
+            <SelectItem value="swirl">Swirl</SelectItem>
+            <SelectItem value="flip">Flip</SelectItem>
+            <SelectItem value="drop">Drop</SelectItem>
+            <SelectItem value="bounce">Bounce</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -82,3 +103,5 @@ const AnimationPanel: React.FC<AnimationPanelProps> = ({ selectedNode, onAnimati
 };
 
 export default AnimationPanel;
+
+    
