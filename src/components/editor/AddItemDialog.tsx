@@ -19,9 +19,12 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
     const filteredSymbols = useMemo(() => {
         if (!searchQuery.trim()) return [];
         const lowerCaseQuery = searchQuery.toLowerCase();
-        return allSymbols.filter(symbol => 
+        // Limit results for performance if query is short
+        const limit = lowerCaseQuery.length < 3 ? 50 : Infinity;
+        const results = allSymbols.filter(symbol => 
             symbol.name.toLowerCase().includes(lowerCaseQuery)
         );
+        return results.slice(0, limit);
     }, [searchQuery]);
 
     if (!isOpen) {
@@ -34,11 +37,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
     };
 
     const handleCategoryClick = (itemType: string) => {
-        if (['arrow', 'currency', 'weather', 'astrology', 'music', 'dices and tiles', 'chess', 'card', 'recycle', 'gender', 'emoji'].includes(itemType)) {
-            setSearchQuery(itemType);
-        } else {
-            onSelectItem(itemType);
-        }
+        onSelectItem(itemType);
     };
 
     return (
@@ -100,7 +99,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose, onSelect
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                                 <span>Clipart</span>
                             </button>
-                             <button className="add-item-card" data-item-type="emoji" onClick={() => handleCategoryClick('emoji')}>
+                            <button className="add-item-card" data-item-type="emoji" onClick={() => handleCategoryClick('emoji')}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto mb-2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                                 <span>Emoji</span>
                             </button>

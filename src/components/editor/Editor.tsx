@@ -29,6 +29,7 @@ const FrameDialog = dynamic(() => import('@/components/editor/FrameDialog'), { s
 const MaskDialog = dynamic(() => import('@/components/editor/MaskDialog'), { ssr: false });
 const ClipartDialog = dynamic(() => import('@/components/editor/ClipartDialog'), { ssr: false });
 const IconDialog = dynamic(() => import('@/components/editor/IconDialog'), { ssr: false });
+const EmojiDialog = dynamic(() => import('@/components/editor/EmojiDialog'), { ssr: false });
 const OnCanvasTextEditor = dynamic(() => import('@/components/editor/OnCanvasTextEditor'), { ssr: false });
 const CropImageModal = dynamic(() => import('@/components/editor/CropImageModal'), { ssr: false });
 
@@ -58,6 +59,8 @@ function EditorUI() {
     setClipartDialogOpen,
     isIconDialogOpen,
     setIconDialogOpen,
+    isEmojiDialogOpen,
+    setEmojiDialogOpen,
     editingShapeNode,
     editingFrameNode,
     editingMaskNode,
@@ -72,6 +75,7 @@ function EditorUI() {
     handleUpdateMask,
     handleAddClipart,
     handleAddIcon,
+    handleAddSymbol,
     handleSelectItem,
     handleMoveNode,
     canvasSize,
@@ -180,6 +184,12 @@ function EditorUI() {
           isOpen={isIconDialogOpen}
           onClose={() => setIconDialogOpen(false)}
           onAddIcon={handleAddIcon}
+        />
+        
+        <EmojiDialog
+          isOpen={isEmojiDialogOpen}
+          onClose={() => setEmojiDialogOpen(false)}
+          onAddEmoji={handleAddSymbol}
         />
 
         <CropImageModal

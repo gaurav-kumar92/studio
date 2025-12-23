@@ -1,11 +1,11 @@
 
+
 import { arrowSymbols } from './arrow-symbols';
 import { astrologySymbols } from './astrology-symbols';
 import { cardSymbols } from './card-symbols';
 import { chessSymbols } from './chess-symbols';
 import { currencySymbols } from './currency-symbols';
 import { dicesAndTilesSymbols } from './dices-and-tiles-symbols';
-import { emojiSymbols } from './emoji-symbols';
 import { genderSymbols } from './gender-symbols';
 import { musicSymbols } from './music-symbols';
 import { recycleSymbols } from './recycle-symbols';
@@ -24,7 +24,6 @@ export const allSymbols: SymbolInfo[] = [
     ...chessSymbols.map(s => ({ char: s, name: `chess ${s}`})),
     ...currencySymbols.map(s => ({ char: s, name: `currency ${s}`})),
     ...dicesAndTilesSymbols.map(s => ({ char: s, name: `dice tile ${s}`})),
-    ...emojiSymbols,
     ...genderSymbols.map(s => ({ char: s, name: `gender ${s}`})),
     ...musicSymbols.map(s => ({ char: s, name: `music ${s}`})),
     ...recycleSymbols.map(s => ({ char: s, name: `recycle ${s}`})),

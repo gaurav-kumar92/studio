@@ -73,6 +73,8 @@ type CanvasContextType = {
   setClipartDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isIconDialogOpen: boolean;
   setIconDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isEmojiDialogOpen: boolean;
+  setEmojiDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingShapeNode: any;
   setEditingShapeNode: React.Dispatch<React.SetStateAction<any>>;
   editingFrameNode: any;
@@ -198,6 +200,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [editingMaskNode, setEditingMaskNode] = useState<any>(null);
   const [isClipartDialogOpen, setClipartDialogOpen] = useState(false);
   const [isIconDialogOpen, setIconDialogOpen] = useState(false);
+  const [isEmojiDialogOpen, setEmojiDialogOpen] = useState(false);
  
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
@@ -484,9 +487,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       case 'mask': setEditingMaskNode(null); setMaskDialogOpen(true); break;
       case 'clipart': setClipartDialogOpen(true); break;
       case 'icon': setIconDialogOpen(true); break;
+      case 'emoji': setEmojiDialogOpen(true); break;
       default: break;
     }
-  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
+  }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setEmojiDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
@@ -757,7 +761,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
     isCanvasReady, setCanvasReady, isKonvaReady, setKonvaReady, isLoading, setIsLoading, isAddItemDialogOpen,
     setAddItemDialogOpen, isShapeDialogOpen, setShapeDialogOpen, isFrameDialogOpen,
-    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, editingShapeNode, 
+    setFrameDialogOpen, isMaskDialogOpen, setMaskDialogOpen, isClipartDialogOpen, setClipartDialogOpen, isIconDialogOpen, setIconDialogOpen, isEmojiDialogOpen, setEmojiDialogOpen, editingShapeNode, 
     setEditingShapeNode, editingFrameNode, setEditingFrameNode, editingMaskNode, setEditingMaskNode, editingTextNode, 
     setEditingTextNode, isCropModalOpen, setCropModalOpen, nodeToCrop, setNodeToCrop,
     canvasSize, setCanvasSize, backgroundColor, setBackgroundColor, backgroundImage, setBackgroundImage, backgroundImageProps, clipboard,
