@@ -26,7 +26,7 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="dialog-overlay" onClick={onClose}></div>
-            <div className="dialog flex flex-col" style={{ maxHeight: '85vh', width: '90vw', maxWidth: '700px' }}>
+            <div className="dialog flex flex-col" style={{ height: '85vh', maxHeight: '700px', width: '90vw', maxWidth: '700px' }}>
                 <h3 className="text-lg font-semibold mb-4 flex-shrink-0">Select an Emoji</h3>
                 
                 <Tabs defaultValue={emojiCategories[0].name} className="flex flex-col flex-grow w-full overflow-hidden">
@@ -39,7 +39,7 @@ const EmojiDialog: React.FC<EmojiDialogProps> = ({ isOpen, onClose, onAddEmoji }
                     </TabsList>
 
                     {emojiCategories.map((category) => (
-                        <TabsContent key={category.name} value={category.name} className="flex-grow mt-4 overflow-hidden">
+                        <TabsContent key={category.name} value={category.name} className="flex-grow mt-4 overflow-hidden" style={{ height: 'calc(100% - 80px)'}}>
                              <ScrollArea className="h-full">
                                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 pr-4">
                                     {category.symbols.map((symbol) => (
