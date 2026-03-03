@@ -32,8 +32,12 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config) => {
+    // Standard Next.js fix for Konva/canvas dependency issues
     config.resolve.alias.canvas = false;
     config.resolve.alias.encoding = false;
+    
+    // Ensure konva itself isn't bundled if we're strictly using CDN
+    // though the primary issue is the 'canvas' resolution.
     return config;
   },
 };

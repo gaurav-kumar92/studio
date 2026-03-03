@@ -1,6 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
+// We avoid any 'import' from 'konva' here to prevent the 'canvas' module resolution error during Next.js builds.
+// window.Konva is used for runtime logic.
 
 export const useBackground = ({ 
   canvasRef, 

@@ -18,12 +18,9 @@ import { useClipartHandler } from '@/hooks/useClipartHandler';
 import { useIconHandler } from '@/hooks/useIconHandler';
 import { useNodeHandlers } from '@/hooks/useNodeHandlers';
 import { useSelection } from '@/hooks/useSelection';
-import { useCanvasChangeTracker } from '@/hooks/useCanvasChangeTracker';
 import { useLockHandler } from '@/hooks/useLockHandler';
 import { useAnimationHandler } from '@/hooks/useAnimationHandler';
-import { Node } from 'konva/lib/Node';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/hooks/use-toast';
 import { useZoomPan } from "@/hooks/useZoomPan";
 import { useBackground } from "@/hooks/useBackground";
 import { useTransforms } from "@/hooks/useTransforms";
@@ -33,6 +30,7 @@ import { useExport } from '@/hooks/useExport';
 import { useMaskImageControls } from '@/hooks/useMaskImageControls';
 import { useCrop } from '@/hooks/useCrop';
 import { useSymbolHandler } from '@/hooks/useSymbolHandler';
+import { useCanvasPersistence } from '@/hooks/useCanvasPersistence';
 
 declare global {
   interface Window {
@@ -175,9 +173,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isKonvaReady, setKonvaReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  
- const [isPanning, setIsPanning] = useState(false);
- const [lastTouch, setLastTouch] = useState<{ x: number; y: number } | null>(null);
   const {
     canvasScale,
     canvasPosition,
@@ -186,7 +181,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     zoomOut,
     fitToScreen,
     handleZoomChange,
-    zoom
   } = useZoomPan({ canvasRef, isCanvasReady });
   
 
@@ -205,21 +199,45 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const [canvasSize, setCanvasSizeState] = useState('1080x1080');
   
-  
- 
+  const setCanvasSize = (size: string) => {
+    setCanvasSizeState(size);
+  };
+
+  const updateLayers = useCallback(() => {
+    if (!canvasRef.current?.layer) return;
+    const layer = canvasRef.current.layer;
+
+    const children = layer.getChildren((node: any) => {
+      const className = node?.getClassName?.() ?? '';
+      const isTransformer = className === 'Transformer' || node?.hasName?.('Transformer');
+      const isBackground = node?.name?.() === 'background';
+      const hasId = !!node?.id?.();
+      return hasId && !isTransformer && !isBackground;
+    });
+
+    setKonvaObjects(Array.from(children));
+    layer.draw();
+  }, []);
+
+  const deselectNodes = useCallback(() => {
+    setSelectedNodes([]);
+  }, []);
+
   const {
-    undo: undoBase,
-    redo: redoBase,
+    save,
+    undo,
+    redo,
     canUndo,
     canRedo,
     forceRecord,
-    runAsSingleHistoryStep,
-  } = useCanvasChangeTracker(canvasRef, isCanvasReady);
+  } = useCanvasPersistence({
+    canvasRef,
+    isCanvasReady,
+    setKonvaObjects,
+    attachDoubleClick: (node: any) => nodeHandlers.attachDoubleClick(node),
+    setSelectedNodes,
+  });
 
-  const setCanvasSize = (size: string) => {
-    setCanvasSizeState(size);
-    forceRecord();
-  };
   const {
     isCropModalOpen,
     setCropModalOpen,
@@ -250,20 +268,17 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     isKonvaReady
   });
 
- 
-
-
-
   const { isSelectionLocked, isAnySelectedLocked, toggleLock } = useLockHandler(
     selectedNodes,
     setSelectedNodes
   );
 
   const isNodeLocked = useCallback((n: any) => !!n?.getAttr?.('isLocked'), []);
- const getUnlocked = useCallback(
+  const getUnlocked = useCallback(
     (nodes: any[]) => nodes.filter((n) => !isNodeLocked(n)),
     [isNodeLocked]
   );
+
   const {
     applyFill,
     applyStroke,
@@ -293,43 +308,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     forceRecord,
   });
   
-  
-  
-  const updateLayers = useCallback(() => {
-    if (!canvasRef.current?.layer) return;
-    const layer = canvasRef.current.layer;
-
-    const children = layer.getChildren((node: any) => {
-      const className = node?.getClassName?.() ?? '';
-      const isTransformer = className === 'Transformer' || node?.hasName?.('Transformer');
-      const isBackground = node?.name?.() === 'background';
-      const hasId = !!node?.id?.();
-      return hasId && !isTransformer && !isBackground;
-    });
-
-    setKonvaObjects(Array.from(children));
-    layer.draw();
-  }, []);
-
-  const deselectNodes = useCallback(() => {
-    setSelectedNodes([]);
-  }, []);
   const { handleAnimationChange, timelineState } = useAnimationHandler({ canvasRef, selectedNodes, forceRecord });
+  
   const { handleSave } = useExport({
     canvasRef,
     deselectNodes,
     timelineState,
   });
   
-
-  
-  const handleDoubleClick = (node: any) => {
-    const handleNodeDoubleClick = (targetNode: any) => {
-        // Implementation will be provided by useNodeHandlers
-    };
-    handleNodeDoubleClick(node);
-  };
-  const attachDoubleClick = useCallback((node: Node) => {
+  const attachDoubleClick = useCallback((node: any) => {
     node.on('dblclick dbltap', () => {
       if (node.getAttr('isLocked')) return;
       let targetNode = node as any;
@@ -357,9 +344,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     deselectNodes,
     updateLayers,
     attachDoubleClick,
-    runAsSingleHistoryStep,
     forceRecord,
   });
+
   const {
     handleGroup,
     handleUngroup,
@@ -370,7 +357,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setMultiSelectMode,
     updateLayers,
     attachDoubleClick,
-    runAsSingleHistoryStep,
   });
   
 
@@ -380,19 +366,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { handleAddClipart } = useClipartHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddIcon } = useIconHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
   const { handleAddSymbol } = useSymbolHandler({ canvasRef, updateLayers, setSelectedNodes, attachDoubleClick, forceRecord });
-
-  const handleDoubleClickRef = useRef(handleDoubleClick);
-  handleDoubleClickRef.current = nodeHandlers.handleDoubleClick;
-  
-  useEffect(() => {
-    (handleDoubleClick as any).dependencies = [nodeHandlers.handleDoubleClick];
-  }, [nodeHandlers.handleDoubleClick, handleDoubleClick]);
-
-  
- 
-  useEffect(() => {
-    (handleDoubleClick as any).dependencies = [handleUngroup, nodeHandlers.handleDoubleClick];
-  }, [handleUngroup, nodeHandlers.handleDoubleClick, handleDoubleClick]);
 
   useSelection({ isCanvasReady, canvasRef, isMultiSelectMode, selectedNodes, setSelectedNodes });
   const { handleAddOrUpdateText } = useTextHandler({ canvasRef, updateLayers, setSelectedNodes, applyFill, attachDoubleClick: attachDoubleClick, editingTextNode, setEditingTextNode, forceRecord });
@@ -492,7 +465,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [deselectNodes, addImageFromComputer, setAddItemDialogOpen, handleAddOrUpdateText, setShapeDialogOpen, setFrameDialogOpen, setMaskDialogOpen, setClipartDialogOpen, setIconDialogOpen, setEmojiDialogOpen, setEditingShapeNode, setEditingFrameNode, setEditingMaskNode]);
 
- const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
+  const handleClipartPartColorChange = useCallback((partName: string, color: string) => {
     const clipartNode = selectedNodes.find(n => n.hasName('clipart'));
     if (!clipartNode || isNodeLocked(clipartNode)) return;
 
@@ -511,85 +484,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         canvasRef.current?.layer.draw();
         forceRecord?.();
     }
-}, [selectedNodes, isNodeLocked, forceRecord, canvasRef]);
+  }, [selectedNodes, isNodeLocked, forceRecord, canvasRef]);
 
   useEffect(() => {
     if (isKonvaReady && isCanvasReady && canvasRef.current?.background) {
-      const backgroundRect = canvasRef.current.background;
-      const layer = canvasRef.current.layer;
-
-      backgroundRect.fill(null);
-      backgroundRect.fillLinearGradientColorStops(null);
-      backgroundRect.fillRadialGradientColorStops(null);
-      backgroundRect.fillPatternImage(null);
-
-      if (backgroundImage) {
-          // background image is handled by Canvas.tsx
-      } else if (backgroundColor.isGradient) {
-        //const { width, height } = backgroundRect.getClientRect();
-        const width = backgroundRect.width();
-        const height = backgroundRect.height();
-        const colorStopsFlat = backgroundColor.colorStops.flatMap((cs: any) => [cs.stop, cs.color]);
-        if (backgroundColor.gradientDirection === 'radial') {
-          const rectWidth = backgroundRect.width();
-          const rectHeight = backgroundRect.height();
-        
-          const centerX = rectWidth / 2;
-          const centerY = rectHeight / 2;
-        
-          backgroundRect.fillPriority('radial-gradient');
-        
-          backgroundRect.fillRadialGradientStartPoint({
-            x: centerX,
-            y: centerY,
-          });
-          backgroundRect.fillRadialGradientStartRadius(0);
-        
-          backgroundRect.fillRadialGradientEndPoint({
-            x: centerX,
-            y: centerY,
-          });
-        
-          backgroundRect.fillRadialGradientEndRadius(
-            Math.sqrt(rectWidth * rectWidth + rectHeight * rectHeight) / 2
-          );
-        
-          backgroundRect.fillRadialGradientColorStops(colorStopsFlat);
-        } else {
-          backgroundRect.fillPriority('linear-gradient');
-        
-          let start = { x: 0, y: 0 };
-          let end = { x: 0, y: 0 };
-        
-          const rectWidth = backgroundRect.width();
-          const rectHeight = backgroundRect.height();
-        
-          switch (backgroundColor.gradientDirection) {
-            case 'top-to-bottom':
-              end = { x: 0, y: rectHeight };
-              break;
-            case 'left-to-right':
-              end = { x: rectWidth, y: 0 };
-              break;
-            case 'diagonal-tl-br':
-              end = { x: rectWidth, y: rectHeight };
-              break;
-            case 'diagonal-tr-bl':
-              start = { x: rectWidth, y: 0 };
-              end = { x: 0, y: rectHeight };
-              break;
-          }
-        
-          backgroundRect.fillLinearGradientStartPoint(start);
-          backgroundRect.fillLinearGradientEndPoint(end);
-          backgroundRect.fillLinearGradientColorStops(colorStopsFlat);
-        }
-        
-      } else {
-        backgroundRect.fillPriority('color');
-        backgroundRect.fill(backgroundColor.solidColor);
-      }
-      if (layer) layer.draw();
+      // background drawing logic is handled in useBackground
     }
   }, [backgroundColor, isKonvaReady, backgroundImage]);
 
@@ -604,158 +503,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       return hasId && !isTransformer && !isBackground;
     });
     setKonvaObjects(Array.from(children ?? []));
-  }, [selectedNodes]);
+  }, [selectedNodes, updateLayers]);
   
-  useEffect(() => {
-    const container = document.getElementById('canvas-wrapper');
-    const stage = canvasRef.current?.stage;
-    if (!container || !stage || !isCanvasReady) return;
-  
-    const getStagePointerFromTouch = (touch: Touch | undefined) => {
-      if (!touch) return null;
-      const rect = container.getBoundingClientRect();
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
-    };
-  
-    const onTouchStart = (e: TouchEvent) => {
-      if (!e.touches || e.touches.length === 0) return;
-      const touch = e.touches[0];
-      const pointer = getStagePointerFromTouch(touch);
-      if (!pointer) return;
-  
-      const konvaTarget = stage.getIntersection(pointer);
-  
-      if (konvaTarget && konvaTarget !== stage && (konvaTarget.name && konvaTarget.name() !== 'background')) {
-        setIsPanning(false);
-        setLastTouch(null);
-        return;
-      }
-  
-      setIsPanning(true);
-      setLastTouch({ x: touch.clientX, y: touch.clientY });
-    };
-  
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isPanning || !lastTouch || !e.touches || !e.touches.length) return;
-      const touch = e.touches[0];
-  
-      e.preventDefault();
-  
-      const dx = touch.clientX - lastTouch.x;
-      const dy = touch.clientY - lastTouch.y;
-  
-      const stageWidth = stage.width() * canvasScale;
-      const stageHeight = stage.height() * canvasScale;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-  
-      setCanvasPosition((prev) => {
-        let newX = prev.x + dx;
-        let newY = prev.y + dy;
-  
-        const minX = containerWidth - stageWidth;
-        const minY = containerHeight - stageHeight;
-  
-        if (stageWidth <= containerWidth) {
-          newX = Math.round((containerWidth - stageWidth) / 2);
-        } else {
-          newX = Math.min(0, Math.max(newX, minX));
-        }
-  
-        if (stageHeight <= containerHeight) {
-          newY = Math.round((containerHeight - stageHeight) / 2);
-        } else {
-          newY = Math.min(0, Math.max(newY, minY));
-        }
-  
-        return { x: newX, y: newY };
-      });
-  
-      setLastTouch({ x: touch.clientX, y: touch.clientY });
-    };
-  
-    const onTouchEnd = () => {
-      setIsPanning(false);
-      setLastTouch(null);
-    };
-  
-    container.addEventListener('touchstart', onTouchStart, { passive: true });
-    container.addEventListener('touchmove', onTouchMove, { passive: false });
-    container.addEventListener('touchend', onTouchEnd);
-    container.addEventListener('touchcancel', onTouchEnd);
-  
-    return () => {
-      container.removeEventListener('touchstart', onTouchStart);
-      container.removeEventListener('touchmove', onTouchMove);
-      container.removeEventListener('touchend', onTouchEnd);
-      container.removeEventListener('touchcancel', onTouchEnd);
-    };
-  }, [isCanvasReady, canvasScale, isPanning, lastTouch, setCanvasPosition, canvasRef]);
-  
-
   useEffect(() => {
     if (isKonvaReady && isCanvasReady && canvasRef.current?.stage) {
-      const stage = canvasRef.current.stage;
-      
       fitToScreen();
       window.addEventListener('resize', fitToScreen);
-
-      // Set initial loading to false only after everything is ready
       setIsLoading(false);
-
       return () => {
           window.removeEventListener('resize', fitToScreen);
-          if (stage && typeof stage.off === 'function') {
-            stage.off('dragmove');
-          }
       };
     }
-}, [isKonvaReady, isCanvasReady, fitToScreen, canvasRef]);
-
-  type LockedSnapshot = { id: string; className: string; attrs: any; parentId?: string; zIndex?: number; };
-  const snapshotLockedNodes = useCallback((): LockedSnapshot[] => {
-    const layer = canvasRef.current?.layer;
-    if (!layer) return [];
-    const locked: any[] = layer.find((n: any) => n.getAttr && n.getAttr('isLocked'));
-    return locked.map((n: any) => ({ id: n.id?.() || '', className: n.getClassName?.() || 'Group', attrs: { ...n.getAttrs?.() }, parentId: n.getParent?.()?.id?.(), zIndex: n.getZIndex?.() }));
-  }, []);
-
-  const restoreLockedNodes = useCallback((snapshots: LockedSnapshot[]) => {
-    const layer = canvasRef.current?.layer;
-    if (!layer) return;
-    snapshots.forEach((s) => {
-      let target: any = layer.findOne(`#${s.id}`);
-      if (target) {
-        target.setAttrs(s.attrs);
-        if (typeof s.zIndex === 'number') {
-          try {
-            target.setZIndex(s.zIndex);
-          } catch { /* ignore */ }
-        }
-      } else {
-        const Ctor = (window.Konva as any)[s.className] || window.Konva.Group;
-        const node = new Ctor(s.attrs);
-        const parent = (s.parentId && (layer.findOne(`#${s.parentId}`) as any)) || layer;
-        parent.add(node);
-      }
-    });
-    layer.batchDraw();
-  }, []);
-
-  const undo = useCallback(() => {
-    const lockedBefore = snapshotLockedNodes();
-    undoBase();
-    restoreLockedNodes(lockedBefore);
-  }, [undoBase, snapshotLockedNodes, restoreLockedNodes]);
-
-  const redo = useCallback(() => {
-    const lockedBefore = snapshotLockedNodes();
-    redoBase();
-    restoreLockedNodes(lockedBefore);
-  }, [redoBase, snapshotLockedNodes, restoreLockedNodes]);
+  }, [isKonvaReady, isCanvasReady, fitToScreen]);
 
   const value: CanvasContextType = {
     canvasRef, konvaObjects, setKonvaObjects, selectedNodes, setSelectedNodes, isMultiSelectMode, setMultiSelectMode,
