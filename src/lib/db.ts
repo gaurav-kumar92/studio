@@ -1,20 +1,22 @@
-// src/lib/db.ts
-import { openDB } from 'idb';
+import { openDB, type IDBPDatabase } from 'idb';
 
-export const dbPromise = openDB('canvas-editor-db', 1, {
-  upgrade(db) {
-    if (!db.objectStoreNames.contains('projects')) {
-      db.createObjectStore('projects', { keyPath: 'id' });
-    }
-  },
-});
+/**
+ * SSR-safe wrapper for IndexedDB using 'idb' library.
+ */
+export const dbPromise: Promise<IDBPDatabase<any> | null> = 
+  typeof window !== 'undefined' 
+    ? openDB('canvas-editor-db', 1, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains('projects')) {
+            db.createObjectStore('projects', { keyPath: 'id' });
+          }
+        },
+      })
+    : Promise.resolve(null);
 
-// Save canvas locally
-export async function saveProjectLocal(
-  projectId: string,
-  canvasState: any
-) {
+export async function saveProjectLocal(projectId: string, canvasState: any) {
   const db = await dbPromise;
+  if (!db) return;
   await db.put('projects', {
     id: projectId,
     state: canvasState,
@@ -22,14 +24,14 @@ export async function saveProjectLocal(
   });
 }
 
-// Load canvas locally
 export async function loadProjectLocal(projectId: string) {
   const db = await dbPromise;
+  if (!db) return null;
   return db.get('projects', projectId);
 }
 
-// Optional cleanup
 export async function deleteProjectLocal(projectId: string) {
   const db = await dbPromise;
+  if (!db) return;
   await db.delete('projects', projectId);
 }
