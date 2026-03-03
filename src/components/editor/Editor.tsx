@@ -4,6 +4,8 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
+import { loadProjectLocal, saveProjectLocal } from '@/lib/db';
+
 import {
   CanvasProvider,
   useCanvas,
@@ -40,6 +42,7 @@ declare global {
 }
 
 function EditorUI() {
+  const projectId = 'default-project';
   const {
     canvasRef,
     setKonvaReady,
@@ -88,6 +91,55 @@ function EditorUI() {
 
   const isCircular = canvasSize.endsWith('-circle');
   const sizeString = canvasSize.split('-')[0];
+  let saveTimeout: any;
+
+function saveCanvasLocal() {
+  const canvas = canvasRef.current;
+  if (!canvas?.stage) return;
+
+  const json = canvas.stage.toJSON();
+
+  // 1️⃣ Save instantly to IndexedDB
+  saveProjectLocal(projectId, json);
+
+  // 2️⃣ Debounce (cloud save later)
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    // Firestore save will go here later
+    console.log('idle save');
+  }, 4000);
+}
+
+
+    // ===============================
+  // LOAD CANVAS FROM INDEXEDDB
+  // ===============================
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvas.stage) return;
+  
+    async function loadLocalCanvas() {
+      const local = await loadProjectLocal(projectId);
+  
+      if (local?.state) {
+        const stage = canvas.stage;
+  
+        // Clear existing nodes
+        stage.destroyChildren();
+  
+        // Restore from JSON
+        window.Konva.Node.create(
+          local.state,
+          stage.container()
+        );
+  
+        stage.draw();
+      }
+    }
+  
+    loadLocalCanvas();
+  }, [canvasRef, projectId]);
+  
 
   return (
     <>
