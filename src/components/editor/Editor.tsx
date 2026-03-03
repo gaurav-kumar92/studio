@@ -1,8 +1,7 @@
 
 'use client';
 
-import React from 'react';
-import Script from 'next/script';
+import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
 import {
@@ -87,120 +86,127 @@ function EditorUI() {
     handleApplyCrop,
   } = useCanvas();
 
+  useEffect(() => {
+    // Dynamically load Konva only in the browser
+    const initKonva = async () => {
+      try {
+        const Konva = (await import('konva')).default;
+        window.Konva = Konva;
+        setKonvaReady(true);
+      } catch (err) {
+        console.error('Failed to load Konva:', err);
+      }
+    };
+    initKonva();
+  }, [setKonvaReady]);
+
   const isCircular = canvasSize.endsWith('-circle');
   const sizeString = canvasSize.split('-')[0];
 
   return (
-    <>
-      <Script
-        src="https://cdn.jsdelivr.net/npm/konva@9.3.6/konva.min.js"
-        strategy="lazyOnload"
-        onLoad={() => setKonvaReady(true)}
-      />
-      <div id="editor-ui">
-        <div className="editor-main-column">
-          <h1 className="text-4xl text-center my-4 font-headline" style={{ fontWeight: 400 }}>
-            <span style={{ color: '#F25912' }}>c</span>
-            <span style={{ color: '#FFC400' }}>h</span>
-            <span style={{ color: '#16C47F' }}>i</span>
-            <span style={{ color: '#7C00FE' }}>t</span>
-            <span style={{ color: '#D91656' }}>r</span>
-            <span style={{ color: '#640D5F' }}>a</span>
-          </h1>
-          <Toolbar />
-          <Canvas
-            ref={canvasRef}
-            canvasSize={sizeString!}
-            isCircular={isCircular!}
-            backgroundImage={backgroundImage}
+    <div id="editor-ui">
+      <div className="editor-main-column">
+        <h1 className="text-4xl text-center my-4 font-headline" style={{ fontWeight: 400 }}>
+          <span style={{ color: '#F25912' }}>c</span>
+          <span style={{ color: '#FFC400' }}>h</span>
+          <span style={{ color: '#16C47F' }}>i</span>
+          <span style={{ color: '#7C00FE' }}>t</span>
+          <span style={{ color: '#D91656' }}>r</span>
+          <span style={{ color: '#640D5F' }}>a</span>
+        </h1>
+        <Toolbar />
+        <Canvas
+          ref={canvasRef}
+          canvasSize={sizeString!}
+          isCircular={isCircular!}
+          backgroundImage={backgroundImage}
+        />
+        {editingTextNode && (
+          <OnCanvasTextEditor
+            node={editingTextNode}
+            onClose={() => setEditingTextNode(null)}
+            onUpdate={handleAddOrUpdateText}
           />
-          {editingTextNode && (
-            <OnCanvasTextEditor
-              node={editingTextNode}
-              onClose={() => setEditingTextNode(null)}
-              onUpdate={handleAddOrUpdateText}
-            />
-          )}
-          <PropertiesToolbar />
-        </div>
-
-        <LayersPanel
-          layers={konvaObjects}
-          selectedNodes={selectedNodes}
-          onSelectNode={(id) => {
-            const node = canvasRef.current?.layer.findOne(`#${id}`);
-            if (node) {
-              if (isMultiSelectMode) {
-                const isSelected = selectedNodes.some((n) => n.id() === node.id());
-                if (isSelected) {
-                  setSelectedNodes(selectedNodes.filter((n) => n.id() !== node.id()));
-                } else {
-                  setSelectedNodes([...selectedNodes, node]);
-                }
-              } else {
-                setSelectedNodes([node]);
-              }
-            }
-          }}
-          onMoveNode={handleMoveNode}
-        />
-
-        <AddItemDialog
-          isOpen={isAddItemDialogOpen}
-          onClose={() => setAddItemDialogOpen(false)}
-          onSelectItem={handleSelectItem}
-        />
-
-        <ShapeDialog
-          isOpen={isShapeDialogOpen}
-          onClose={() => setShapeDialogOpen(false)}
-          onAddShape={handleAddShape}
-          onUpdateShape={handleUpdateShape}
-          editingNode={editingShapeNode}
-        />
-
-        <FrameDialog
-          isOpen={isFrameDialogOpen}
-          onClose={() => setFrameDialogOpen(false)}
-          onAddFrame={handleAddFrame}
-          onUpdateFrame={handleUpdateFrame}
-          editingNode={editingFrameNode}
-        />
-
-        <MaskDialog
-          isOpen={isMaskDialogOpen}
-          onClose={() => setMaskDialogOpen(false)}
-          onAddMask={handleAddMask}
-          onUpdateMask={handleUpdateMask}
-          editingNode={editingMaskNode}
-        />
-
-        <ClipartDialog
-          isOpen={isClipartDialogOpen}
-          onClose={() => setClipartDialogOpen(false)}
-          onAddClipart={handleAddClipart}
-        />
-
-        <IconDialog
-          isOpen={isIconDialogOpen}
-          onClose={() => setIconDialogOpen(false)}
-          onAddIcon={handleAddIcon}
-        />
-        
-        <EmojiDialog
-          isOpen={isEmojiDialogOpen}
-          onClose={() => setEmojiDialogOpen(false)}
-          onAddEmoji={handleAddSymbol}
-        />
-
-        <CropImageModal
-          isOpen={isCropModalOpen}
-          imageNode={nodeToCrop}
-          onClose={() => setCropModalOpen(false)}
-          onApply={handleApplyCrop}
-        />
+        )}
+        <PropertiesToolbar />
       </div>
-    </>
+
+      <LayersPanel
+        layers={konvaObjects}
+        selectedNodes={selectedNodes}
+        onSelectNode={(id) => {
+          const node = canvasRef.current?.layer.findOne(`#${id}`);
+          if (node) {
+            if (isMultiSelectMode) {
+              const isSelected = selectedNodes.some((n) => n.id() === node.id());
+              if (isSelected) {
+                setSelectedNodes(selectedNodes.filter((n) => n.id() !== node.id()));
+              } else {
+                setSelectedNodes([...selectedNodes, node]);
+              }
+            } else {
+              setSelectedNodes([node]);
+            }
+          }
+        }}
+        onMoveNode={handleMoveNode}
+      />
+
+      <AddItemDialog
+        isOpen={isAddItemDialogOpen}
+        onClose={() => setAddItemDialogOpen(false)}
+        onSelectItem={handleSelectItem}
+      />
+
+      <ShapeDialog
+        isOpen={isShapeDialogOpen}
+        onClose={() => setShapeDialogOpen(false)}
+        onAddShape={handleAddShape}
+        onUpdateShape={handleUpdateShape}
+        editingNode={editingShapeNode}
+      />
+
+      <FrameDialog
+        isOpen={isFrameDialogOpen}
+        onClose={() => setFrameDialogOpen(false)}
+        onAddFrame={handleAddFrame}
+        onUpdateFrame={handleUpdateFrame}
+        editingNode={editingFrameNode}
+      />
+
+      <MaskDialog
+        isOpen={isMaskDialogOpen}
+        onClose={() => setMaskDialogOpen(false)}
+        onAddMask={handleAddMask}
+        onUpdateMask={handleUpdateMask}
+        editingNode={editingMaskNode}
+      />
+
+      <ClipartDialog
+        isOpen={isClipartDialogOpen}
+        onClose={() => setClipartDialogOpen(false)}
+        onAddClipart={handleAddClipart}
+      />
+
+      <IconDialog
+        isOpen={isIconDialogOpen}
+        onClose={() => setIconDialogOpen(false)}
+        onAddIcon={handleAddIcon}
+      />
+      
+      <EmojiDialog
+        isOpen={isEmojiDialogOpen}
+        onClose={() => setEmojiDialogOpen(false)}
+        onAddEmoji={handleAddSymbol}
+      />
+
+      <CropImageModal
+        isOpen={isCropModalOpen}
+        imageNode={nodeToCrop}
+        onClose={() => setCropModalOpen(false)}
+        onApply={handleApplyCrop}
+      />
+    </div>
   );
 }
 

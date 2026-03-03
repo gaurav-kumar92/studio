@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -10,12 +11,11 @@ export function useClipboard({
     deselectNodes,
     updateLayers,
     attachDoubleClick,
-    runAsSingleHistoryStep,
     forceRecord,
   }) {
     const [clipboard, setClipboard] = useState<any[]>([]);
 
-     // ---- COPY ----
+  // ---- COPY ----
   const handleCopy = useCallback(() => {
     const unlockedNodes = getUnlocked(selectedNodes);
     if (unlockedNodes.length === 0) return;
@@ -27,46 +27,45 @@ export function useClipboard({
   // ---- PASTE ----
   const handlePaste = useCallback(() => {
     if (clipboard.length === 0 || !canvasRef.current?.layer) return;
-    runAsSingleHistoryStep(() => {
-        const layer = canvasRef.current!.layer;
-        const newSelection: any[] = [];
-  
-        clipboard.forEach((nodeToPaste: any, index: number) => {
-          const clone = nodeToPaste.clone();
+    
+    const layer = canvasRef.current!.layer;
+    const newSelection: any[] = [];
 
-          const uniqueId = `node-${Date.now()}-${Math.floor(
-            Math.random() * 1000
-          )}-${index}`;
-  
-          clone.setAttrs({
-            id: uniqueId,
-            x: clone.x() + 20,
-            y: clone.y() + 20,
-          });
-          attachDoubleClick(clone);
-          layer.add(clone);
-          newSelection.push(clone);
-        });
-  
-        layer.batchDraw();
-        setSelectedNodes(newSelection);
-        updateLayers();
+    clipboard.forEach((nodeToPaste: any, index: number) => {
+      const clone = nodeToPaste.clone();
+
+      const uniqueId = `node-${Date.now()}-${Math.floor(
+        Math.random() * 1000
+      )}-${index}`;
+
+      clone.setAttrs({
+        id: uniqueId,
+        x: clone.x() + 20,
+        y: clone.y() + 20,
       });
-    }, [
-        clipboard,
-        canvasRef,
-        attachDoubleClick,
-        setSelectedNodes,
-        updateLayers,
-        runAsSingleHistoryStep,
-      ]);
+      attachDoubleClick(clone);
+      layer.add(clone);
+      newSelection.push(clone);
+    });
+
+    layer.batchDraw();
+    setSelectedNodes(newSelection);
+    updateLayers();
+    forceRecord?.();
+  }, [
+    clipboard,
+    canvasRef,
+    attachDoubleClick,
+    setSelectedNodes,
+    updateLayers,
+    forceRecord,
+  ]);
       
   // ---- DELETE ----
   const handleDelete = useCallback(() => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
 
-    forceRecord?.();
     nodes.forEach((node) => node.destroy());
     deselectNodes();
     updateLayers();
@@ -78,6 +77,7 @@ export function useClipboard({
     updateLayers,
     forceRecord,
   ]);
+
   return {
     clipboard,
     handleCopy,

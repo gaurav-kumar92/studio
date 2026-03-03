@@ -42,6 +42,13 @@ const nextConfig: NextConfig = {
       canvas: false,
       encoding: false,
     };
+
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      canvas: false,
+      fs: false,
+      path: false,
+    };
     
     return config;
   },
