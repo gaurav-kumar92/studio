@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCallback } from 'react';
@@ -28,7 +29,7 @@ export function useExport({
       quality: number = 1
     ) => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas || typeof window === 'undefined' || !window.Konva) return;
 
       const { stage, layer, background } = canvas;
 
@@ -60,7 +61,7 @@ export function useExport({
           document.body.appendChild(tempContainer);
           
           // 🔑 Create a temporary stage with exact canvas size
-          const tempStage = new Konva.Stage({
+          const tempStage = new window.Konva.Stage({
             container: tempContainer,
             width: 1080,
             height: 1080,
@@ -74,7 +75,9 @@ export function useExport({
             if (frameIndex >= totalFrames) {
               // Cleanup
               tempStage.destroy();
-              document.body.removeChild(tempContainer);
+              if (tempContainer.parentNode) {
+                document.body.removeChild(tempContainer);
+              }
               
               gifshot.createGIF(
                 {
@@ -98,8 +101,8 @@ export function useExport({
             }
         
             // 🔑 Clone the layer to temp stage
-            const layer = background.getLayer();
-            const clonedLayer = layer.clone();
+            const layerToClone = background.getLayer();
+            const clonedLayer = layerToClone.clone();
             tempStage.add(clonedLayer);
             tempStage.draw();
             
@@ -148,7 +151,8 @@ export function useExport({
         // Clone drawable objects
         layer.getChildren().forEach((child: any) => {
           if (child === background) return;
-          if (child.getClassName?.() === 'Transformer') return;
+          const className = child.getClassName?.() || '';
+          if (className === 'Transformer') return;
           if (child.hasName?.('Transformer')) return;
           if (child.name?.() === 'background') return;
           if (child.name?.() === 'selection-rect') return;

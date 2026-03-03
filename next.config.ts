@@ -31,13 +31,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    // Standard Next.js fix for Konva/canvas dependency issues
-    config.resolve.alias.canvas = false;
-    config.resolve.alias.encoding = false;
+  webpack: (config, { isServer }) => {
+    // Aggressive fix for Konva/canvas/jsdom dependency issues on Vercel
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'canvas', 'jsdom'];
+    }
     
-    // Ensure konva itself isn't bundled if we're strictly using CDN
-    // though the primary issue is the 'canvas' resolution.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+      encoding: false,
+    };
+    
     return config;
   },
 };
