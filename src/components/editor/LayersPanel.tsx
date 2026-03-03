@@ -1,12 +1,10 @@
-
 'use client';
 
 import React from 'react';
-import { Node } from 'konva/lib/Node';
 
 type LayersPanelProps = {
-  layers: Node[];
-  selectedNodes: Node[];
+  layers: any[];
+  selectedNodes: any[];
   onSelectNode: (nodeId: string) => void;
   onMoveNode: (action: 'up' | 'down', nodeId: string) => void;
 };
@@ -17,7 +15,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
   onSelectNode,
   onMoveNode,
 }) => {
-  const getLayerNameAndIcon = (node: Node) => {
+  const getLayerNameAndIcon = (node: any) => {
     let icon: React.ReactNode = null;
     let name = 'Object';
 
@@ -44,10 +42,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
         >
           <path d="M4 7V4h16v3M9 20h6M12 4v16" />
         </svg>
@@ -163,7 +158,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
     <div id="layers-panel">
       <h3 className="text-lg font-semibold mb-4 text-center">Layers</h3>
       <ul id="layers-list">
-        {reversedLayers.map((node: Node, index: number) => {
+        {reversedLayers.map((node: any, index: number) => {
           const { icon, name } = getLayerNameAndIcon(node);
           const isSelected = selectedNodes.some(n => n.id() === node.id());
           const nodeCount = reversedLayers.length;

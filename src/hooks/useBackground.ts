@@ -1,6 +1,6 @@
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type Konva from 'konva';
 
 export const useBackground = ({ 
   canvasRef, 

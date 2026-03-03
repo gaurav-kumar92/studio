@@ -1,8 +1,6 @@
-
 'use client';
 
 import { useCallback } from 'react';
-import type Konva from 'konva';
 
 export type GradientConfig = {
   type: 'linear' | 'radial';
@@ -12,7 +10,7 @@ export type GradientConfig = {
 
 export function useGradient() {
   const applyGradient = useCallback(
-    (rect: Konva.Shape, config: GradientConfig) => {
+    (rect: any, config: GradientConfig) => {
       if (!rect || typeof window === 'undefined' || !window.Konva) return;
 
       const { width, height } = rect.getClientRect();

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Node } from 'konva/lib/Node';
 
 export function useGrouping({
     canvasRef,
@@ -12,7 +11,7 @@ export function useGrouping({
     attachDoubleClick,
     runAsSingleHistoryStep,
   }) {
-    // ---- GROUP (AS-IS) ----
+    // ---- GROUP ----
   const handleGroup = useCallback(() => {
     if (
       selectedNodes.length < 2 ||
@@ -91,7 +90,7 @@ export function useGrouping({
     updateLayers,
     attachDoubleClick,
   ]);
-  // ---- UNGROUP (AS-IS) ----
+  // ---- UNGROUP ----
   const handleUngroup = useCallback(() => {
     const group = selectedNodes[0];
 
@@ -104,9 +103,9 @@ export function useGrouping({
       runAsSingleHistoryStep(() => {
         const layer = canvasRef.current?.layer ?? group.getLayer();
         const children = group.getChildren().slice();
-        const nodesToSelect: Node[] = [];
+        const nodesToSelect: any[] = [];
   
-        children.forEach((child: Node) => {
+        children.forEach((child: any) => {
           const absPos = child.getAbsolutePosition();
   
           child.moveTo(layer);
@@ -137,5 +136,3 @@ export function useGrouping({
         handleUngroup,
       };
     }
-        
-  

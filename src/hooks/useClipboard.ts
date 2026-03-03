@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Node } from 'konva/lib/Node';
 
 export function useClipboard({
     canvasRef,
@@ -16,7 +15,7 @@ export function useClipboard({
   }) {
     const [clipboard, setClipboard] = useState<any[]>([]);
 
-     // ---- COPY (AS-IS) ----
+     // ---- COPY ----
   const handleCopy = useCallback(() => {
     const unlockedNodes = getUnlocked(selectedNodes);
     if (unlockedNodes.length === 0) return;
@@ -25,12 +24,12 @@ export function useClipboard({
     setClipboard(copied);
   }, [selectedNodes, getUnlocked]);
 
-  // ---- PASTE (AS-IS) ----
+  // ---- PASTE ----
   const handlePaste = useCallback(() => {
     if (clipboard.length === 0 || !canvasRef.current?.layer) return;
     runAsSingleHistoryStep(() => {
         const layer = canvasRef.current!.layer;
-        const newSelection: Node[] = [];
+        const newSelection: any[] = [];
   
         clipboard.forEach((nodeToPaste: any, index: number) => {
           const clone = nodeToPaste.clone();
@@ -62,7 +61,7 @@ export function useClipboard({
         runAsSingleHistoryStep,
       ]);
       
-  // ---- DELETE (AS-IS) ----
+  // ---- DELETE ----
   const handleDelete = useCallback(() => {
     const nodes = getUnlocked(selectedNodes);
     if (nodes.length === 0) return;
